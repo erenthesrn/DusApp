@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'quiz_screen.dart';
 
-
 void main() {
   runApp(const DusApp());
 }
@@ -13,7 +12,7 @@ class DusApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'DUS APP',
+      title: 'DUS APP DENEMEEEEE',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF8F9FA),
         primaryColor: const Color(0xFF007AFF),
