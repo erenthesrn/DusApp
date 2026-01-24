@@ -12,7 +12,7 @@ class DusApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SANAN DUS APP',
+      title: 'DUS APP',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF8F9FA),
         primaryColor: const Color(0xFF007AFF),
