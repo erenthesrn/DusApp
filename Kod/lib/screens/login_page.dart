@@ -12,7 +12,79 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // Metin kutularını okumak için gerekli araçlar(kullanıcıadı veya şifreyi kontrol etmek için):
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+
+  // Butona basılınca dönmeye başlaması için bu değişkeni tutuyoruz
+  bool _isLoading = false;
+
+  // ===========================================================================
+  // ||                                                                       ||
+  // ||  BAŞLANGIÇ: LOADING (YÜKLENİYOR) VE GİRİŞ MANTIĞI                     ||
+  // ||  Burada butona basılınca neler olacağı tanımlanıyor.                  ||
+  // ||                                                                       ||
+  // ===========================================================================
+  void _handleLogin() async {
+    // ADIM 1: Klavyeyi kapat (Görsel temizlik için)
+    FocusScope.of(context).unfocus();
+
+    //Yazıları al
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lütfen tüm alanları doldurun."), backgroundColor: Colors.red,),
+       
+      );
+      return; //Hata varsa dur, aşağı inme!
+    }
+    //KONTROL 2: Mail geçerli mi?
+    // Bu 'RegExp' kodu mailin içinde @ var mı, sonunda .com/.net var mı diye bakar.
+    final bool emailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
+
+    if (!emailValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Lütfen geçerli bir e-posta giriniz (örn: ali@gmail.com)"), 
+          backgroundColor: Colors.orange
+        ),
+      );
+      return; // Hata varsa dur!
+    }
+
+    // ADIM 2: Yükleniyor animasyonunu BAŞLAT
+    setState(() {
+      _isLoading = true;
+    });
+
+    // ADIM 3: Backend'e istek atıyor gibi bekle (Simülasyon - 2 Saniye)
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (mounted) {
+      // ADIM 4: Yükleniyor animasyonunu BİTİR
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // ADIM 5: Kullanıcıya mesaj göster
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Giriş Başarılı! Yönlendiriliyorsunuz..."),
+          backgroundColor: Colors.green, // Başarılı ise yeşil
+          duration: Duration(seconds: 2),
+        )
+      );
+      
+      // NOT: Buraya daha sonra Quiz ekranına yönlendirme kodu gelecek.
+      // Navigator.pushReplacement...
+    }
+  }
+  // ===========================================================================
+  // ||  BİTİŞ: LOADING MANTIĞI SONU                                          ||
+  // ===========================================================================
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +106,8 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 48),
                 
                 // Email Input
-                const TextField(
+                TextField(
+                  controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(labelText: 'E-posta Adresi', prefixIcon: Icon(Icons.email_outlined)),
                 ),
@@ -42,6 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                 
                 // Şifre Input
                 TextField(
+                  controller: _passwordController,
                   obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
                     labelText: 'Şifre',
@@ -67,14 +141,75 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
 
                 // Giriş Yap Butonu
-                ElevatedButton(
-                  onPressed: () {
-                     // Giriş işlemi (backend) buraya gelecek
-                  },
-                  child: const Text('Giriş Yap'),
+              // --- GİRİŞ BUTONU ---
+                SizedBox(
+                  height: 56, 
+                  child: ElevatedButton(
+                    // Eğer yükleniyorsa tıkla(ma)yacak (null), değilse fonksiyon çalışacak
+                    onPressed: _isLoading ? null : _handleLogin, 
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isLoading 
+                      ? const SizedBox(
+                          height: 24, 
+                          width: 24, 
+                          // Standart dönen beyaz daire
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                        )
+                      : const Text(
+                          'Giriş Yap', 
+                          style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)
+                        ),
+                  ),
                 ),
 
                 const SizedBox(height: 32),
+
+                // --- VEYA ÇİZGİSİ ---
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text("veya", style: TextStyle(color: Colors.grey[500])),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey[300])),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // --- MİSAFİR BUTONU ---
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Misafir girişi yapıldı."), 
+                        backgroundColor: Colors.blueGrey,
+                        duration: Duration(milliseconds: 2000), // 2000 ms = 2 saniye
+                        )
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Theme.of(context).primaryColor),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      'Misafir olarak devam et',
+                      style: TextStyle(
+                        fontSize: 16, 
+                        fontWeight: FontWeight.bold, 
+                        color: Theme.of(context).primaryColor
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+
 
                 // --- KAYIT OL ALANI ---
                 Row(
