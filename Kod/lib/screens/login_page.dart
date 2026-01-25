@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.medical_services_outlined, size: 80, color: Theme.of(context).primaryColor),
+                Image.asset('assets/images/logo.png',height: 120,),
                 const SizedBox(height: 16),
                 Text('DUS Asistanı', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
                 const SizedBox(height: 8),
