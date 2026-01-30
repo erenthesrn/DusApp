@@ -1,11 +1,15 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Veri çekmek için lazım
-import 'package:cloud_firestore/cloud_firestore.dart'; // Veri çekmek için lazım
-import 'login_page.dart'; 
-import 'topic_selection_screen.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math'; // 🔥 Rastgele sayı üretmek için bu kütüphane şart!
+import 'login_page.dart';
+import 'topic_selection_screen.dart';
 import 'profile_screen.dart';
 
+// =============================================================================
+// ||                            ANA EKRAN (SKELETON)                         ||
+// =============================================================================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -14,18 +18,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _targetBranch = "Doktor"; // Varsayılan hitap
+  String _targetBranch = "Doktor";
   int _selectedIndex = 0;
-  int _dailyGoal = 60; // Varsayılan hedef (dk)
-  int _currentMinutes = 0; // Şu anlık 0 (İleride kronometreden gelecek)
+  int _dailyGoal = 60;
+  int _currentMinutes = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchTargetBranch(); // Sayfa açılınca hedefi çek
+    _fetchTargetBranch();
   }
 
-  // 🔥 Kullanıcının hedef branşını çeken fonksiyon
   Future<void> _fetchTargetBranch() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -33,17 +36,14 @@ class _HomeScreenState extends State<HomeScreen> {
         DocumentSnapshot doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists && doc.data() != null) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          if (data.containsKey('targetBranch')) {
-            setState(() {
-              // 1. Hedef Branş
-              if (data.containsKey('targetBranch')) {
-                _targetBranch = "Geleceğin ${data['targetBranch']} Uzmanı";
-              }
-              // 2. Günlük Hedef (Dakika) - EKLENEN KISIM
-              if (data.containsKey('dailyGoalMinutes')) {
-                _dailyGoal = data['dailyGoalMinutes'];
-              }            });
-          }
+          setState(() {
+            if (data.containsKey('targetBranch')) {
+              _targetBranch = "Geleceğin ${data['targetBranch']} Uzmanı";
+            }
+            if (data.containsKey('dailyGoalMinutes')) {
+              _dailyGoal = data['dailyGoalMinutes'];
+            }
+          });
         }
       } catch (e) {
         debugPrint("Veri çekme hatası: $e");
@@ -59,12 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Sayfalar Listesi
-    // Sayfalar Listesi
     final List<Widget> pages = [
       DashboardView(
-        titleName: _targetBranch, 
-        dailyGoal: _dailyGoal, 
+        titleName: _targetBranch,
+        dailyGoal: _dailyGoal,
         currentMinutes: _currentMinutes
       ),
       const Center(child: Text("İstatistikler (Yakında)")),
@@ -72,10 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 224, 247, 250), 
+      backgroundColor: const Color.fromARGB(255, 224, 247, 250),
       body: pages[_selectedIndex],
-      
-      // ALT MENÜ
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
@@ -87,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profil'),
           ],
           currentIndex: _selectedIndex,
-          selectedItemColor: const Color(0xFF0D47A1), // Ana tema rengimiz
+          selectedItemColor: const Color(0xFF0D47A1),
           unselectedItemColor: Colors.grey,
           showUnselectedLabels: false,
           onTap: _onItemTapped,
@@ -100,26 +96,53 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // =============================================================================
-// ||                         ANA KOKPİT TASARIMI                             ||
+// ||                         ANA KOKPİT TASARIMI (DASHBOARD)                 ||
 // =============================================================================
 
 class DashboardView extends StatelessWidget {
   final String titleName;
-  final int dailyGoal;      // EKLENDİ
-  final int currentMinutes; // EKLENDİ
+  final int dailyGoal;
+  final int currentMinutes;
 
-  const DashboardView({
-    super.key, 
+  DashboardView({
+    super.key,
     required this.titleName,
     required this.dailyGoal,
     required this.currentMinutes,
   });
 
-  // --- 1. KONU SEÇİM EKRANINI AÇAN FONKSİYON ---
+  // 🔥 SORU HAVUZU: Buraya istediğin kadar soru ekle.
+  final List<Map<String, String>> tumSorularHavuzu = [
+    {"ders": "Anatomi", "soru": "Foramen rotundum'dan hangi sinir geçer?", "cevap": "N. Maxillaris"},
+    {"ders": "Fizyoloji", "soru": "Kalp kasında 'gap junction' nerede bulunur?", "cevap": "İnterkalar disklerde"},
+    {"ders": "Patoloji", "soru": "En sık görülen odontojenik kist hangisidir?", "cevap": "Radiküler Kist"},
+    {"ders": "Farmakoloji", "soru": "Lokal anesteziklerin etki mekanizması nedir?", "cevap": "Na+ kanallarını blokajı"},
+    {"ders": "Cerrahisi", "soru": "Mandibular anestezi komplikasyonları?", "cevap": "Trismus, Hematom"},
+    {"ders": "Mikrobiyoloji", "soru": "Diş çürüğünün primer etkeni nedir?", "cevap": "Streptococcus Mutans"},
+    {"ders": "Ortodonti", "soru": "Sefalometrik analizde SNA açısı neyi gösterir?", "cevap": "Maksillanın kafa kaidesine konumu"},
+    {"ders": "Pedodonti", "soru": "Süt dişlerinde en sık görülen travma?", "cevap": "Lüksasyon yaralanmaları"},
+    {"ders": "Periodontoloji", "soru": "Ataşman kaybı neyle ölçülür?", "cevap": "Sondalama derinliği + Diş eti çekilmesi"},
+    {"ders": "Radyoloji", "soru": "Panoramik röntgende 'Hayalet Görüntü' nerede oluşur?", "cevap": "Gerçek görüntünün karşı tarafında ve yukarıda"},
+  ];
+
+  // 🔥 HER GÜN FARKLI SORU SEÇEN SİHİRLİ FONKSİYON
+  Map<String, String> get gununSorusu {
+    final now = DateTime.now();
+    // Bugünün tarihini (YılAyGün) birleştirip sayıya çeviriyoruz. Örn: 20260130
+    int seed = int.parse("${now.year}${now.month}${now.day}");
+    
+    // Bu sayıyı "tohum" (seed) olarak kullanıyoruz.
+    // Aynı tohum her zaman aynı rastgele sayıyı üretir. (Tarih değişince tohum değişir)
+    final random = Random(seed);
+    
+    int randomIndex = random.nextInt(tumSorularHavuzu.length);
+    return tumSorularHavuzu[randomIndex];
+  }
+
   void _showSelectionSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent, 
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
           height: 250,
@@ -135,22 +158,20 @@ class DashboardView extends StatelessWidget {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  // TEMEL BİLİMLER BUTONU
                   Expanded(
                     child: _buildOptionButton(
-                      context, 
-                      "Temel Bilimler", 
-                      Colors.orange, 
+                      context,
+                      "Temel Bilimler",
+                      Colors.orange,
                       ["💀Anatomi","🧬Histoloji ve Embriyoloji" ,"🫀Fizyoloji", "🧪Biyokimya", "🦠Mikrobiyoloji", "🔬Patoloji", "💊Farmakoloji","🧬Biyoloji ve Genetik"]
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // KLİNİK BİLİMLER BUTONU
                   Expanded(
                     child: _buildOptionButton(
-                      context, 
-                      "Klinik Bilimler", 
-                      Colors.blue, 
+                      context,
+                      "Klinik Bilimler",
+                      Colors.blue,
                       ["🦷Protetik Diş Tedavisi", "✨Restoratif Diş Tedavisi", "⚡️Endodonti", "🩸Periodontoloji", "📏Ortodonti", "👶Pedodonti", "😷Ağız,Diş ve Çene Cerrahisi", "💀Ağız,Diş ve Çene Radyolojisi"]
                     ),
                   ),
@@ -163,11 +184,10 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // BottomSheet içindeki buton tasarımı
   Widget _buildOptionButton(BuildContext context, String title, Color color, List<String> topics) {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context); 
+        Navigator.pop(context);
         Navigator.push(context, MaterialPageRoute(builder: (context) => TopicSelectionScreen(
           title: title,
           topics: topics,
@@ -193,7 +213,6 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // --- 2. DENEME SEÇİM EKRANINI AÇAN FONKSİYON ---
   void _showDenemeSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -207,7 +226,7 @@ class DashboardView extends StatelessWidget {
           ),
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisSize: MainAxisSize.min, 
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
@@ -219,35 +238,33 @@ class DashboardView extends StatelessWidget {
               ),
               const Text("Deneme Türünü Seç", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
-
               _buildWideButton(
-                context, 
-                title: "Temel Bilimler Denemesi", 
+                context,
+                title: "Temel Bilimler Denemesi",
                 subtitle: "Sadece temel derslerden 60 soru",
-                icon: Icons.science, 
+                icon: Icons.science,
                 color: Colors.orange,
                 onTap: () { Navigator.pop(context); }
               ),
               const SizedBox(height: 16),
               _buildWideButton(
-                context, 
-                title: "Klinik Bilimler Denemesi", 
+                context,
+                title: "Klinik Bilimler Denemesi",
                 subtitle: "Sadece klinik derslerden 60 soru",
-                icon: Icons.healing, 
+                icon: Icons.healing,
                 color: Colors.blue,
                 onTap: () { Navigator.pop(context); }
               ),
               const SizedBox(height: 16),
               _buildWideButton(
-                context, 
-                title: "Genel Deneme (Tam Sınav)", 
+                context,
+                title: "Genel Deneme (Tam Sınav)",
                 subtitle: "Gerçek sınav formatı (120 Soru)",
-                icon: Icons.timer, 
+                icon: Icons.timer,
                 color: Colors.redAccent,
                 onTap: () { Navigator.pop(context); }
               ),
-              
-              const SizedBox(height: 20), 
+              const SizedBox(height: 20),
             ],
           ),
         );
@@ -255,7 +272,6 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // Deneme seçim ekranındaki geniş butonlar
   Widget _buildWideButton(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
     return Material(
       color: Colors.grey[50],
@@ -297,6 +313,11 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🔥 SORUYU BURADA ÇAĞIRIYORUZ
+    final soruVerisi = gununSorusu;
+    
+    final dusTarihi = DateTime(2026, 4, 26);
+    final kalanGun = dusTarihi.difference(DateTime.now()).inDays;
     final primaryColor = Theme.of(context).primaryColor;
 
     return SafeArea(
@@ -312,18 +333,16 @@ class DashboardView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🔥 DİNAMİK BAŞLIK: Geleceğin X Uzmanı
                     Text("Merhaba, $titleName 👋", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                     const SizedBox(height: 4),
                     const Text("Bugün Hazır mısın?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
                   ],
                 ),
-                // DUS Sayacı Chip'i
                 Container(
-                  width: 120, 
+                  width: 120,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD), 
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
@@ -334,13 +353,9 @@ class DashboardView extends StatelessWidget {
                       children: [
                         const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF1565C0)),
                         const SizedBox(width: 4),
-                        const Text(
-                          "DUS'a 86 Gün",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1565C0),
-                            fontSize: 12,
-                          ),
+                        Text(
+                          "DUS'a $kalanGun Gün",
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1565C0), fontSize: 12),
                         ),
                       ],
                     ),
@@ -351,7 +366,7 @@ class DashboardView extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // --- GÜNÜN SORUSU KARTI ---
+            // --- GÜNÜN SORUSU KARTI (DİNAMİK) ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -361,28 +376,62 @@ class DashboardView extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
-                    child: const Text("🔥 Günün Sorusu", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("Mandibular anestezi komplikasyonları nelerdir?", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 16),
+                        const SizedBox(width: 4),
+                        Text("Günün Sorusu: ${soruVerisi['ders']}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                    child: const Text("Hemen Çöz"),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // 🔥 RASTGELE SEÇİLEN SORU METNİ
+                  Text(
+                    soruVerisi['soru']!, 
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, height: 1.3),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Soru sayfasına giderken soruyu da gönderiyoruz
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => const DailyQuestionScreen())
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: primaryColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Text("Hemen Çöz", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_rounded, size: 20),
+                        ],
+                      ),
+                    ),
                   )
                 ],
               ),
@@ -390,12 +439,11 @@ class DashboardView extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // --- İSTATİSTİK KARTLARI (Şeffaflık Korundu) ---
+            // --- İSTATİSTİK KARTLARI ---
             Row(
               children: [
                 Expanded(child: _buildStatCard(context, "Çözülen", "124", Icons.check_circle_outline, Colors.green)),
                 const SizedBox(width: 16),
-// 🔥 ÖZEL HEDEF KARTI (PROGRESS BARLI)
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -407,14 +455,13 @@ class DashboardView extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // Yuvarlak İlerleme Çubuğu
                         Stack(
                           alignment: Alignment.center,
                           children: [
                             SizedBox(
                               width: 44, height: 44,
                               child: CircularProgressIndicator(
-                                value: dailyGoal > 0 ? (currentMinutes / dailyGoal) : 0.0, // Doluluk oranı
+                                value: dailyGoal > 0 ? (currentMinutes / dailyGoal) : 0.0,
                                 backgroundColor: Colors.orange.withOpacity(0.2),
                                 color: Colors.orange,
                                 strokeWidth: 4,
@@ -427,7 +474,6 @@ class DashboardView extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Dinamik Hedef Dakikası
                             Text("$dailyGoal dk", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                             Text("Günlük Hedef", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                           ],
@@ -435,14 +481,15 @@ class DashboardView extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),              ],
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),
             const Text("Çalışma Modülleri", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // --- MODÜLLER IZGARASI (Şeffaflık Korundu) ---
+            // --- MODÜLLER IZGARASI ---
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -452,14 +499,14 @@ class DashboardView extends StatelessWidget {
               childAspectRatio: 1.1,
               children: [
                 _buildMenuCard(context, "Konu Sınavları", "Temel & Klinik", Icons.library_books, Colors.purple, onTap: () {
-                   _showSelectionSheet(context); 
+                   _showSelectionSheet(context);
                 }),
                 _buildMenuCard(context, "Denemeler", "Tam Format", Icons.timer, Colors.redAccent, onTap: () {_showDenemeSheet(context); }),
                 _buildMenuCard(context, "Spot Bilgiler", "Hızlı Tekrar", Icons.flash_on, Colors.amber[700]!, onTap: () {}),
                 _buildMenuCard(context, "Yanlışlarım", "Eksikleri Kapat", Icons.refresh, Colors.teal, onTap: () {}),
               ],
             ),
-            
+
             const SizedBox(height: 30),
           ],
         ),
@@ -467,9 +514,6 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // --- YARDIMCI WIDGET'LAR ---
-  
-  // 🔥 İstatistik Kartı: Buzlu Cam Etkisi
   Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -501,10 +545,9 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  // 🔥 Menü Kartı: Buzlu Cam Etkisi
   Widget _buildMenuCard(BuildContext context, String title, String subtitle, IconData icon, Color color, {required VoidCallback onTap}) {
     return Material(
-      color: Colors.transparent, 
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
@@ -536,6 +579,19 @@ class DashboardView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// 🔥 EKLENEN GEÇİCİ SORU EKRANI
+class DailyQuestionScreen extends StatelessWidget {
+  const DailyQuestionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Günün Sorusu")),
+      body: const Center(child: Text("Burada soru ve şıklar olacak...")),
     );
   }
 }
