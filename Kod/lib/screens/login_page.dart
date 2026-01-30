@@ -1,8 +1,10 @@
 // lib/screens/login_page.dart
 import 'package:flutter/material.dart';
-// Diğer sayfalara geçiş yapacağı için onları import ediyoruz:
+import 'package:firebase_auth/firebase_auth.dart'; // Firebase Auth eklendi
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
+import 'home_screen.dart'; // Ana sayfaya yönlendirmek için
+import 'guest_home_page.dart'; // <-- Bunu ekle
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,79 +14,109 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Metin kutularını okumak için gerekli araçlar(kullanıcıadı veya şifreyi kontrol etmek için):
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-
-  // Butona basılınca dönmeye başlaması için bu değişkeni tutuyoruz
   bool _isLoading = false;
 
   // ===========================================================================
-  // ||                                                                       ||
-  // ||  BAŞLANGIÇ: LOADING (YÜKLENİYOR) VE GİRİŞ MANTIĞI                     ||
-  // ||  Burada butona basılınca neler olacağı tanımlanıyor.                  ||
-  // ||                                                                       ||
+  // ||  🔥 GÜNCELLENMİŞ GİRİŞ MANTIĞI                                        ||
   // ===========================================================================
   void _handleLogin() async {
-    // ADIM 1: Klavyeyi kapat (Görsel temizlik için)
+    // 1. Klavyeyi kapat
     FocusScope.of(context).unfocus();
 
-    //Yazıları al
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
+    // 2. Boş alan kontrolü
     if (email.isEmpty || password.isEmpty){
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen tüm alanları doldurun."), backgroundColor: Colors.red,),
-       
+        const SnackBar(content: Text("Lütfen tüm alanları doldurun."), backgroundColor: Colors.orange),
       );
-      return; //Hata varsa dur, aşağı inme!
-    }
-    //KONTROL 2: Mail geçerli mi?
-    // Bu 'RegExp' kodu mailin içinde @ var mı, sonunda .com/.net var mı diye bakar.
-    final bool emailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-
-    if (!emailValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Lütfen geçerli bir e-posta giriniz (örn: ali@gmail.com)"), 
-          backgroundColor: Colors.orange
-        ),
-      );
-      return; // Hata varsa dur!
+      return;
     }
 
-    // ADIM 2: Yükleniyor animasyonunu BAŞLAT
+    // 3. Yükleniyor başlat
     setState(() {
       _isLoading = true;
     });
 
-    // ADIM 3: Backend'e istek atıyor gibi bekle (Simülasyon - 2 Saniye)
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      // ADIM 4: Yükleniyor animasyonunu BİTİR
-      setState(() {
-        _isLoading = false;
-      });
-      
-      // ADIM 5: Kullanıcıya mesaj göster
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Giriş Başarılı! Yönlendiriliyorsunuz..."),
-          backgroundColor: Colors.green, // Başarılı ise yeşil
-          duration: Duration(seconds: 2),
-        )
+    try {
+      // 🔥 ADIM 1: Firebase'e Giriş Yap
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+
+      // 🔥 ADIM 2: E-posta Doğrulanmış mı Kontrol Et
+      User? user = userCredential.user;
+
+      if (user != null && !user.emailVerified) {
+        // EĞER ONAYLANMAMIŞSA:
+        await FirebaseAuth.instance.signOut(); // Hemen çıkış yap (İçeri alma)
+        
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("E-posta Onayı Gerekli 📧"),
+              content: const Text("Giriş yapabilmek için lütfen e-posta adresinize gönderilen onay linkine tıklayın."),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                     // İsteğe bağlı: Tekrar mail gönder butonu
+                     // await user.sendEmailVerification(); 
+                     Navigator.of(context).pop();
+                  },
+                  child: const Text("Tamam"),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        // EĞER ONAYLANMIŞSA (veya null değilse):
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Giriş Başarılı!"), backgroundColor: Colors.green),
+          );
+
+          // Ana Sayfaya Yönlendir
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      }
+
+    } on FirebaseAuthException catch (e) {
+      // 🔥 HATA YÖNETİMİ
+      String errorMessage = "Giriş başarısız.";
       
-      // NOT: Buraya daha sonra Quiz ekranına yönlendirme kodu gelecek.
-      // Navigator.pushReplacement...
+      if (e.code == 'user-not-found') {
+        errorMessage = "Bu e-posta ile kayıtlı kullanıcı bulunamadı.";
+      } else if (e.code == 'wrong-password') {
+        errorMessage = "Şifre hatalı.";
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = "E-posta veya şifre hatalı.";
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyin.";
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      // Her durumda yükleniyor simgesini durdur
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-  // ===========================================================================
-  // ||  BİTİŞ: LOADING MANTIĞI SONU                                          ||
-  // ===========================================================================
 
   @override
   Widget build(BuildContext context) {
@@ -98,9 +130,31 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Image.asset('assets/images/logo.png',height: 200,),
-                const SizedBox(height: 16),
-                Text('DUS Asistanı', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
+                // LOGO KISMI
+
+                Padding(
+                  padding: const EdgeInsets.only(top: 30.0), 
+                  child: Image.asset(
+                    'assets/images/logo.png', 
+                    height: 150, 
+                  ),
+                ),
+                
+                // Aradaki SizedBox'ı tamamen sildik!
+
+                // --- YAZIYI YUKARI ÇEKEN KOD (Transform) ---
+                Transform.translate(
+                  offset: const Offset(0, -20), // <-- BURASI ÖNEMLİ: Yazıyı 20 birim yukarı kaydırır
+                  child: Text(
+                    'DUS Asistanı', 
+                    textAlign: TextAlign.center, 
+                    style: TextStyle(
+                      fontSize: 28, 
+                      fontWeight: FontWeight.bold, 
+                      color: Theme.of(context).primaryColor
+                    )
+                  ),
+                ),
                 const SizedBox(height: 8),
                 const Text('Giriş yapın ve çalışmaya başlayın.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
                 const SizedBox(height: 48),
@@ -109,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(labelText: 'E-posta Adresi', prefixIcon: Icon(Icons.email_outlined)),
+                  decoration: const InputDecoration(labelText: 'E-posta Adresi', prefixIcon: Icon(Icons.email_outlined)),
                 ),
                 const SizedBox(height: 20),
                 
@@ -127,12 +181,11 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                // --- ŞİFREMİ UNUTTUM BUTONU ---
+                // --- ŞİFREMİ UNUTTUM ---
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Şifremi Unuttum sayfasına git
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordPage()));
                     },
                     child: const Text('Şifremi Unuttum?'),
@@ -140,12 +193,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // Giriş Yap Butonu
-              // --- GİRİŞ BUTONU ---
+                // --- GİRİŞ BUTONU ---
                 SizedBox(
                   height: 56, 
                   child: ElevatedButton(
-                    // Eğer yükleniyorsa tıkla(ma)yacak (null), değilse fonksiyon çalışacak
                     onPressed: _isLoading ? null : _handleLogin, 
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,
@@ -155,7 +206,6 @@ class _LoginPageState extends State<LoginPage> {
                       ? const SizedBox(
                           height: 24, 
                           width: 24, 
-                          // Standart dönen beyaz daire
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
                         )
                       : const Text(
@@ -186,11 +236,9 @@ class _LoginPageState extends State<LoginPage> {
                   height: 56,
                   child: OutlinedButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Misafir girişi yapıldı."), 
-                        backgroundColor: Colors.blueGrey,
-                        duration: Duration(milliseconds: 2000), // 2000 ms = 2 saniye
-                        )
+                      // Misafir girişini de Home'a yönlendirebilirsin veya böyle bırakabilirsin
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const GuestHomePage()),
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -210,7 +258,6 @@ class _LoginPageState extends State<LoginPage> {
                 
                 const SizedBox(height: 32),
 
-
                 // --- KAYIT OL ALANI ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -218,7 +265,6 @@ class _LoginPageState extends State<LoginPage> {
                     const Text('Üye değil misiniz?', style: TextStyle(color: Colors.grey)),
                     TextButton(
                       onPressed: () {
-                        // Kayıt Ol sayfasına git
                         Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupPage()));
                       },
                       child: Text('Kayıt Ol', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),

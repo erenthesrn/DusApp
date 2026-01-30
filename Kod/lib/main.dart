@@ -1,9 +1,15 @@
 // lib/main.dart
+import 'screens/home_screen.dart'; 
 import 'package:flutter/material.dart';
-// LoginPage'i tanıması için bu import gerekli:
 import 'screens/login_page.dart'; 
+import 'package:firebase_core/firebase_core.dart'; 
+import 'firebase_options.dart'; 
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(apiKey: "AIzaSyCSEnLiJqIOIE0FxXNJNNmiNIWM85OFVKM", appId: "1:272729938344:android:f8312320eb7df19cf8259d", messagingSenderId: "272729938344", projectId: "dusapp-17b00")
+  );
   runApp(const DusApp());
 }
 
@@ -43,7 +49,8 @@ class DusApp extends StatelessWidget {
         ),
       ),
       // Uygulama LoginPage ile başlar (Burada const olmamasına dikkat ettik)
-      home: const LoginPage(), 
+      //home: const LoginPage(), 
+      home: const HomeScreen(), // <-- TASARIM SÜRECİ BİTİNCE ÇIKAR ANA MENÜYÜ AÇIYOR
     );
   }
 }

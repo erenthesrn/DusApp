@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "272729938344",
+    "project_id": "dusapp-17b00",
+    "storage_bucket": "dusapp-17b00.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:272729938344:android:f8312320eb7df19cf8259d",
+        "android_client_info": {
+          "package_name": "com.example.dus_app_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSEnLiJqIOIE0FxXNJNNmiNIWM85OFVKM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

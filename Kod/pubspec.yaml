@@ -36,6 +36,9 @@ dependencies:
   # Use swith the CupertinoIcons class for iOS style icons.
   google_fonts: ^6.1.0
   cupertino_icons: ^1.0.8
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
 
 dev_dependencies:
   flutter_test:
@@ -75,10 +78,10 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
+  fonts:
+     - family: Fish
+       fonts:
+         - asset: assets/fonts/Fish.ttf
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro
