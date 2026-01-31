@@ -52,7 +52,7 @@ class DusApp extends StatelessWidget {
       ),
       // Uygulama LoginPage ile başlar (Burada const olmamasına dikkat ettik)
       //home: const LoginPage(), 
-      home: const LoginPage(), // <-- TASARIM SÜRECİ BİTİNCE ÇIKAR ANA MENÜYÜ AÇIYOR
+      home: const HomeScreen(), // <-- TASARIM SÜRECİ BİTİNCE ÇIKAR ANA MENÜYÜ AÇIYOR
     );
   }
 }

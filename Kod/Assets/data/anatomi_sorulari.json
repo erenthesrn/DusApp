@@ -1,0 +1,242 @@
+[
+  {
+    "id": 1,
+    "question": "Mandibular anestezi sırasında 'Nervus Alveolaris Inferior' bloğu yapılırken, enjektör iğnesi hangi anatomik oluşumun hizasında konumlandırılmalıdır?",
+    "options": [
+      "A) Pterygomandibular raphe",
+      "B) Lingula mandibulae",
+      "C) Foramen mentale",
+      "D) Processus coronoideus",
+      "E) Fovea pterygoidea"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 2,
+    "question": "Dilin 2/3 ön kısmının tat duyusunu taşıyan sinir aşağıdakilerden hangisidir?",
+    "options": [
+      "A) N. Lingualis",
+      "B) Chorda Tympani",
+      "C) N. Glossopharyngeus",
+      "D) N. Hypoglossus",
+      "E) N. Vagus"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 3,
+    "question": "Foramen rotundum’dan geçen ve maksiller dişlerin innervasyonunu sağlayan sinir hangisidir?",
+    "options": [
+      "A) N. Ophthalmicus",
+      "B) N. Mandibularis",
+      "C) N. Maxillaris",
+      "D) N. Facialis",
+      "E) N. Trigeminus (Ganglionu)"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 4,
+    "question": "Çiğneme kaslarından hangisi mandibulayı açan (depresyon yaptıran) kastır?",
+    "options": [
+      "A) M. Masseter",
+      "B) M. Temporalis",
+      "C) M. Pterygoideus Medialis",
+      "D) M. Pterygoideus Lateralis",
+      "E) M. Buccinator"
+    ],
+    "answer_index": 3
+  },
+  {
+    "id": 5,
+    "question": "Glandula Parotidea’nın kanalının (Stensen kanalı) ağız içine açıldığı yer neresidir?",
+    "options": [
+      "A) Üst 1. molar diş hizası",
+      "B) Üst 2. molar diş hizası",
+      "C) Alt 2. molar diş hizası",
+      "D) Sublingual karunkula",
+      "E) Retromolar üçgen"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 6,
+    "question": "Aşağıdakilerden hangisi Hyoid kemiğe tutunmaz?",
+    "options": [
+      "A) M. Mylohyoideus",
+      "B) M. Geniohyoideus",
+      "C) M. Sternocleidomastoideus",
+      "D) M. Stylohyoideus",
+      "E) M. Digastricus"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 7,
+    "question": "Sinus maxillaris’in tabanı en yakın hangi dişlerin kökleri ile komşudur?",
+    "options": [
+      "A) Kesici dişler",
+      "B) Köpek dişleri",
+      "C) 1. Premolar ve 2. Premolar",
+      "D) 2. Premolar ve 1. Molar",
+      "E) 3. Molar"
+    ],
+    "answer_index": 3
+  },
+  {
+    "id": 8,
+    "question": "Temporomandibular eklem (TME) kapsülü içinde bulunan disk hangi kasın tendonu ile bağlantılıdır?",
+    "options": [
+      "A) M. Temporalis",
+      "B) M. Masseter",
+      "C) M. Pterygoideus Lateralis",
+      "D) M. Pterygoideus Medialis",
+      "E) M. Buccinator"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 9,
+    "question": "Yüzün motor siniri olan N. Facialis (CN VII) hangi foramenden kafatasını terk eder?",
+    "options": [
+      "A) Foramen Ovale",
+      "B) Foramen Spinosum",
+      "C) Foramen Stylomastoideum",
+      "D) Foramen Jugulare",
+      "E) Foramen Magnum"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 10,
+    "question": "Aşağıdaki kemiklerden hangisi yüz iskeletine (Viscerocranium) ait değildir?",
+    "options": [
+      "A) Maxilla",
+      "B) Mandibula",
+      "C) Os Zygomaticum",
+      "D) Os Sphenoidale",
+      "E) Os Nasale"
+    ],
+    "answer_index": 3
+  },
+  {
+    "id": 11,
+    "question": "Ganglion Gasseri (Trigeminal Ganglion) nerede bulunur?",
+    "options": [
+      "A) Fossa Pterygopalatina",
+      "B) Cavum Meckeli (Impressio trigeminalis)",
+      "C) Fossa Infratemporalis",
+      "D) Sella Turcica",
+      "E) Foramen Magnum"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 12,
+    "question": "Dudakların duyu innervasyonunu sağlayan sinirler aşağıdakilerden hangisinde doğru verilmiştir?",
+    "options": [
+      "A) Üst: N. Infraorbitalis / Alt: N. Mentalis",
+      "B) Üst: N. Facialis / Alt: N. Mandibularis",
+      "C) Üst: N. Buccalis / Alt: N. Lingualis",
+      "D) Üst: N. Zygomaticus / Alt: N. Facialis",
+      "E) Üst: N. Nasociliaris / Alt: N. Mylohyoideus"
+    ],
+    "answer_index": 0
+  },
+  {
+    "id": 13,
+    "question": "Aşağıdakilerden hangisi çiğneme kası değildir ancak yanak gerginliğini sağlar?",
+    "options": [
+      "A) M. Masseter",
+      "B) M. Temporalis",
+      "C) M. Buccinator",
+      "D) M. Orbicularis Oris",
+      "E) M. Risorius"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 14,
+    "question": "Arteria Carotis Externa’nın terminal dalları hangileridir?",
+    "options": [
+      "A) A. Facialis ve A. Lingualis",
+      "B) A. Maxillaris ve A. Temporalis Superficialis",
+      "C) A. Thyroidea Superior ve A. Pharyngea Ascendens",
+      "D) A. Occipitalis ve A. Auricularis Posterior",
+      "E) A. Carotis Interna ve A. Vertebralis"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 15,
+    "question": "Sert damağın arka 1/3’lük kısmının duyusunu alan sinir hangisidir?",
+    "options": [
+      "A) N. Nasopalatinus",
+      "B) N. Palatinus Major",
+      "C) N. Palatinus Minor",
+      "D) N. Glossopharyngeus",
+      "E) N. Alveolaris Superior Posterior"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 16,
+    "question": "Aşağıdaki kaslardan hangisi ağız tabanını oluşturur (Diaphragma oris)?",
+    "options": [
+      "A) M. Genioglossus",
+      "B) M. Hyoglossus",
+      "C) M. Mylohyoideus",
+      "D) M. Digastricus",
+      "E) M. Stylohyoideus"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 17,
+    "question": "Crista Galli hangi kemiğin parçasıdır?",
+    "options": [
+      "A) Os Frontale",
+      "B) Os Ethmoidale",
+      "C) Os Sphenoidale",
+      "D) Vomer",
+      "E) Os Occipitale"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 18,
+    "question": "Vena jugularis interna ve N. Vagus (CN X) hangi boşluktan geçer?",
+    "options": [
+      "A) Foramen Spinosum",
+      "B) Foramen Ovale",
+      "C) Foramen Jugulare",
+      "D) Kanalis Caroticus",
+      "E) Foramen Lacerum"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 19,
+    "question": "Gözyaşı bezinin (Glandula Lacrimalis) parasempatik innervasyonunu hangi ganglion sağlar?",
+    "options": [
+      "A) G. Oticum",
+      "B) G. Submandibulare",
+      "C) G. Pterygopalatinum",
+      "D) G. Ciliare",
+      "E) G. Trigeminale"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 20,
+    "question": "Mandibulanın kondilinin (Processus condylaris) hemen arkasında yer alan ve önemli damar-sinir paketini içeren bölge neresidir?",
+    "options": [
+      "A) Fossa Pterygopalatina",
+      "B) Fossa Retromandibularis",
+      "C) Fossa Infratemporalis",
+      "D) Fossa Temporalis",
+      "E) Fossa Canina"
+    ],
+    "answer_index": 1
+  }
+]
