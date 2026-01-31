@@ -4,19 +4,30 @@ import 'dart:convert'; // 🔥 JSON Çözmek için şart
 import 'package:flutter/material.dart';
 import '../models/question_model.dart'; 
 import '../services/quiz_service.dart';
+import 'result_screen.dart'; // 🔥 Sonuç ekranını import ettik
 
 class QuizScreen extends StatefulWidget {
   final bool isTrial; // Deneme mi?
   final int? fixedDuration; // Sabit süre
   final String? topic;   // Örn: "Anatomi"
   final int? testNo;     // Örn: 1
+  
+  // 🔥 YENİ EKLENEN PARAMETRELER (Virgüller düzeltildi)
+  final List<Question>? questions; 
+  final List<int?>? userAnswers; 
+  final bool isReviewMode; 
+  final int initialIndex; 
 
   const QuizScreen({
     super.key,
     required this.isTrial,
     this.fixedDuration,
     this.topic,   
-    this.testNo 
+    this.testNo,
+    this.questions,    // 🔥
+    this.userAnswers,  // 🔥
+    this.isReviewMode = false, // Varsayılan: Hayır
+    this.initialIndex = 0,     // Varsayılan: 0. soru
   });
 
   @override
@@ -38,7 +49,18 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    _loadQuestions(); // 🔥 Sayfa açılınca soruları yükle
+    
+    // 🔥 EĞER DIŞARIDAN SORU GELDİYSE (İNCELEME MODU)
+    if (widget.questions != null && widget.userAnswers != null) {
+      _questions = widget.questions!;
+      _userAnswers = widget.userAnswers!;
+      _currentQuestionIndex = widget.initialIndex; // Tıklanan sorudan başla
+      _isLoading = false;
+      // İnceleme modunda zamanlayıcı başlatmıyoruz!
+    } else {
+      // NORMAL MOD: Soruları yükle
+      _loadQuestions(); 
+    }
   }
 
   @override
@@ -47,12 +69,10 @@ class _QuizScreenState extends State<QuizScreen> {
     super.dispose();
   }
 
-  // --- 1. SORULARI JSON'DAN ÇEKME FONKSİYONU ---
-// --- GÜÇLENDİRİLMİŞ SORU YÜKLEME VE FİLTRELEME ---
-// --- SORULARI JSON'DAN ÇEKME FONKSİYONU ---
+  // --- SORULARI JSON'DAN ÇEKME FONKSİYONU ---
   Future<void> _loadQuestions() async {
     try {
-      String jsonFileName = ""; //Başlangıçta boş
+      String jsonFileName = ""; 
       
       String topicName = widget.topic ?? "";
 
@@ -69,7 +89,7 @@ class _QuizScreenState extends State<QuizScreen> {
       else if (topicName.contains("Histoloji")) {
         jsonFileName = "histoloji.json";
       }
-      else if (topicName.contains("Farmakoloji")) { // 💊 Yeni Eklendi
+      else if (topicName.contains("Farmakoloji")) { 
         jsonFileName = "farmakoloji.json";
       }
       else if (topicName.contains("Patoloji")) {
@@ -78,11 +98,8 @@ class _QuizScreenState extends State<QuizScreen> {
       else if (topicName.contains("Mikrobiyoloji")) {
         jsonFileName = "mikrobiyoloji.json";
       }
-      // ... Diğer dersleri buraya eklemeye devam edebilirsin ...
-      
       else {
-        // 🛑 ARTIK ANATOMİ AÇMIYORUZ! Hata fırlatıyoruz ki uyarı versin.
-throw Exception("DersTanimsiz"); 
+        throw Exception("DersTanimsiz"); 
       }
       
       debugPrint("📂 Açılacak Dosya: $jsonFileName");
@@ -110,11 +127,10 @@ throw Exception("DersTanimsiz");
       if (mounted) {
         setState(() {
           _questions = filteredQuestions;
-          _userAnswers = List.filled(_questions.length, null); // Cevap anahtarını sıfırla
+          _userAnswers = List.filled(_questions.length, null); 
           _isLoading = false; 
         });
 
-        // Eğer soru listesi doluysa sayacı başlat
         if (_questions.isNotEmpty) {
            _initializeTimer();
         }
@@ -122,41 +138,34 @@ throw Exception("DersTanimsiz");
 
     } catch (e) {
       debugPrint("🛑 BİLGİ: Dosya bulunamadı veya henüz eklenmedi ($e)");
-      
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _questions = []; // Listeyi boşalt
+          _questions = []; 
         });
-        
-        // 🗑️ DİALOG SİLİNDİ
-        // Artık hata mesajı veya popup çıkmayacak.
-        // Ekranda sadece boş liste uyarısı görünecek.
       }
     }
   }
 
-  
-  // --- 2. SAYAÇ MANTIĞI (EKSİKTİ, EKLENDİ) ---
+  // --- 2. SAYAÇ MANTIĞI ---
   void _initializeTimer() {
     if (widget.isTrial) {
       if (widget.fixedDuration != null) {
-        // Sabit süre (Genel Deneme)
         setState(() {
           _seconds = widget.fixedDuration! * 60;
         });
         _startTimer();
       } else {
-        // Kullanıcıya süre sor (Konu Denemesi)
         Future.delayed(Duration.zero, () => _showDurationPickerDialog());
       }
     } else {
-      // Normal Mod (İleri Sayım)
       _startTimer();
     }
   }
 
   void _startTimer() {
+    if (widget.isReviewMode) return; // 🔥 İnceleme modunda sayaç çalışmaz
+
     setState(() => _isTimerRunning = true);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
@@ -177,6 +186,8 @@ throw Exception("DersTanimsiz");
   // --- 3. DİĞER YARDIMCI FONKSİYONLAR ---
 
   Future<bool> _onWillPop() async {
+    if (widget.isReviewMode) return true; // 🔥 İnceleme modundaysa direkt çık
+
     return (await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -203,6 +214,7 @@ throw Exception("DersTanimsiz");
   }
 
   void _showDurationPickerDialog() {
+    // ... (Mevcut kod aynı kalıyor)
     final TextEditingController durationController = TextEditingController();
     showDialog(
       context: context,
@@ -241,6 +253,8 @@ throw Exception("DersTanimsiz");
   }
 
   void _selectOption(int index) {
+    if (widget.isReviewMode) return; // 🔥 İnceleme modunda seçim yapılamaz
+
     setState(() {
       if (_userAnswers[_currentQuestionIndex] == index) {
         _userAnswers[_currentQuestionIndex] = null;
@@ -254,7 +268,12 @@ throw Exception("DersTanimsiz");
     if (_currentQuestionIndex < _questions.length - 1) {
       setState(() => _currentQuestionIndex++);
     } else {
-      _showFinishDialog();
+      // Son soruya gelindiğinde
+      if (widget.isReviewMode) {
+        Navigator.pop(context); // İncelemedeyse geri dön
+      } else {
+        _showFinishDialog(); // Normalse bitir
+      }
     }
   }
 
@@ -281,6 +300,7 @@ throw Exception("DersTanimsiz");
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx); 
+              _timer?.cancel(); // Sayacı durdur
 
               // 1. PUAN HESAPLAMA 🧮
               int correct = 0;
@@ -313,9 +333,23 @@ throw Exception("DersTanimsiz");
                 );
               }
 
-              // 3. EKRANDAN ÇIK 🚪
+              // 3. 🔥 SONUÇ EKRANINA GİT
               if (mounted) {
-                Navigator.pop(context); 
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResultScreen(
+                      questions: _questions,
+                      userAnswers: _userAnswers,
+                      topic: widget.topic ?? "",
+                      testNo: widget.testNo ?? 1,
+                      correctCount: correct,
+                      wrongCount: wrong,
+                      emptyCount: empty,
+                      score: score,
+                    ),
+                  ),
+                );
               }
             },
             child: const Text("Bitir"),
@@ -390,29 +424,36 @@ throw Exception("DersTanimsiz");
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.grey),
+            icon: Icon(widget.isReviewMode ? Icons.arrow_back : Icons.close, color: Colors.grey),
             onPressed: () async {
-              if (await _onWillPop()) {
-                if (mounted) Navigator.of(context).pop();
-              }
+               if (widget.isReviewMode) {
+                 Navigator.pop(context); // İncelemedeyse geri
+               } else {
+                 if (await _onWillPop()) {
+                   if (mounted) Navigator.of(context).pop();
+                 }
+               }
             },
           ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(widget.isTrial ? Icons.hourglass_bottom : Icons.timer_outlined, size: 20, color: const Color(0xFF1565C0)),
-              const SizedBox(width: 8),
-              Text(
-                _formatTime(_seconds), 
-                style: TextStyle(
-                  color: widget.isTrial && _seconds < 60 ? Colors.red : const Color(0xFF1565C0), 
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 18, 
-                  letterSpacing: 1.5
-                )
-              ),
-            ],
-          ),
+          // 🔥 BAŞLIK: İncelemedeyse "İnceleme", değilse Sayaç
+          title: widget.isReviewMode 
+            ? const Text("Cevap İnceleme 👁️", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold))
+            : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(widget.isTrial ? Icons.hourglass_bottom : Icons.timer_outlined, size: 20, color: const Color(0xFF1565C0)),
+                const SizedBox(width: 8),
+                Text(
+                  _formatTime(_seconds), 
+                  style: TextStyle(
+                    color: widget.isTrial && _seconds < 60 ? Colors.red : const Color(0xFF1565C0), 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 18, 
+                    letterSpacing: 1.5
+                  )
+                ),
+              ],
+            ),
           actions: [const SizedBox(width: 48)],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(6.0), 
@@ -441,12 +482,11 @@ throw Exception("DersTanimsiz");
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start, 
                           children: [
-                            // 🔥 GÜNCELLEME: Konu etiketi artık dinamik!
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), 
                               decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), 
                               child: Text(
-                                widget.topic ?? "Deneme Sınavı", // "Anatomi" yerine dinamik metin
+                                widget.topic ?? "Deneme Sınavı", 
                                 style: const TextStyle(color: Color(0xFF1565C0), fontSize: 12, fontWeight: FontWeight.bold)
                               )
                             ), 
@@ -469,7 +509,7 @@ throw Exception("DersTanimsiz");
                   children: [
                     Expanded(child: Align(alignment: Alignment.centerLeft, child: _currentQuestionIndex > 0 ? TextButton.icon(onPressed: _prevQuestion, icon: const Icon(Icons.arrow_back_ios, size: 16, color: Colors.grey), label: const Text("Önceki", style: TextStyle(color: Colors.grey, fontSize: 16))) : const SizedBox.shrink())), 
                     InkWell(onTap: _showQuestionMap, borderRadius: BorderRadius.circular(30), child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle, border: Border.all(color: Colors.grey[300]!)), child: const Icon(Icons.apps_rounded, color: Color(0xFF1565C0), size: 28))), 
-                    Expanded(child: Align(alignment: Alignment.centerRight, child: ElevatedButton(onPressed: _nextQuestion, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0), child: Text(_currentQuestionIndex == _questions.length - 1 ? "Bitir" : "Sonraki", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)))))
+                    Expanded(child: Align(alignment: Alignment.centerRight, child: ElevatedButton(onPressed: _nextQuestion, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0), child: Text(_currentQuestionIndex == _questions.length - 1 ? (widget.isReviewMode ? "Kapat" : "Bitir") : "Sonraki", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)))))
                   ]
                 )
               ),
@@ -480,16 +520,47 @@ throw Exception("DersTanimsiz");
     );
   }
   
+  // 🔥 GÜNCELLENEN BUTON TASARIMI (RENKLENDİRME)
   Widget _buildOptionButton(int index, String optionText) {
-    bool isSelected = _userAnswers[_currentQuestionIndex] == index;
-    Color borderColor = isSelected ? const Color(0xFF1565C0) : Colors.transparent;
-    Color bgColor = isSelected ? const Color(0xFFE3F2FD) : Colors.white;
-    Color textColor = isSelected ? const Color(0xFF1565C0) : Colors.black87;
+    int? userAnswer = _userAnswers[_currentQuestionIndex];
+    int correctAnswer = _questions[_currentQuestionIndex].answerIndex;
+    
+    // Varsayılan Renkler
+    Color borderColor = Colors.transparent;
+    Color bgColor = Colors.white;
+    Color textColor = Colors.black87;
+    IconData? icon;
+
+    // --- RENKLENDİRME MANTIĞI ---
+    if (widget.isReviewMode) {
+      // 👁️ İNCELEME MODU RENKLERİ
+      if (index == correctAnswer) {
+        // Bu şık doğru cevap -> YEŞİL OLSUN
+        bgColor = Colors.green.shade100;
+        borderColor = Colors.green;
+        textColor = Colors.green.shade900;
+        icon = Icons.check_circle;
+      } else if (index == userAnswer) {
+        // Kullanıcı buna basmış ama yanlış -> KIRMIZI OLSUN
+        bgColor = Colors.red.shade100;
+        borderColor = Colors.red;
+        textColor = Colors.red.shade900;
+        icon = Icons.cancel;
+      }
+    } else {
+      // 📝 NORMAL MOD RENKLERİ (Seçiliyse mavi)
+      if (userAnswer == index) {
+        borderColor = const Color(0xFF1565C0);
+        bgColor = const Color(0xFFE3F2FD);
+        textColor = const Color(0xFF1565C0);
+        icon = Icons.check_circle_outline;
+      }
+    }
     
     String optionLetter = String.fromCharCode(65 + index);
     String displayLabel = optionLetter; 
     String displayText = optionText.length > 3 ? optionText.substring(3) : optionText; 
 
-    return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: Material(color: Colors.transparent, child: InkWell(onTap: () => _selectOption(index), borderRadius: BorderRadius.circular(16), child: AnimatedContainer(duration: const Duration(milliseconds: 200), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), decoration: BoxDecoration(color: bgColor, border: Border.all(color: borderColor == Colors.transparent ? Colors.white : borderColor, width: 2), borderRadius: BorderRadius.circular(16), boxShadow: isSelected ? [] : [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]), child: Row(children: [Container(width: 32, height: 32, alignment: Alignment.center, decoration: BoxDecoration(color: isSelected ? textColor.withOpacity(0.2) : Colors.grey[200], shape: BoxShape.circle), child: Text(displayLabel, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? textColor : Colors.grey[600]))), const SizedBox(width: 16), Expanded(child: Text(displayText, style: TextStyle(color: textColor, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal, fontSize: 15))), if (isSelected) Icon(Icons.check_circle_outline, color: textColor)])))));
+    return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: Material(color: Colors.transparent, child: InkWell(onTap: () => _selectOption(index), borderRadius: BorderRadius.circular(16), child: AnimatedContainer(duration: const Duration(milliseconds: 200), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), decoration: BoxDecoration(color: bgColor, border: Border.all(color: borderColor == Colors.transparent ? Colors.white : borderColor, width: 2), borderRadius: BorderRadius.circular(16), boxShadow: (widget.isReviewMode || userAnswer == index) ? [] : [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]), child: Row(children: [Container(width: 32, height: 32, alignment: Alignment.center, decoration: BoxDecoration(color: (widget.isReviewMode && index == correctAnswer) ? Colors.green : (userAnswer == index ? textColor.withOpacity(0.2) : Colors.grey[200]), shape: BoxShape.circle), child: Text(displayLabel, style: TextStyle(fontWeight: FontWeight.bold, color: (widget.isReviewMode && index == correctAnswer) ? Colors.white : (userAnswer == index ? textColor : Colors.grey[600])))), const SizedBox(width: 16), Expanded(child: Text(displayText, style: TextStyle(color: textColor, fontWeight: (userAnswer == index || (widget.isReviewMode && index == correctAnswer)) ? FontWeight.w600 : FontWeight.normal, fontSize: 15))), if (icon != null) Icon(icon, color: textColor)])))));
   }
 }
