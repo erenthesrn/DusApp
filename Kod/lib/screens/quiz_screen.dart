@@ -322,17 +322,18 @@ class _QuizScreenState extends State<QuizScreen> {
                  score = ((correct / _questions.length) * 100).toInt();
               }
 
-              // 2. KAYDETME İŞLEMİ 💾
+// 2. KAYDETME İŞLEMİ 💾
               if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
                 await QuizService.saveQuizResult(
                   topic: widget.topic!,
                   testNo: widget.testNo!,
                   score: score,
                   correctCount: correct,
-                  wrongCount: wrong
+                  wrongCount: wrong,
+                  userAnswers: _userAnswers, // 🔥 YENİ: Listeyi servise gönderdik
                 );
               }
-
+              
               // 3. 🔥 SONUÇ EKRANINA GİT
               if (mounted) {
                 Navigator.pushReplacement(
