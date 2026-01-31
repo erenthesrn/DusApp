@@ -94,6 +94,8 @@ class TestListScreen extends StatelessWidget {
                 context, 
                 MaterialPageRoute(builder: (context) => QuizScreen(
                   isTrial: false, 
+                  topic: topic,      // 🔥 "Anatomi" bilgisini gönderdik
+                  testNo: testNumber // 🔥 "1" bilgisini gönderdik
                   // İleride bu bilgileri veritabanından soru çekmek için kullanacağız:
                   // topic: topic, 
                   // difficulty: difficulty,

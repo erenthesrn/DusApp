@@ -2,13 +2,22 @@
 import 'dart:async';
 import 'dart:convert'; // 🔥 JSON Çözmek için şart
 import 'package:flutter/material.dart';
-import '../models/question_model.dart'; // 🔥 Modeli import ettik
+import '../models/question_model.dart'; 
+import '../services/quiz_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final bool isTrial; // Deneme mi?
   final int? fixedDuration; // Sabit süre
+  final String? topic;   // Örn: "Anatomi"
+  final int? testNo;     // Örn: 1
 
-  const QuizScreen({super.key, required this.isTrial, this.fixedDuration});
+  const QuizScreen({
+    super.key,
+    required this.isTrial,
+    this.fixedDuration,
+    this.topic,   
+    this.testNo 
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -16,11 +25,11 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   // --- DEĞİŞKENLER ---
-  List<Question> _questions = []; // 🔥 Soruları burada tutacağız
-  bool _isLoading = true; // 🔥 Yükleniyor mu?
+  List<Question> _questions = []; 
+  bool _isLoading = true; 
   
   int _currentQuestionIndex = 0;
-  late List<int?> _userAnswers; // Kullanıcı cevapları
+  late List<int?> _userAnswers; 
 
   Timer? _timer;
   int _seconds = 0;
@@ -32,31 +41,103 @@ class _QuizScreenState extends State<QuizScreen> {
     _loadQuestions(); // 🔥 Sayfa açılınca soruları yükle
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   // --- 1. SORULARI JSON'DAN ÇEKME FONKSİYONU ---
+// --- GÜÇLENDİRİLMİŞ SORU YÜKLEME VE FİLTRELEME ---
+// --- SORULARI JSON'DAN ÇEKME FONKSİYONU ---
   Future<void> _loadQuestions() async {
     try {
-      // JSON dosyasını oku
-      String data = await DefaultAssetBundle.of(context).loadString('assets/data/anatomi_sorulari.json');
+      String jsonFileName = ""; //Başlangıçta boş
+      
+      String topicName = widget.topic ?? "";
+
+      // 🔥 DERS EŞLEŞTİRME LİSTESİ
+      if (topicName.contains("Anatomi")) {
+        jsonFileName = "anatomi.json";
+      } 
+      else if (topicName.contains("Biyokimya")) {
+        jsonFileName = "biyokimya.json";
+      } 
+      else if (topicName.contains("Fizyoloji")) {
+        jsonFileName = "fizyoloji.json";
+      }
+      else if (topicName.contains("Histoloji")) {
+        jsonFileName = "histoloji.json";
+      }
+      else if (topicName.contains("Farmakoloji")) { // 💊 Yeni Eklendi
+        jsonFileName = "farmakoloji.json";
+      }
+      else if (topicName.contains("Patoloji")) {
+        jsonFileName = "patoloji.json";
+      }
+      else if (topicName.contains("Mikrobiyoloji")) {
+        jsonFileName = "mikrobiyoloji.json";
+      }
+      // ... Diğer dersleri buraya eklemeye devam edebilirsin ...
+      
+      else {
+        // 🛑 ARTIK ANATOMİ AÇMIYORUZ! Hata fırlatıyoruz ki uyarı versin.
+throw Exception("DersTanimsiz"); 
+      }
+      
+      debugPrint("📂 Açılacak Dosya: $jsonFileName");
+
+      // 2. JSON dosyasını oku
+      String data = await DefaultAssetBundle.of(context).loadString('assets/data/$jsonFileName');
       List<dynamic> jsonList = json.decode(data);
 
-      // Listeyi Question objelerine çevir
-      setState(() {
-        _questions = jsonList.map((x) => Question.fromJson(x)).toList();
-        _userAnswers = List.filled(_questions.length, null); // Cevap anahtarını hazırla
-        _isLoading = false; // Yükleme bitti
-      });
+      // 3. Tüm soruları listeye çevir
+      List<Question> allQuestions = jsonList.map((x) => Question.fromJson(x)).toList();
+      List<Question> filteredQuestions = [];
 
-      // 🔥 Sorular yüklendikten sonra sayacı başlat
-      _initializeTimer();
+      // 4. 🔥 FİLTRELEME
+      if (widget.isTrial) {
+        filteredQuestions = allQuestions;
+      } else {
+        if (widget.testNo != null) {
+           filteredQuestions = allQuestions.where((q) => q.testNo == widget.testNo).toList();
+        } else {
+           filteredQuestions = allQuestions;
+        }
+      }
+
+      // 5. EKRANI GÜNCELLE
+      if (mounted) {
+        setState(() {
+          _questions = filteredQuestions;
+          _userAnswers = List.filled(_questions.length, null); // Cevap anahtarını sıfırla
+          _isLoading = false; 
+        });
+
+        // Eğer soru listesi doluysa sayacı başlat
+        if (_questions.isNotEmpty) {
+           _initializeTimer();
+        }
+      }
 
     } catch (e) {
-      debugPrint("Hata: $e");
-      // Hata olursa kullanıcıya gösterilebilir veya boş liste kalır
-      setState(() => _isLoading = false);
+      debugPrint("🛑 BİLGİ: Dosya bulunamadı veya henüz eklenmedi ($e)");
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _questions = []; // Listeyi boşalt
+        });
+        
+        // 🗑️ DİALOG SİLİNDİ
+        // Artık hata mesajı veya popup çıkmayacak.
+        // Ekranda sadece boş liste uyarısı görünecek.
+      }
     }
   }
 
-  // --- 2. SAYAÇ MANTIĞI ---
+  
+  // --- 2. SAYAÇ MANTIĞI (EKSİKTİ, EKLENDİ) ---
   void _initializeTimer() {
     if (widget.isTrial) {
       if (widget.fixedDuration != null) {
@@ -67,9 +148,6 @@ class _QuizScreenState extends State<QuizScreen> {
         _startTimer();
       } else {
         // Kullanıcıya süre sor (Konu Denemesi)
-        // Not: Burada await ile bekletip sormak daha temiz ama şimdilik direkt başlatıyoruz
-        // İstersen buraya _showDurationPickerDialog() çağrısını taşıyabiliriz.
-        // Şimdilik varsayılan bir süre verelim veya dialogu açalım:
         Future.delayed(Duration.zero, () => _showDurationPickerDialog());
       }
     } else {
@@ -96,12 +174,7 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  // --- 3. DİĞER FONKSİYONLAR ---
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  // --- 3. DİĞER YARDIMCI FONKSİYONLAR ---
 
   Future<bool> _onWillPop() async {
     return (await showDialog(
@@ -192,7 +265,64 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _showFinishDialog({bool timeUp = false}) {
-    showDialog(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(title: Text(timeUp ? "Süre Doldu! ⌛" : "Sınavı Bitir?"), content: Text(timeUp ? "Süre bitti." : "Emin misin?"), actions: [if (!timeUp) TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Vazgeç")), ElevatedButton(onPressed: () { Navigator.pop(ctx); Navigator.pop(context); }, child: const Text("Bitir"))]));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(timeUp ? "Süre Doldu! ⌛" : "Sınavı Bitir?"),
+        content: Text(timeUp ? "Süre bitti, sonuçların kaydedilecek." : "Sınavı bitirmek ve sonucunu kaydetmek istiyor musun?"),
+        actions: [
+          if (!timeUp)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Vazgeç"),
+            ),
+            
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx); 
+
+              // 1. PUAN HESAPLAMA 🧮
+              int correct = 0;
+              int wrong = 0;
+              int empty = 0;
+
+              for (int i = 0; i < _questions.length; i++) {
+                if (_userAnswers[i] == null) {
+                  empty++;
+                } else if (_userAnswers[i] == _questions[i].answerIndex) {
+                  correct++;
+                } else {
+                  wrong++;
+                }
+              }
+              
+              int score = 0;
+              if (_questions.isNotEmpty) {
+                 score = ((correct / _questions.length) * 100).toInt();
+              }
+
+              // 2. KAYDETME İŞLEMİ 💾
+              if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
+                await QuizService.saveQuizResult(
+                  topic: widget.topic!,
+                  testNo: widget.testNo!,
+                  score: score,
+                  correctCount: correct,
+                  wrongCount: wrong
+                );
+              }
+
+              // 3. EKRANDAN ÇIK 🚪
+              if (mounted) {
+                Navigator.pop(context); 
+              }
+            },
+            child: const Text("Bitir"),
+          )
+        ],
+      ),
+    );
   }
 
   void _showQuestionMap() {
@@ -213,7 +343,7 @@ class _QuizScreenState extends State<QuizScreen> {
               Expanded(
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, crossAxisSpacing: 10, mainAxisSpacing: 10),
-                  itemCount: _questions.length, // 🔥 Dinamik sayı
+                  itemCount: _questions.length, 
                   itemBuilder: (context, index) {
                     bool isAnswered = _userAnswers[index] != null;
                     bool isCurrent = index == _currentQuestionIndex;
@@ -237,7 +367,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 YÜKLENİYORSA SPINNER GÖSTER
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFFE3F2FD),
@@ -245,14 +374,12 @@ class _QuizScreenState extends State<QuizScreen> {
       );
     }
 
-    // 🔥 HATA OLDUYSA VEYA BOŞSA
     if (_questions.isEmpty) {
       return const Scaffold(
-        body: Center(child: Text("Sorular yüklenemedi!")),
+        body: Center(child: Text("Bu test için soru bulunamadı.")),
       );
     }
 
-    // 🔥 VERİ GELDİYSE EKRANI ÇİZ
     final currentQuestion = _questions[_currentQuestionIndex];
 
     return WillPopScope(
@@ -290,7 +417,7 @@ class _QuizScreenState extends State<QuizScreen> {
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(6.0), 
             child: LinearProgressIndicator(
-              value: (_currentQuestionIndex + 1) / _questions.length, // 🔥 Dinamik
+              value: (_currentQuestionIndex + 1) / _questions.length, 
               backgroundColor: Colors.white, 
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange), 
               minHeight: 6
@@ -314,14 +441,21 @@ class _QuizScreenState extends State<QuizScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start, 
                           children: [
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Text("Anatomi", style: TextStyle(color: Color(0xFF1565C0), fontSize: 12, fontWeight: FontWeight.bold))), 
+                            // 🔥 GÜNCELLEME: Konu etiketi artık dinamik!
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), 
+                              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), 
+                              child: Text(
+                                widget.topic ?? "Deneme Sınavı", // "Anatomi" yerine dinamik metin
+                                style: const TextStyle(color: Color(0xFF1565C0), fontSize: 12, fontWeight: FontWeight.bold)
+                              )
+                            ), 
                             const SizedBox(height: 16), 
                             Text(currentQuestion.question, style: const TextStyle(fontSize: 18, height: 1.5, fontWeight: FontWeight.w600, color: Colors.black87))
                           ]
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // 🔥 ŞIKLARI DİNAMİK LİSTELE
                       ...List.generate(currentQuestion.options.length, (index) => _buildOptionButton(index, currentQuestion.options[index])),
                       const SizedBox(height: 20),
                     ],
@@ -346,19 +480,15 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
   
-  // 🔥 GÜNCELLENDİ: Şık metnini parametre olarak alıyor
   Widget _buildOptionButton(int index, String optionText) {
     bool isSelected = _userAnswers[_currentQuestionIndex] == index;
     Color borderColor = isSelected ? const Color(0xFF1565C0) : Colors.transparent;
     Color bgColor = isSelected ? const Color(0xFFE3F2FD) : Colors.white;
     Color textColor = isSelected ? const Color(0xFF1565C0) : Colors.black87;
     
-    // Şık Harfi (A, B, C...)
     String optionLetter = String.fromCharCode(65 + index);
-    // Metin temizliği (A) ... kısmını atıp sadece metni göstermek istersen substring yapabilirsin,
-    // ama JSON verin zaten "A) ..." formatında olduğu için direkt basıyoruz.
     String displayLabel = optionLetter; 
-    String displayText = optionText.length > 3 ? optionText.substring(3) : optionText; // A) 'yı kesmek için
+    String displayText = optionText.length > 3 ? optionText.substring(3) : optionText; 
 
     return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: Material(color: Colors.transparent, child: InkWell(onTap: () => _selectOption(index), borderRadius: BorderRadius.circular(16), child: AnimatedContainer(duration: const Duration(milliseconds: 200), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), decoration: BoxDecoration(color: bgColor, border: Border.all(color: borderColor == Colors.transparent ? Colors.white : borderColor, width: 2), borderRadius: BorderRadius.circular(16), boxShadow: isSelected ? [] : [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]), child: Row(children: [Container(width: 32, height: 32, alignment: Alignment.center, decoration: BoxDecoration(color: isSelected ? textColor.withOpacity(0.2) : Colors.grey[200], shape: BoxShape.circle), child: Text(displayLabel, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? textColor : Colors.grey[600]))), const SizedBox(width: 16), Expanded(child: Text(displayText, style: TextStyle(color: textColor, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal, fontSize: 15))), if (isSelected) Icon(Icons.check_circle_outline, color: textColor)])))));
   }

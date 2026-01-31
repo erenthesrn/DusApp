@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Mandibular anestezi sırasında 'Nervus Alveolaris Inferior' bloğu yapılırken, enjektör iğnesi hangi anatomik oluşumun hizasında konumlandırılmalıdır?",
+    "options": [
+      "A) Pterygomandibular raphe",
+      "B) Lingula mandibulae",
+      "C) Foramen mentale",
+      "D) Processus coronoideus",
+      "E) Fovea pterygoidea"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 2,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Dilin 2/3 ön kısmının tat duyusunu taşıyan sinir aşağıdakilerden hangisidir?",
+    "options": [
+      "A) N. Lingualis",
+      "B) Chorda Tympani",
+      "C) N. Glossopharyngeus",
+      "D) N. Hypoglossus",
+      "E) N. Vagus"
+    ],
+    "answer_index": 1
+  },
+  {
+    "id": 3,
+    "test_no": 2,
+    "level": "Orta",
+    "question": "TEST 2 SORUSU: Foramen rotundum’dan geçen ve maksiller dişlerin innervasyonunu sağlayan sinir hangisidir?",
+    "options": [
+      "A) N. Ophthalmicus",
+      "B) N. Mandibularis",
+      "C) N. Maxillaris",
+      "D) N. Facialis",
+      "E) N. Trigeminus (Ganglionu)"
+    ],
+    "answer_index": 2
+  },
+  {
+    "id": 4,
+    "test_no": 2,
+    "level": "Zor",
+    "question": "TEST 2 SORUSU: Çiğneme kaslarından hangisi mandibulayı açan (depresyon yaptıran) kastır?",
+    "options": [
+      "A) M. Masseter",
+      "B) M. Temporalis",
+      "C) M. Pterygoideus Medialis",
+      "D) M. Pterygoideus Lateralis",
+      "E) M. Buccinator"
+    ],
+    "answer_index": 3
+  }
+]

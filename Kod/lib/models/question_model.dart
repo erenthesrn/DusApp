@@ -4,12 +4,18 @@ class Question {
   final String question;
   final List<String> options;
   final int answerIndex;
+  
+  // 🔥 YENİ EKLENEN ALANLAR (Hatanın sebebi bunlardı)
+  final String level;   // "Kolay", "Orta", "Zor"
+  final int testNo;     // 1, 2, 3...
 
   Question({
     required this.id,
     required this.question,
     required this.options,
     required this.answerIndex,
+    required this.level,
+    required this.testNo,
   });
 
   // JSON'dan Nesneye Çeviren Fabrika
@@ -19,6 +25,10 @@ class Question {
       question: json['question'],
       options: List<String>.from(json['options']),
       answerIndex: json['answer_index'],
+      
+      // 🔥 Eğer JSON'da bu bilgiler yoksa varsayılan değer ata (Uygulama çökmesin diye)
+      level: json['level'] ?? "Kolay", 
+      testNo: json['test_no'] ?? 1,    
     );
   }
 }

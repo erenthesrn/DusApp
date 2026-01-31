@@ -39,6 +39,7 @@ dependencies:
   firebase_core: ^4.4.0
   firebase_auth: ^6.1.4
   cloud_firestore: ^6.1.2
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:
@@ -66,7 +67,9 @@ flutter:
   assets:
     - assets/animations/loading_dent.json
     - assets/images/logo.png
-    - assets/data/anatomi_sorulari.json
+    - assets/data/anatomi.json
+    - assets/data/
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
