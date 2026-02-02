@@ -11,7 +11,8 @@
       "D) Processus coronoideus",
       "E) Fovea pterygoidea"
     ],
-    "answer_index": 1
+    "answer_index": 1,
+    "explanation": "Doğru cevap B şıkkıdır. Mandibular anestezide (IANB), iğne Lingula mandibulae hizasında, foramen mandibulare'nin hemen üzerindeki sulcus mandibularis'e doğru yönlendirilir. Lingula, anestezik solüsyonun depolanacağı bölge için en önemli kemik referans noktasıdır."
   },
   {
     "id": 2,
@@ -25,13 +26,14 @@
       "D) N. Hypoglossus",
       "E) N. Vagus"
     ],
-    "answer_index": 1
+    "answer_index": 1,
+    "explanation":"Açıklama eklenecek"
   },
   {
     "id": 3,
     "test_no": 2,
     "level": "Orta",
-    "question": "TEST 2 SORUSU: Foramen rotundum’dan geçen ve maksiller dişlerin innervasyonunu sağlayan sinir hangisidir?",
+    "question": "Foramen rotundum’dan geçen ve maksiller dişlerin innervasyonunu sağlayan sinir hangisidir?",
     "options": [
       "A) N. Ophthalmicus",
       "B) N. Mandibularis",
@@ -39,13 +41,14 @@
       "D) N. Facialis",
       "E) N. Trigeminus (Ganglionu)"
     ],
-    "answer_index": 2
+    "answer_index": 2,
+    "explanation":""
   },
   {
     "id": 4,
     "test_no": 2,
     "level": "Zor",
-    "question": "TEST 2 SORUSU: Çiğneme kaslarından hangisi mandibulayı açan (depresyon yaptıran) kastır?",
+    "question": "Çiğneme kaslarından hangisi mandibulayı açan (depresyon yaptıran) kastır?",
     "options": [
       "A) M. Masseter",
       "B) M. Temporalis",
@@ -53,6 +56,7 @@
       "D) M. Pterygoideus Lateralis",
       "E) M. Buccinator"
     ],
-    "answer_index": 3
+    "answer_index": 3,
+    "explanation":""
   }
 ]

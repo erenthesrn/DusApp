@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../models/question_model.dart'; 
 import '../services/quiz_service.dart';
 import 'result_screen.dart'; // 🔥 Sonuç ekranını import ettik
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class QuizScreen extends StatefulWidget {
   final bool isTrial; // Deneme mi?
@@ -283,6 +285,71 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
+  void _showReportDialog(Question question) {
+    final TextEditingController noteController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 10),
+            Text("Hata Bildir"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Bu soruda neyin yanlış olduğunu düşünüyorsunuz?"),
+            const SizedBox(height: 10),
+            TextField(
+              controller: noteController,
+              decoration: const InputDecoration(
+                hintText: "Örn: Cevap B olmalı çünkü...",
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Vazgeç", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+            onPressed: () async {
+              if (noteController.text.trim().isEmpty) return;
+
+              Navigator.pop(context); // Pencereyi kapat
+              
+              // Kullanıcıya teşekkür mesajı göster
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Geri bildiriminiz için teşekkürler! İncelenecektir.")),
+              );
+
+              // 🔥 FIREBASE'E KAYDETME İŞLEMİ
+              try {
+                await FirebaseFirestore.instance.collection('question_reports').add({
+                  'questionId': question.id,
+                  'questionText': question.question, // Hangi soru olduğunu kolay bulman için
+                  'userNote': noteController.text.trim(),
+                  'userId': FirebaseAuth.instance.currentUser?.uid ?? "Anonim",
+                  'reportedAt': FieldValue.serverTimestamp(),
+                  'status': 'open', // 'open', 'resolved', 'rejected' gibi durumlar yönetebilirsin
+                });
+              } catch (e) {
+                print("Rapor gönderilemedi: $e");
+              }
+            },
+            child: const Text("Gönder"),
+          ),
+        ],
+      ),
+    );
+  }
   void _showFinishDialog({bool timeUp = false}) {
     showDialog(
       context: context,
@@ -498,6 +565,69 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                       const SizedBox(height: 24),
                       ...List.generate(currentQuestion.options.length, (index) => _buildOptionButton(index, currentQuestion.options[index])),
+                      if (widget.isReviewMode && (currentQuestion.explanation.isNotEmpty)) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F8E9), // Açık yeşil ton
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.lightbulb_circle, color: Colors.green.shade700, size: 24),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Çözüm Açıklaması",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade800,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Divider(height: 1, color: Colors.green), // İnce çizgi
+                              const SizedBox(height: 12),
+                              Text(
+                                currentQuestion.explanation,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.green.shade900,
+                                  height: 1.5, // Okunabilirlik için satır aralığı
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      // ... (Açıklama kartı if bloğu burada bitiyor)
+
+                      const SizedBox(height: 30),
+
+                      // 🔥 HATA BİLDİR BUTONU
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () => _showReportDialog(currentQuestion),
+                          icon: Icon(Icons.flag_outlined, color: Colors.grey[600], size: 20),
+                          label: Text(
+                            "Soru Hatalı mı? Bildir",
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                              decoration: TextDecoration.underline, // Tıklanabilir hissi verir
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red, // Basınca hafif kırmızı efekt
+                          ),
+                        ),
+                      ),       
                       const SizedBox(height: 20),
                     ],
                   ),

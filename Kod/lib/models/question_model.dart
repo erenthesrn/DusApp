@@ -4,6 +4,7 @@ class Question {
   final String question;
   final List<String> options;
   final int answerIndex;
+  final String explanation;
   
   // 🔥 YENİ EKLENEN ALANLAR (Hatanın sebebi bunlardı)
   final String level;   // "Kolay", "Orta", "Zor"
@@ -16,6 +17,7 @@ class Question {
     required this.answerIndex,
     required this.level,
     required this.testNo,
+    this.explanation = "",
   });
 
   // JSON'dan Nesneye Çeviren Fabrika
@@ -25,6 +27,7 @@ class Question {
       question: json['question'],
       options: List<String>.from(json['options']),
       answerIndex: json['answer_index'],
+      explanation: json['explanation'] ?? "Açıklama bulunmuyor.",
       
       // 🔥 Eğer JSON'da bu bilgiler yoksa varsayılan değer ata (Uygulama çökmesin diye)
       level: json['level'] ?? "Kolay", 
