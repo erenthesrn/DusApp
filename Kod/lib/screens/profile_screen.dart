@@ -102,6 +102,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Hedef Branşı Değiştirme Fonksiyonu
+  void _changeTargetBranch() {
+    final List<String> branches = [
+      "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi", "Pedodonti", 
+      "Periodontoloji", "Protetik Diş Tedavisi", 
+      "Endodonti", "Restoratif Diş Tedavisi",
+      "Ortodonti"
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Hedeflediğin Uzmanlık Alanını Seç", 
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: branches.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(branches[index]),
+                      leading: const Icon(Icons.star_border, color: Colors.blue),
+                      onTap: () async {
+                        // Firebase Güncelleme
+                        User? user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .update({'targetBranch': branches[index]});
+                          
+                          if (mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Hedef başarıyla güncellendi!"))
+                            );
+                            _getUserData(); // Ekrandaki veriyi tazele
+                          }
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,6 +206,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilePage()));
                           }
                         ),
+                        _buildDivider(),
+                        _buildMenuItem(
+                          Icons.ads_click,
+                          "Hedefim",
+                          "Uzmanlık hedefini değiştir.",
+                          _changeTargetBranch
+                          ),
+                          
                         _buildDivider(),
                         _buildMenuItem(Icons.notifications_outlined, "Bildirimler", "Sınav hatırlatmaları", () {}),
                       ],

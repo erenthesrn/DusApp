@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           setState(() {
             if (data.containsKey('targetBranch')) {
-              _targetBranch = "Geleceğin ${data['targetBranch']} Uzmanı";
+              _targetBranch = "${data['targetBranch']} Uzmanlığı";
             }
             if (data.containsKey('dailyGoalMinutes')) {
               _dailyGoal = data['dailyGoalMinutes'];
@@ -57,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 0){
+      _fetchTargetBranch();
+    }
   }
 
   @override
@@ -354,9 +357,9 @@ class DashboardView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Merhaba, $titleName 👋", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                    Text("Merhaba, Doktor", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                     const SizedBox(height: 4),
-                    const Text("Bugün Hazır mısın?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text("Hedef: $titleName", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
                   ],
                 ),
                 Container(
