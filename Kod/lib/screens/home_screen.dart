@@ -440,42 +440,59 @@ class DashboardView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- HEADER ---
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Merhaba, Doktor", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Text("Hedef: $titleName", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
-                  ],
-                ),
-                Container(
-                  width: 120,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+// children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Merhaba, Doktor",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF1565C0)),
-                        const SizedBox(width: 4),
-                        Text(
-                          "DUS'a $kalanGun Gün",
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1565C0), fontSize: 12),
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    "Hedef: $titleName",
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1, // <-- Bunlar parantezin içinde olmalı
+                    overflow: TextOverflow.ellipsis, // <-- Küçük harfle 'overflow'
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF1565C0)),
+                  const SizedBox(width: 4),
+                  Text(
+                    "DUS'a $kalanGun Gün",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1565C0),
+                      fontSize: 12,
                     ),
                   ),
-                )
-              ],
-            ),
+                ],
+              ),
+            )
+          ],
+        ),
+      // ],
 
             const SizedBox(height: 24),
 
@@ -555,7 +572,7 @@ class DashboardView extends StatelessWidget {
             // --- İSTATİSTİK KARTLARI ---
             Row(
               children: [
-                Expanded(child: _buildStatCard(context, "Çözülen Soru Sayısı", "$totalSolved", Icons.check_circle_outline, Colors.green)),
+                Expanded(child: _buildStatCard(context, "Çözülen Soru", "$totalSolved", Icons.check_circle_outline, Colors.green)),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Container(
@@ -588,7 +605,7 @@ class DashboardView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("$currentMinutes / $dailyGoal dk", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            Text("Günlük Süre Hedefi", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                            Text("Süre Hedefi", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                           ],
                         )
                       ],

@@ -107,9 +107,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Hedef Branşı Değiştirme Fonksiyonu
   void _changeTargetBranch() {
     final List<String> branches = [
-      "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi", "Pedodonti", 
-      "Periodontoloji", "Protetik Diş Tedavisi", 
-      "Endodonti", "Restoratif Diş Tedavisi",
+      "Cerrahi", "Radyoloji", "Pedodonti", 
+      "Periodontoloji", "Protetik", 
+      "Endodonti", "Restoratif",
       "Ortodonti"
     ];
 
