@@ -8,6 +8,7 @@ import 'topic_selection_screen.dart'; // Ders seçimi için
 import 'profile_screen.dart';
 import 'quiz_screen.dart'; // Sınav ekranı
 import 'mistakes_screen.dart';
+import 'package:confetti/confetti.dart';
 
 // =============================================================================
 // ||                            ANA EKRAN (SKELETON)                         ||
@@ -25,10 +26,21 @@ class _HomeScreenState extends State<HomeScreen> {
   int _dailyGoal = 60;
   int _currentMinutes = 0;
   int _totalSolved = 0;
+
+  late ConfettiController _confettiController;
+  bool _isFirstLoad = true;
+
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _fetchTargetBranch();
+  }
+
+  @override
+  void dispose(){
+    _confettiController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchTargetBranch() async {
@@ -38,25 +50,65 @@ class _HomeScreenState extends State<HomeScreen> {
         DocumentSnapshot doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists && doc.data() != null) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+          int newMinutes = 0;
+          int newDailyGoal = 60;
+
+          if (data.containsKey('dailyGoalMinutes')){
+            newDailyGoal = (data['dailyGoalMinutes'] as num).toInt();
+          }
+          // totalMinutes verisini çek
+          if (data.containsKey('totalMinutes')) {
+            newMinutes = (data['totalMinutes'] as num).toInt();
+          }
+
           setState(() {
             if (data.containsKey('targetBranch')) {
               _targetBranch = "${data['targetBranch']} Uzmanlığı";
             }
-            if (data.containsKey('dailyGoalMinutes')) {
-              _dailyGoal = data['dailyGoalMinutes'];
+            if (data.containsKey('totalSolved')) {
+              _totalSolved = (data['totalSolved'] as num).toInt();
             }
-            if (data.containsKey('totalSolved')){
-              _totalSolved = data['totalSolved'];
+
+            // 🔥 MANTIK: Eğer ilk yükleme değilse VE önceden hedef tamamlanmamışsa VE şimdi tamamlandıysa
+            if (!_isFirstLoad && _currentMinutes < _dailyGoal && newMinutes >= newDailyGoal) {
+              _confettiController.play(); // 🎉 PATLAT!
+              _showCongratulationDialog(); // 💬 Mesaj göster
             }
-            if(data.containsKey('totalMinutes')){
-              _currentMinutes = data['totalMinutes'];
-            }
+            _currentMinutes = newMinutes;
+            _dailyGoal = newDailyGoal;
+            _isFirstLoad = false;
           });
         }
       } catch (e) {
         debugPrint("Veri çekme hatası: $e");
       }
     }
+  }
+    void _showCongratulationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.emoji_events, color: Colors.orange, size: 30),
+            SizedBox(width: 10),
+            Text("Tebrikler! 👏"),
+          ],
+        ),
+        content: const Text(
+          "Günlük çalışma hedefine ulaştın!\nBu istikrarla devam et, DUS senin!",
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Teşekkürler"),
+          )
+        ],
+      ),
+    );
   }
 
   void _onItemTapped(int index) {
@@ -84,7 +136,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 224, 247, 250),
-      body: pages[_selectedIndex],
+      body: Stack(
+        alignment: Alignment.topCenter, // Konfetiler yukarıdan aşağı aksın
+        children: [
+          // 1. En Alta Mevcut Sayfayı Koyuyoruz
+          pages[_selectedIndex],
+
+          // 2. En Üste Konfeti Aracını Koyuyoruz (Gizli durur, play() deyince çalışır)
+          ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive, // Her yöne patlasın
+            shouldLoop: false, // Tek seferlik patlasın
+            colors: const [
+              Colors.green,
+              Colors.blue,
+              Colors.pink,
+              Colors.orange,
+              Colors.purple
+            ], 
+            gravity: 0.2, // Süzülme hızı
+            numberOfParticles: 20, // Parçacık sayısı
+          ),
+        ],
+      ),
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
@@ -373,7 +448,7 @@ class DashboardView extends StatelessWidget {
                   children: [
                     Text("Merhaba, Doktor", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                     const SizedBox(height: 4),
-                    Text("Hedef: $titleName", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text("Hedef: $titleName", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
                   ],
                 ),
                 Container(
@@ -480,7 +555,7 @@ class DashboardView extends StatelessWidget {
             // --- İSTATİSTİK KARTLARI ---
             Row(
               children: [
-                Expanded(child: _buildStatCard(context, "Çözülen", "$totalSolved", Icons.check_circle_outline, Colors.green)),
+                Expanded(child: _buildStatCard(context, "Çözülen Soru Sayısı", "$totalSolved", Icons.check_circle_outline, Colors.green)),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Container(
@@ -499,7 +574,7 @@ class DashboardView extends StatelessWidget {
                             SizedBox(
                               width: 44, height: 44,
                               child: CircularProgressIndicator(
-                                value: dailyGoal > 0 ? (currentMinutes / dailyGoal) : 0.0,
+                                value: dailyGoal > 0 ? (currentMinutes / dailyGoal).clamp(0.0 , 1.0) : 0.0,
                                 backgroundColor: Colors.orange.withOpacity(0.2),
                                 color: Colors.orange,
                                 strokeWidth: 4,
@@ -512,8 +587,8 @@ class DashboardView extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("$dailyGoal dk", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            Text("Günlük Hedef", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                            Text("$currentMinutes / $dailyGoal dk", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text("Günlük Süre Hedefi", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                           ],
                         )
                       ],
