@@ -16,6 +16,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _name = "Yükleniyor...";
   String _email = "";
   String _role = "free"; // Varsayılan ücretsiz
+  int _streak = 0;
   bool _isLoading = true;
 
   @override
@@ -41,7 +42,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
             _name = data['name'] ?? "İsimsiz";
             _email = data['email'] ?? currentUser.email!;
-            _role = data['role'] ?? "free";
+            _role = data['role'] ?? "free";            
+            _streak = data['streak'] ?? 0;
             _isLoading = false;
           });
         } else {
@@ -345,27 +347,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ... Diğer Widgetlar (_buildStreakCard, _buildMenuItem, _buildDivider) AYNI KALDI ...
   Widget _buildStreakCard() {
+    bool isActive = _streak > 0;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFFF8008), Color(0xFFFFC837)]),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("🔥 Günlük Seri", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              SizedBox(height: 4),
-              Text("Çalışmaya devam et!", style: TextStyle(color: Colors.white70, fontSize: 12)),
-            ],
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            // 🔥 Eğer seri varsa Alev Rengi, yoksa Gri (Pasif) Renk
+            gradient: LinearGradient(
+              colors: isActive 
+                  ? [const Color(0xFFFF8008), const Color(0xFFFFC837)] // Aktif: Turuncu/Sarı
+                  : [Colors.grey.shade400, Colors.grey.shade600],      // Pasif: Gri Tonları
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isActive 
+                ? [BoxShadow(color: const Color(0xFFFF8008).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] 
+                : [], // Pasifse gölge yok
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isActive ? "🔥 Günlük Seri" : "💤 Seri Başlamadı", // Başlık duruma göre değişir
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isActive 
+                      ? "Harikasın, böyle devam et!" 
+                      : "Bugün bir test çöz ve ateşi yak!", // Alt metin motive eder
+                    style: const TextStyle(color: Colors.white, fontSize: 12) // white70 yerine white yaptık daha okunaklı olsun diye
+                  ),
+                ],
+              ),
+              
           Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-            child: const Text("1", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+            padding: const EdgeInsets.all(12), // Alanı biraz genişlettik
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2), 
+              shape: BoxShape.circle
+            ),
+            child: Text(
+              "$_streak", 
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)
+            ),
           )
         ],
       ),

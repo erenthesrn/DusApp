@@ -417,16 +417,52 @@ class _QuizScreenState extends State<QuizScreen> {
                   // şimdilik normal modda geçen süreyi (dakika cinsinden) alıyoruz.
 
                   try {
-                    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-                      // FieldValue.increment sayesinde eski değeri okumadan üstüne ekleme yapıyoruz
-                      'totalSolved': FieldValue.increment(totalSolvedNow),
-                      'totalMinutes': FieldValue.increment(minutesSpent),
-                    });
-                  } catch (e) {
-                    debugPrint("İstatistik güncellenemedi: $e");
+                        final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+                        final snapshot = await userDoc.get();
+                        
+                        int currentStreak = 0;
+                        DateTime? lastStudyDate;
+
+                        if (snapshot.exists && snapshot.data() != null) {
+                          final data = snapshot.data() as Map<String, dynamic>;
+                          currentStreak = data['streak'] ?? 0;
+                          
+                          if (data['lastStudyDate'] != null) {
+                            lastStudyDate = (data['lastStudyDate'] as Timestamp).toDate();
+                          }
+                        }
+
+                        final now = DateTime.now();
+                        final today = DateTime(now.year, now.month, now.day); 
+                        
+                        // İlk defa çalışıyorsa
+                        if (lastStudyDate == null) {
+                          currentStreak = 1;
+                        } else {
+                          final lastDay = DateTime(lastStudyDate.year, lastStudyDate.month, lastStudyDate.day);
+                          final difference = today.difference(lastDay).inDays;
+
+                          if (difference == 1) {
+                            currentStreak++; // Dün çalışmış, seriyi artır! 🚀
+                          } else if (difference > 1) {
+                            currentStreak = 1; // Ara vermiş, seriyi sıfırla (1 yap) 😢
+                          }
+                          // difference == 0 ise (Bugün zaten çalışmışsa) dokunma.
+                        }
+
+                        // Hepsini (Soru + Dakika + Seri + Tarih) tek seferde kaydet
+                        await userDoc.update({
+                          'totalSolved': FieldValue.increment(totalSolvedNow),
+                          'totalMinutes': FieldValue.increment(minutesSpent),
+                          'streak': currentStreak,
+                          'lastStudyDate': FieldValue.serverTimestamp(),
+                        });
+
+                      } catch (e) {
+                        debugPrint("Veri güncelleme hatası: $e");
+                      }
+                    }
                   }
-                }
-              }
               int score = 0;
               if (_questions.isNotEmpty) {
                  score = ((correct / _questions.length) * 100).toInt();
