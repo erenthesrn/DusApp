@@ -2,9 +2,12 @@
 
 import 'package:flutter/material.dart';
 import '../models/question_model.dart';
-import 'quiz_screen.dart'; // İnceleme modunu açmak için lazım
+import 'quiz_screen.dart';
+// --- YENİ EKLENEN IMPORT ---
+import '../services/achievement_service.dart'; 
+// ---------------------------
 
-class ResultScreen extends StatelessWidget {
+class ResultScreen extends StatefulWidget {
   final List<Question> questions;
   final List<int?> userAnswers;
   final String topic;
@@ -25,6 +28,38 @@ class ResultScreen extends StatelessWidget {
     required this.emptyCount,
     required this.score,
   });
+
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  
+  // --- GÜNCELLENEN KISIM (INITSTATE) ---
+  @override
+  void initState() {
+    super.initState();
+    
+    // Sayfa çizildikten hemen sonra achievement servisini çalıştır
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 1. Kategori ve doğru sayısını kaydet (Örn: Anatomi Kurdu rozeti için)
+      AchievementService.instance.incrementCategory(
+        context, 
+        widget.topic,        // Kategori ismi (Anatomi, Biyokimya vb.)
+        widget.correctCount, // Doğru sayısı
+      );
+
+      // 2. Skor ve Saat kontrolü yap (Örn: Kusursuz veya Gece Kuşu rozeti için)
+      // Not: Max puanı standart 100 varsaydık.
+      AchievementService.instance.checkTimeAndScore(
+        context, 
+        widget.score, 
+        100, 
+        widget.correctCount // 🔥 YENİ EKLENEN PARAMETRE (Şanslı Yedili için)
+      );
+    });
+  }
+  // -------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -53,20 +88,20 @@ class ResultScreen extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  "$score Puan",
+                  "${widget.score} Puan", 
                   style: TextStyle(
                     fontSize: 32, 
                     fontWeight: FontWeight.bold, 
-                    color: score >= 70 ? Colors.green : Colors.orange
+                    color: widget.score >= 70 ? Colors.green : Colors.orange
                   ),
                 ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem("Doğru", correctCount, Colors.green),
-                    _buildStatItem("Yanlış", wrongCount, Colors.red),
-                    _buildStatItem("Boş", emptyCount, Colors.grey),
+                    _buildStatItem("Doğru", widget.correctCount, Colors.green),
+                    _buildStatItem("Yanlış", widget.wrongCount, Colors.red),
+                    _buildStatItem("Boş", widget.emptyCount, Colors.grey),
                   ],
                 ),
               ],
@@ -90,10 +125,10 @@ class ResultScreen extends StatelessWidget {
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),
-              itemCount: questions.length,
+              itemCount: widget.questions.length, 
               itemBuilder: (context, index) {
-                int? userAnswer = userAnswers[index];
-                int correctAnswer = questions[index].answerIndex;
+                int? userAnswer = widget.userAnswers[index]; 
+                int correctAnswer = widget.questions[index].answerIndex;
                 
                 // Renk Belirleme
                 Color bgColor;
@@ -113,12 +148,12 @@ class ResultScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => QuizScreen(
                           isTrial: false,
-                          topic: topic,
-                          testNo: testNo,
+                          topic: widget.topic,
+                          testNo: widget.testNo,
                           
                           // 🔥 BU PARAMETRELER ÇOK ÖNEMLİ:
-                          questions: questions, // Aynı soruları gönder
-                          userAnswers: userAnswers, // Kullanıcının cevaplarını gönder
+                          questions: widget.questions, // Aynı soruları gönder
+                          userAnswers: widget.userAnswers, // Kullanıcının cevaplarını gönder
                           initialIndex: index, // Tıkladığı sorudan başla
                           isReviewMode: true, // İNCELEME MODUNU AÇ
                         ),

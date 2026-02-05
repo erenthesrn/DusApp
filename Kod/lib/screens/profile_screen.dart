@@ -1,9 +1,11 @@
 // lib/screens/profile_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart'; // Çıkış yapınca login sayfasına dönmek için
 import 'edit_profile_page.dart';
+import 'achievements_screen.dart'; // --- YENİ EKLENEN IMPORT ---
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -65,17 +67,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           });
         }
       } catch (e) {
+        if (mounted) {
+          setState(() {
+            _name = "Hata";
+            _isLoading = false;
+          });
+        }
+      }
+    } else {
+      if (mounted) {
         setState(() {
-          _name = "Hata";
+          _name = "Misafir Kullanıcı";
+          _email = "Giriş yapılmadı";
           _isLoading = false;
         });
       }
-    } else {
-      setState(() {
-        _name = "Misafir Kullanıcı";
-        _email = "Giriş yapılmadı";
-        _isLoading = false;
-      });
     }
   }
 
@@ -178,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- 5. HEDEF MENÜSÜ GÖSTERİMİ (Süre veya Uzmanlık Seçimi) ---
+  // --- 5. HEDEF MENÜSÜ GÖSTERİMİ ---
   void _showTargetOptions() {
     showModalBottomSheet(
       context: context,
@@ -306,7 +312,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      // Buradaki 'context' ismini 'sheetContext' yaptım ki karışmasın
       builder: (sheetContext) { 
         return Container(
           padding: const EdgeInsets.all(20),
@@ -319,17 +324,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: ListView.builder(
                   itemCount: branches.length,
-                  // Buradaki 'context' ismini de 'itemContext' yaptım
                   itemBuilder: (itemContext, index) {
                     return ListTile(
                       title: Text(branches[index]),
                       leading: const Icon(Icons.star_border, color: Colors.blue),
                       onTap: () async {
-                        // 1. ADIM: ÖNCE MENÜYÜ KAPAT 
-                        // (Böylece kullanıcı tekrar basamaz ve uygulama çökmez)
                         Navigator.pop(sheetContext); 
 
-                        // 2. ADIM: ARKA PLANDA İŞLEMİ YAP
                         User? user = FirebaseAuth.instance.currentUser;
                         if (user != null) {
                           await FirebaseFirestore.instance
@@ -337,8 +338,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               .doc(user.uid)
                               .update({'targetBranch': branches[index]});
                           
-                          // 3. ADIM: BİLGİ VER
-                          // Artık menü kapandığı için ana sayfanın 'context'ini (this.context) kullanıyoruz.
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Hedef başarıyla güncellendi!"))
@@ -357,6 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -403,11 +403,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           }
                         ),
                         _buildDivider(),
+                        
+                        // --- 🔥 BURAYA ROZETLERİM BUTONUNU EKLEDİM ---
+                        _buildMenuItem(
+                          Icons.emoji_events_rounded, 
+                          "Rozetlerim & Başarılar", 
+                          "Kupa dolabına göz at", 
+                          () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const AchievementsScreen()));
+                          }
+                        ),
+                        _buildDivider(),
+                        // ---------------------------------------------
+
                         _buildMenuItem(
                           Icons.ads_click,
                           "Hedeflerim",
                           "Süre Hedefi ve Uzmanlık hedefini değiştir.",
-                          _showTargetOptions // <-- Düzeltilmiş menü fonksiyonu
+                          _showTargetOptions 
                         ),
                         _buildDivider(),
                         _buildMenuItem(Icons.notifications_outlined, "Bildirimler", "Sınav hatırlatmaları", () {}),
