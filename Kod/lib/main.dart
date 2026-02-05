@@ -20,10 +20,13 @@ void main() async {
     // Web için özel ayarlar (Web kullanıyorsan burayı doldurman gerekebilir)
     await Firebase.initializeApp(
       options: const FirebaseOptions(
-        apiKey: "BURAYA_WEB_API_KEY_GELECEK",
-        appId: "BURAYA_WEB_APP_ID_GELECEK",
+        apiKey: "AIzaSyDNxUY3kYnZJNl-TtxCkCjSn94ubg97dgc",
+        appId: "1:272729938344:web:6e766b4cb0c63e94f8259d",
+        authDomain: "dusapp-17b00.firebaseapp.com",
         messagingSenderId: "272729938344",
         projectId: "dusapp-17b00",
+        storageBucket: "dusapp-17b00.firebasestorage.app",
+        measurementId: "G-9Z19HY8QBF"
       ),
     );
   } 
