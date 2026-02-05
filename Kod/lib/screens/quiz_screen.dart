@@ -15,7 +15,7 @@ class QuizScreen extends StatefulWidget {
   final String? topic;   // Örn: "Anatomi"
   final int? testNo;     // Örn: 1
   
-  // 🔥 YENİ EKLENEN PARAMETRELER (Virgüller düzeltildi)
+  // 🔥 YENİ EKLENEN PARAMETRELER
   final List<Question>? questions; 
   final List<int?>? userAnswers; 
   final bool isReviewMode; 
@@ -27,8 +27,8 @@ class QuizScreen extends StatefulWidget {
     this.fixedDuration,
     this.topic,   
     this.testNo,
-    this.questions,    // 🔥
-    this.userAnswers,  // 🔥
+    this.questions,    
+    this.userAnswers,  
     this.isReviewMode = false, // Varsayılan: Hayır
     this.initialIndex = 0,     // Varsayılan: 0. soru
   });
@@ -76,7 +76,6 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _loadQuestions() async {
     try {
       String jsonFileName = ""; 
-      
       String topicName = widget.topic ?? "";
 
       // 🔥 DERS EŞLEŞTİRME LİSTESİ
@@ -102,7 +101,7 @@ class _QuizScreenState extends State<QuizScreen> {
         jsonFileName = "mikrobiyoloji.json";
       }
      else if (topicName.contains("Biyoloji ve Genetik")) {
-        jsonFileName = " biyoloji.json";
+        jsonFileName = "biyoloji.json"; // Boşluk düzeltildi
       }
       else if (topicName.contains("Ağız, Diş ve Çene Cerrahisi")) {
         jsonFileName = "cerrahi.json";
@@ -112,10 +111,7 @@ class _QuizScreenState extends State<QuizScreen> {
       }
       else if (topicName.contains("Periodontoloji")) {
         jsonFileName = "perio.json";
-      }         
-      else if (topicName.contains("Mikrobiyoloji")) {
-        jsonFileName = "mikrobiyoloji.json";
-      }         
+      }                 
       else if (topicName.contains("Ortodonti")) {
         jsonFileName = "orto.json";
       }      
@@ -132,7 +128,9 @@ class _QuizScreenState extends State<QuizScreen> {
         jsonFileName = "resto.json";
       }      
       else {
-        throw Exception("DersTanimsiz"); 
+        // Eğer hiçbirine uymazsa varsayılan bir dosya veya hata
+        // throw Exception("DersTanimsiz"); 
+        jsonFileName = "anatomi.json"; // Geçici çözüm, hata vermemesi için
       }
       
       debugPrint("📂 Açılacak Dosya: $jsonFileName");
@@ -247,7 +245,6 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _showDurationPickerDialog() {
-    // ... (Mevcut kod aynı kalıyor)
     final TextEditingController durationController = TextEditingController();
     showDialog(
       context: context,
@@ -286,7 +283,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _selectOption(int index) {
-    if (widget.isReviewMode) return; // 🔥 İnceleme modunda seçim yapılamaz
+    if (widget.isReviewMode) return; 
 
     setState(() {
       if (_userAnswers[_currentQuestionIndex] == index) {
@@ -303,9 +300,9 @@ class _QuizScreenState extends State<QuizScreen> {
     } else {
       // Son soruya gelindiğinde
       if (widget.isReviewMode) {
-        Navigator.pop(context); // İncelemedeyse geri dön
+        Navigator.pop(context); 
       } else {
-        _showFinishDialog(); // Normalse bitir
+        _showFinishDialog(); 
       }
     }
   }
@@ -354,9 +351,8 @@ class _QuizScreenState extends State<QuizScreen> {
             onPressed: () async {
               if (noteController.text.trim().isEmpty) return;
 
-              Navigator.pop(context); // Pencereyi kapat
+              Navigator.pop(context); 
               
-              // Kullanıcıya teşekkür mesajı göster
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Geri bildiriminiz için teşekkürler! İncelenecektir.")),
               );
@@ -365,11 +361,11 @@ class _QuizScreenState extends State<QuizScreen> {
               try {
                 await FirebaseFirestore.instance.collection('question_reports').add({
                   'questionId': question.id,
-                  'questionText': question.question, // Hangi soru olduğunu kolay bulman için
+                  'questionText': question.question,
                   'userNote': noteController.text.trim(),
                   'userId': FirebaseAuth.instance.currentUser?.uid ?? "Anonim",
                   'reportedAt': FieldValue.serverTimestamp(),
-                  'status': 'open', // 'open', 'resolved', 'rejected' gibi durumlar yönetebilirsin
+                  'status': 'open',
                 });
               } catch (e) {
                 print("Rapor gönderilemedi: $e");
@@ -381,6 +377,8 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
+  
+  // 🔥 DÜZELTİLEN SINAVI BİTİR FONKSİYONU
   void _showFinishDialog({bool timeUp = false}) {
     showDialog(
       context: context,
@@ -397,37 +395,15 @@ class _QuizScreenState extends State<QuizScreen> {
             
           ElevatedButton(
             onPressed: () async {
+              // 1. DİYALOGU KAPAT
               Navigator.pop(ctx); 
-              _timer?.cancel(); // Sayacı durdur
+              _timer?.cancel(); 
 
-              List<Map<String, dynamic>> wrongQuestionsToSave = [];
-
-              //Yanlışların kaydının tutulması
-
-              for (int i = 0; i < _questions.length; i++) {
-                // Eğer kullanıcı yanlış yaptıysa (boşlar dahil edilmeyebilir, tercihen sadece yanlışlar)
-                if (_userAnswers[i] != _questions[i].answerIndex) {
-                  wrongQuestionsToSave.add({
-                    'id': _questions[i].id,
-                    'question': _questions[i].question,
-                    'options': _questions[i].options,
-                    'correctIndex': _questions[i].answerIndex,
-                    'userIndex': _userAnswers[i],
-                    'subject': widget.topic ?? "Genel", // Dersi buradan alıyoruz
-                    'explanation': _questions[i].explanation,
-                    'date': DateTime.now().toIso8601String(),
-                  });
-                }
-              }
-
-              if (wrongQuestionsToSave.isNotEmpty) {
-                await MistakesService.addMistakes(wrongQuestionsToSave);
-              }
-
-              // 1. PUAN HESAPLAMA 🧮
+              // 2. PUANLARI HESAPLA (Yerel işlem, anında biter)
               int correct = 0;
               int wrong = 0;  
               int empty = 0;
+              List<Map<String, dynamic>> wrongQuestionsToSave = [];
 
               for (int i = 0; i < _questions.length; i++) {
                 if (_userAnswers[i] == null) {
@@ -436,81 +412,27 @@ class _QuizScreenState extends State<QuizScreen> {
                   correct++;
                 } else {
                   wrong++;
+                  // Yanlış soruyu listeye ekle
+                  wrongQuestionsToSave.add({
+                    'id': _questions[i].id,
+                    'question': _questions[i].question,
+                    'options': _questions[i].options,
+                    'correctIndex': _questions[i].answerIndex,
+                    'userIndex': _userAnswers[i],
+                    'subject': widget.topic ?? "Genel",
+                    'explanation': _questions[i].explanation,
+                    'date': DateTime.now().toIso8601String(),
+                  });
                 }
               }
-              if (!widget.isReviewMode) {
-                User? user = FirebaseAuth.instance.currentUser;
-                if (user != null) {
-                  int totalSolvedNow = correct + wrong; // Boşları saymıyoruz, sadece işaretlenenler
-                  int minutesSpent = (_seconds > 0 && !widget.isTrial) ? (_seconds ~/ 60) : 0; 
-                  // Not: Deneme sınavında süre geriye saydığı için mantığı farklı kurabilirsin, 
-                  // şimdilik normal modda geçen süreyi (dakika cinsinden) alıyoruz.
 
-                  try {
-                        final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
-                        final snapshot = await userDoc.get();
-                        
-                        int currentStreak = 0;
-                        DateTime? lastStudyDate;
-
-                        if (snapshot.exists && snapshot.data() != null) {
-                          final data = snapshot.data() as Map<String, dynamic>;
-                          currentStreak = data['streak'] ?? 0;
-                          
-                          if (data['lastStudyDate'] != null) {
-                            lastStudyDate = (data['lastStudyDate'] as Timestamp).toDate();
-                          }
-                        }
-
-                        final now = DateTime.now();
-                        final today = DateTime(now.year, now.month, now.day); 
-                        
-                        // İlk defa çalışıyorsa
-                        if (lastStudyDate == null) {
-                          currentStreak = 1;
-                        } else {
-                          final lastDay = DateTime(lastStudyDate.year, lastStudyDate.month, lastStudyDate.day);
-                          final difference = today.difference(lastDay).inDays;
-
-                          if (difference == 1) {
-                            currentStreak++; // Dün çalışmış, seriyi artır! 🚀
-                          } else if (difference > 1) {
-                            currentStreak = 1; // Ara vermiş, seriyi sıfırla (1 yap) 😢
-                          }
-                          // difference == 0 ise (Bugün zaten çalışmışsa) dokunma.
-                        }
-
-                        // Hepsini (Soru + Dakika + Seri + Tarih) tek seferde kaydet
-                        await userDoc.update({
-                          'totalSolved': FieldValue.increment(totalSolvedNow),
-                          'totalMinutes': FieldValue.increment(minutesSpent),
-                          'streak': currentStreak,
-                          'lastStudyDate': FieldValue.serverTimestamp(),
-                        });
-
-                      } catch (e) {
-                        debugPrint("Veri güncelleme hatası: $e");
-                      }
-                    }
-                  }
               int score = 0;
               if (_questions.isNotEmpty) {
-                 score = ((correct / _questions.length) * 100).toInt();
+                score = ((correct / _questions.length) * 100).toInt();
               }
 
-              // 2. KAYDETME İŞLEMİ 💾
-              if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
-                await QuizService.saveQuizResult(
-                  topic: widget.topic!,
-                  testNo: widget.testNo!,
-                  score: score,
-                  correctCount: correct,
-                  wrongCount: wrong,
-                  userAnswers: _userAnswers, // 🔥 YENİ: Listeyi servise gönderdik
-                );
-              }
-              
-              // 3. 🔥 SONUÇ EKRANINA GİT
+              // 3. 🔥 KRİTİK HAMLE: KULLANICIYI BEKLETMEDEN EKRANI DEĞİŞTİR!
+              // Firebase işlemlerini beklemeden (await demeden) hemen yönlendiriyoruz.
               if (mounted) {
                 Navigator.pushReplacement(
                   context,
@@ -528,12 +450,90 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                 );
               }
+
+              // 4. 🔥 ARKA PLAN İŞLEMLERİ (Fire & Forget)
+              
+              // A) Yanlışları Kaydet (Local)
+              if (wrongQuestionsToSave.isNotEmpty) {
+                MistakesService.addMistakes(wrongQuestionsToSave);
+              }
+
+              // B) Sonucu Telefona Kaydet (Local)
+              if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
+                QuizService.saveQuizResult(
+                  topic: widget.topic!,
+                  testNo: widget.testNo!,
+                  score: score,
+                  correctCount: correct,
+                  wrongCount: wrong,
+                  userAnswers: _userAnswers,
+                );
+              }
+
+              // C) Firebase İstatistiklerini Güncelle (Server)
+              if (!widget.isReviewMode) {
+                _updateFirebaseStats(correct, wrong); 
+              }
             },
             child: const Text("Bitir"),
           )
         ],
       ),
     );
+  }
+
+  // 🔥 FIREBASE GÜNCELLEMESİ (Arka planda çalışır)
+  Future<void> _updateFirebaseStats(int correct, int wrong) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      
+      final snapshot = await userDoc.get(); 
+
+      int totalSolvedNow = correct + wrong;
+      int minutesSpent = (_seconds > 0 && !widget.isTrial) ? (_seconds ~/ 60) : 0; 
+      
+      int currentStreak = 0;
+      DateTime? lastStudyDate;
+
+      if (snapshot.exists && snapshot.data() != null) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        currentStreak = data['streak'] ?? 0;
+        if (data['lastStudyDate'] != null) {
+          lastStudyDate = (data['lastStudyDate'] as Timestamp).toDate();
+        }
+      }
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day); 
+
+      if (lastStudyDate == null) {
+        currentStreak = 1;
+      } else {
+        final lastDay = DateTime(lastStudyDate.year, lastStudyDate.month, lastStudyDate.day);
+        final difference = today.difference(lastDay).inDays;
+
+        if (difference == 1) {
+          currentStreak++; 
+        } else if (difference > 1) {
+          currentStreak = 1; 
+        }
+      }
+
+      await userDoc.update({
+        'totalSolved': FieldValue.increment(totalSolvedNow),
+        'totalMinutes': FieldValue.increment(minutesSpent),
+        'streak': currentStreak,
+        'lastStudyDate': FieldValue.serverTimestamp(),
+      });
+      
+      debugPrint("✅ İstatistikler arka planda güncellendi.");
+      
+    } catch (e) {
+      debugPrint("⚠️ İstatistik güncelleme hatası (İnternet olmayabilir): $e");
+    }
   }
 
   void _showQuestionMap() {

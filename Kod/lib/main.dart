@@ -1,20 +1,23 @@
 // lib/main.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Web ve Platform kontrolü için şart
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // 🔥 Beni Hatırla için ekledik
+import 'firebase_options.dart';
+
+// Sayfalar
+import 'screens/home_screen.dart';
+import 'screens/login_page.dart';
+// Diğer importlarını da korudum
 import 'package:dus_app_1/screens/blog_screen.dart';
 import 'package:dus_app_1/screens/quiz_screen.dart';
-import 'package:flutter/foundation.dart'; // Web kontrolü (kIsWeb) için bu gerekli
-import 'screens/home_screen.dart'; 
-import 'package:flutter/material.dart';
-import 'screens/login_page.dart'; 
-import 'package:firebase_core/firebase_core.dart'; 
-import 'firebase_options.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // --- PLATFORM AYARLARI (SENİN KODUN) ---
   if (kIsWeb) {
-    // --- CHROME (WEB) İÇİN AYARLAR ---
-    // Buradaki değerleri Firebase Konsolu -> Proje Ayarları -> Web Uygulaması (</>) kısmından almalısınız.
-    // Android şifreleri burada ÇALIŞMAZ.
+    // Web için özel ayarlar (Web kullanıyorsan burayı doldurman gerekebilir)
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         apiKey: "BURAYA_WEB_API_KEY_GELECEK",
@@ -25,11 +28,12 @@ void main() async {
     );
   } 
   else if (defaultTargetPlatform == TargetPlatform.iOS) {
-    // --- iOS (IPHONE) ---
-    // Dosyadan (GoogleService-Info.plist) otomatik okur.
+    // --- iOS (IPHONE) İÇİN ---
+    // GoogleService-Info.plist dosyasından otomatik okur.
     await Firebase.initializeApp();
   } 
   else {
+    // --- ANDROID İÇİN ---
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         apiKey: "AIzaSyCSEnLiJqIOIE0FxXNJNNmiNIWM85OFVKM",
@@ -51,7 +55,8 @@ class DusApp extends StatelessWidget {
     return MaterialApp(
       title: 'DUS Asistanı',
       debugShowCheckedModeBanner: false,
-      // TEMA AYARLARI
+      
+      // --- TEMA AYARLARI ---
       theme: ThemeData(
         primaryColor: const Color(0xFF0D47A1), // Koyu Mavi
         colorScheme: ColorScheme.fromSeed(
@@ -78,9 +83,28 @@ class DusApp extends StatelessWidget {
           ),
         ),
       ),
-      // Uygulama LoginPage ile başlar (Burada const olmamasına dikkat ettik)
-      //home: const LoginPage(), 
-      home: const LoginPage(), // <-- TASARIM SÜRECİ BİTİNCE ÇIKAR ANA MENÜYÜ AÇIYOR
+
+      // 🔥 GİRİŞ KONTROLÜ (STREAMBUILDER)
+      // Artık sabit LoginPage yerine burası var.
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // 1. Durum: Firebase henüz yanıt vermedi, bekliyoruz (Loading)
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          
+          // 2. Durum: Kullanıcı verisi VAR -> Ana Sayfaya git
+          if (snapshot.hasData) {
+            return const HomeScreen();
+          }
+
+          // 3. Durum: Kullanıcı verisi YOK -> Giriş Sayfasına git
+          return const LoginPage();
+        },
+      ),
     );
   }
 }

@@ -306,7 +306,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
+      // Buradaki 'context' ismini 'sheetContext' yaptım ki karışmasın
+      builder: (sheetContext) { 
         return Container(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -318,12 +319,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: ListView.builder(
                   itemCount: branches.length,
-                  itemBuilder: (context, index) {
+                  // Buradaki 'context' ismini de 'itemContext' yaptım
+                  itemBuilder: (itemContext, index) {
                     return ListTile(
                       title: Text(branches[index]),
                       leading: const Icon(Icons.star_border, color: Colors.blue),
                       onTap: () async {
-                        // Firebase Güncelleme
+                        // 1. ADIM: ÖNCE MENÜYÜ KAPAT 
+                        // (Böylece kullanıcı tekrar basamaz ve uygulama çökmez)
+                        Navigator.pop(sheetContext); 
+
+                        // 2. ADIM: ARKA PLANDA İŞLEMİ YAP
                         User? user = FirebaseAuth.instance.currentUser;
                         if (user != null) {
                           await FirebaseFirestore.instance
@@ -331,8 +337,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               .doc(user.uid)
                               .update({'targetBranch': branches[index]});
                           
+                          // 3. ADIM: BİLGİ VER
+                          // Artık menü kapandığı için ana sayfanın 'context'ini (this.context) kullanıyoruz.
                           if (mounted) {
-                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Hedef başarıyla güncellendi!"))
                             );
@@ -350,7 +357,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
