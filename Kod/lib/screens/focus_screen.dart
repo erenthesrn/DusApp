@@ -34,6 +34,15 @@ class _FocusScreenState extends State<FocusScreen> {
       animation: _focusService,
       builder: (context, child) {
         
+        // --- SÜRE BİTİŞ KONTROLÜ ---
+        // Eğer süre 0 ise ve hala çalışıyor (running) durumundaysa dialogu göster
+        if (_focusService.remainingSeconds == 0 && 
+            _focusService.totalTimeInSeconds > 0 && 
+            _focusService.isRunning) {
+          // Build sırasında UI değiştiremeyeceğimiz için bir sonraki frame'e erteliyoruz
+          Future.microtask(() => _showCompletionDialog());
+        }
+
         // Yüzde hesaplama
         double percent = _focusService.totalTimeInSeconds > 0
             ? (_focusService.remainingSeconds / _focusService.totalTimeInSeconds)
@@ -166,6 +175,65 @@ class _FocusScreenState extends State<FocusScreen> {
   }
 
   // --- YARDIMCI METODLAR ---
+
+  // Süre bittiğinde gösterilecek özel dialog
+  void _showCompletionDialog() {
+    // Rastgele bir söz seçiyoruz
+    final String randomQuote = _quotes[Random().nextInt(_quotes.length)];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(Icons.stars_rounded, color: Colors.amber, size: 60),
+            SizedBox(height: 10),
+            Text("Harika İş çıkardın!", textAlign: TextAlign.center),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Bu seansı başarıyla tamamladın.",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Text(
+                randomQuote,
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Color(0xFF1565C0),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () {
+                _focusService.resetTimer(); // Servisi temizle
+                Navigator.pop(context); // Dialogu kapat
+              },
+              child: const Text("Yeni Seans İçin Hazırım!", 
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showDurationPicker() {
     // Başlangıç değeri

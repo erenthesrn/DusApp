@@ -6,7 +6,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class FocusService extends ChangeNotifier {
-  // Singleton Yapısı (Uygulamanın her yerinden aynı servise erişmek için)
+  // Singleton Yapısı
   static final FocusService _instance = FocusService._internal();
   static FocusService get instance => _instance;
 
@@ -52,13 +52,13 @@ class FocusService extends ChangeNotifier {
 
     _isRunning = true;
     _isPaused = false;
-    WakelockPlus.enable(); // Ekran açık kalsın
-    notifyListeners(); // Ekranı güncelle
+    WakelockPlus.enable(); 
+    notifyListeners(); 
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
         _remainingSeconds--;
-        notifyListeners(); // Her saniye ekranı güncelle
+        notifyListeners(); 
       } else {
         _completeTimer();
       }
@@ -94,14 +94,20 @@ class FocusService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- GÜNCELLENEN KISIM ---
   void _completeTimer() async {
     _timer?.cancel();
-    _isRunning = false;
-    _isPaused = false;
     _remainingSeconds = 0;
     WakelockPlus.disable();
+    
+    // ÖNEMLİ: notifyListeners'ı isRunning hala true iken çağırıyoruz.
+    // Bu sayede FocusScreen sürenin bittiğini ve diyaloğu göstermesi gerektiğini anlıyor.
     notifyListeners();
 
+    // Diyalog tetiklendikten sonra durumu sıfırlıyoruz
+    _isRunning = false;
+    _isPaused = false;
+    
     await _showNotification();
   }
 
