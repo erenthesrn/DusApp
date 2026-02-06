@@ -1,23 +1,28 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Web ve Platform kontrolü için şart
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // 🔥 Beni Hatırla için ekledik
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+
+// --- SERVİS İMPORTU ---
+import 'services/focus_service.dart';
 
 // Sayfalar
 import 'screens/home_screen.dart';
 import 'screens/login_page.dart';
-// Diğer importlarını da korudum
 import 'package:dus_app_1/screens/blog_screen.dart';
 import 'package:dus_app_1/screens/quiz_screen.dart';
+
+// --- 1. ADIM: GLOBAL NAVIGATOR KEY ---
+// Bu anahtar, context olmayan yerlerden (servis gibi) pop-up açmamızı sağlar.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // --- PLATFORM AYARLARI (SENİN KODUN) ---
+  // --- PLATFORM AYARLARI ---
   if (kIsWeb) {
-    // Web için özel ayarlar (Web kullanıyorsan burayı doldurman gerekebilir)
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         apiKey: "AIzaSyDNxUY3kYnZJNl-TtxCkCjSn94ubg97dgc",
@@ -31,12 +36,9 @@ void main() async {
     );
   } 
   else if (defaultTargetPlatform == TargetPlatform.iOS) {
-    // --- iOS (IPHONE) İÇİN ---
-    // GoogleService-Info.plist dosyasından otomatik okur.
     await Firebase.initializeApp();
   } 
   else {
-    // --- ANDROID İÇİN ---
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         apiKey: "AIzaSyCSEnLiJqIOIE0FxXNJNNmiNIWM85OFVKM",
@@ -47,6 +49,9 @@ void main() async {
     );
   }
 
+  // --- FOCUS SERVICE BAŞLATMA ---
+  FocusService.instance; 
+
   runApp(const DusApp());
 }
 
@@ -56,16 +61,17 @@ class DusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // --- NAVIGATOR KEY BURAYA BAĞLANMALI ---
+      navigatorKey: navigatorKey, 
       title: 'DUS Asistanı',
       debugShowCheckedModeBanner: false,
       
-      // --- TEMA AYARLARI ---
       theme: ThemeData(
-        primaryColor: const Color(0xFF0D47A1), // Koyu Mavi
+        primaryColor: const Color(0xFF0D47A1), 
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF0D47A1),
           primary: const Color(0xFF0D47A1),
-          secondary: const Color(0xFF00BFA5), // Turkuaz
+          secondary: const Color(0xFF00BFA5),
         ),
         useMaterial3: true,
         inputDecorationTheme: InputDecorationTheme(
@@ -87,24 +93,19 @@ class DusApp extends StatelessWidget {
         ),
       ),
 
-      // 🔥 GİRİŞ KONTROLÜ (STREAMBUILDER)
-      // Artık sabit LoginPage yerine burası var.
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // 1. Durum: Firebase henüz yanıt vermedi, bekliyoruz (Loading)
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
           
-          // 2. Durum: Kullanıcı verisi VAR -> Ana Sayfaya git
           if (snapshot.hasData) {
             return const HomeScreen();
           }
 
-          // 3. Durum: Kullanıcı verisi YOK -> Giriş Sayfasına git
           return const LoginPage();
         },
       ),

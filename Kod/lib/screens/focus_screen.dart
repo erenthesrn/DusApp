@@ -1,6 +1,5 @@
 // lib/screens/focus_screen.dart
 
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -17,15 +16,6 @@ class _FocusScreenState extends State<FocusScreen> {
   // Servise erişim
   final FocusService _focusService = FocusService.instance;
 
-  // Motive edici sözler
-  final List<String> _quotes = [
-    "Başarı, her gün tekrarlanan küçük çabaların toplamıdır. 🦷",
-    "Bugün yaptığın çalışma, yarınki uzmanlığının temelidir.",
-    "DUS zor olabilir ama sen daha güçlüsün! 💪",
-    "Bir ünite daha bitti, hedefe bir adım daha yaklaştın.",
-    "Disiplin, hedeflerle başarı arasındaki köprüdür.",
-  ];
-
   @override
   Widget build(BuildContext context) {
     // AnimatedBuilder kullanarak servis her güncellendiğinde (her saniye)
@@ -34,14 +24,8 @@ class _FocusScreenState extends State<FocusScreen> {
       animation: _focusService,
       builder: (context, child) {
         
-        // --- SÜRE BİTİŞ KONTROLÜ ---
-        // Eğer süre 0 ise ve hala çalışıyor (running) durumundaysa dialogu göster
-        if (_focusService.remainingSeconds == 0 && 
-            _focusService.totalTimeInSeconds > 0 && 
-            _focusService.isRunning) {
-          // Build sırasında UI değiştiremeyeceğimiz için bir sonraki frame'e erteliyoruz
-          Future.microtask(() => _showCompletionDialog());
-        }
+        // NOT: Artık burada "SÜRE BİTİŞ KONTROLÜ" yapmamıza gerek yok.
+        // FocusService içindeki global pop-up mekanizması her şeyi hallediyor.
 
         // Yüzde hesaplama
         double percent = _focusService.totalTimeInSeconds > 0
@@ -135,7 +119,6 @@ class _FocusScreenState extends State<FocusScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Duruma göre butonları göster
                     if (!_focusService.isRunning && !_focusService.isPaused)
                       _buildControlBtn(
                           icon: Icons.play_arrow_rounded,
@@ -157,7 +140,6 @@ class _FocusScreenState extends State<FocusScreen> {
                     
                     const SizedBox(width: 20),
                     
-                    // Sıfırla butonu
                     if (_focusService.remainingSeconds != _focusService.totalTimeInSeconds)
                       _buildControlBtn(
                           icon: Icons.refresh_rounded,
@@ -176,69 +158,8 @@ class _FocusScreenState extends State<FocusScreen> {
 
   // --- YARDIMCI METODLAR ---
 
-  // Süre bittiğinde gösterilecek özel dialog
-  void _showCompletionDialog() {
-    // Rastgele bir söz seçiyoruz
-    final String randomQuote = _quotes[Random().nextInt(_quotes.length)];
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Column(
-          children: [
-            Icon(Icons.stars_rounded, color: Colors.amber, size: 60),
-            SizedBox(height: 10),
-            Text("Harika İş çıkardın!", textAlign: TextAlign.center),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Bu seansı başarıyla tamamladın.",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Text(
-                randomQuote,
-                style: const TextStyle(
-                  fontStyle: FontStyle.italic,
-                  color: Color(0xFF1565C0),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Center(
-            child: TextButton(
-              onPressed: () {
-                _focusService.resetTimer(); // Servisi temizle
-                Navigator.pop(context); // Dialogu kapat
-              },
-              child: const Text("Yeni Seans İçin Hazırım!", 
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showDurationPicker() {
-    // Başlangıç değeri
     Duration initialDuration = Duration(seconds: _focusService.totalTimeInSeconds);
-    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -268,7 +189,6 @@ class _FocusScreenState extends State<FocusScreen> {
                   initialTimerDuration: initialDuration,
                   onTimerDurationChanged: (Duration newDuration) {
                     if (newDuration.inSeconds > 0) {
-                      // Servis üzerinden süreyi güncelle
                       _focusService.setDuration(newDuration.inMinutes);
                     }
                   },
@@ -288,7 +208,6 @@ class _FocusScreenState extends State<FocusScreen> {
   }
 
   Widget _buildTimeChip(String label, int minutes) {
-    // Servisteki süre ile eşleşiyor mu kontrol et
     bool isSelected = (_focusService.totalTimeInSeconds == minutes * 60);
     return ChoiceChip(
       label: Text("$label ($minutes dk)"),

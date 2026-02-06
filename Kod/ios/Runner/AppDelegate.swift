@@ -1,5 +1,6 @@
-import Flutter
 import UIKit
+import Flutter
+import flutter_local_notifications // Bildirim eklentisini içeri aktarıyoruz
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -7,6 +8,12 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    
+    // Uygulama ön plandayken bildirimlerin görüntülenmesini tetikler
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+    }
+
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

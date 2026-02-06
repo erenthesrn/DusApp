@@ -1,9 +1,12 @@
 // lib/services/focus_service.dart
 
 import 'dart:async';
+import 'dart:io';
+import 'dart:math'; // Random için eklendi
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../main.dart'; // navigatorKey'e erişmek için şart
 
 class FocusService extends ChangeNotifier {
   // Singleton Yapısı
@@ -21,7 +24,15 @@ class FocusService extends ChangeNotifier {
   bool _isRunning = false;
   bool _isPaused = false;
 
-  // Dışarıdan erişim için getter'lar
+  // Motive edici sözleri globale taşıdık
+  final List<String> _quotes = [
+    "Başarı, her gün tekrarlanan küçük çabaların toplamıdır. 🦷",
+    "Bugün yaptığın çalışma, yarınki uzmanlığının temelidir.",
+    "DUS zor olabilir ama sen daha güçlüsün! 💪",
+    "Bir ünite daha bitti, hedefe bir adım daha yaklaştın.",
+    "Disiplin, hedeflerle başarı arasındaki köprüdür.",
+  ];
+
   int get totalTimeInSeconds => _totalTimeInSeconds;
   int get remainingSeconds => _remainingSeconds;
   bool get isRunning => _isRunning;
@@ -29,13 +40,16 @@ class FocusService extends ChangeNotifier {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  // --- BİLDİRİM KURULUMU ---
   void _initNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     
     const DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings();
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
@@ -43,13 +57,20 @@ class FocusService extends ChangeNotifier {
     );
 
     await _notificationsPlugin.initialize(initializationSettings);
-  }
 
-  // --- TIMER KONTROLLERİ ---
+    if (Platform.isIOS) {
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+    } else if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidImplementation?.requestNotificationsPermission();
+    }
+  }
 
   void startTimer() {
     if (_isRunning) return;
-
     _isRunning = true;
     _isPaused = false;
     WakelockPlus.enable(); 
@@ -72,9 +93,7 @@ class FocusService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resumeTimer() {
-    startTimer();
-  }
+  void resumeTimer() => startTimer();
 
   void resetTimer() {
     _timer?.cancel();
@@ -94,33 +113,111 @@ class FocusService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- GÜNCELLENEN KISIM ---
   void _completeTimer() async {
     _timer?.cancel();
     _remainingSeconds = 0;
-    WakelockPlus.disable();
-    
-    // ÖNEMLİ: notifyListeners'ı isRunning hala true iken çağırıyoruz.
-    // Bu sayede FocusScreen sürenin bittiğini ve diyaloğu göstermesi gerektiğini anlıyor.
-    notifyListeners();
-
-    // Diyalog tetiklendikten sonra durumu sıfırlıyoruz
     _isRunning = false;
     _isPaused = false;
+    WakelockPlus.disable();
+    notifyListeners();
     
+    // 1. Bildirim gönder
     await _showNotification();
+    
+    // 2. Global Pop-up aç (Hangi sayfada olursan ol)
+    _showGlobalCompletionDialog();
+  }
+
+  // --- YENİ: GLOBAL POP-UP FONKSİYONU ---
+  void _showGlobalCompletionDialog() {
+    // NavigatorKey üzerinden o anki context'i yakalıyoruz
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    final String randomQuote = _quotes[Random().nextInt(_quotes.length)];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(Icons.stars_rounded, color: Colors.amber, size: 60),
+            SizedBox(height: 10),
+            Text("Harika İş Çıkardın!", textAlign: TextAlign.center),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Odaklanma seansını başarıyla tamamladın.",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Text(
+                randomQuote,
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Color(0xFF1565C0),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                resetTimer(); // Timer'ı eski süresine döndür
+                Navigator.pop(context); // Pop-up'ı kapat
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1565C0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              child: const Text("Devam Et", style: TextStyle(color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _showNotification() async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'focus_channel', 'Odak Modu',
-        channelDescription: 'Odak süresi bittiğinde bildirim gönderir',
+        'focus_channel_v3', 
+        'Odak Modu Bildirimleri',
         importance: Importance.max,
-        priority: Priority.high);
+        priority: Priority.high,
+        playSound: true,
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.critical,
+    );
     
-    const NotificationDetails details = NotificationDetails(android: androidDetails);
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails, 
+    );
     
     await _notificationsPlugin.show(
-        0, 'Süre Doldu! 🎉', 'Harikasın! Hedefine bir adım daha yaklaştın. 🦷✨', details);
+        0, 
+        'Süre Doldu! 🎉', 
+        'Harikasın! Hedefine bir adım daha yaklaştın. 🦷✨', 
+        details);
   }
 }
