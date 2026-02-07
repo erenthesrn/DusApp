@@ -23,7 +23,7 @@ dependencies:
   # --- ODAK MODU İÇİN YENİ EKLENENLER ---
   percent_indicator: ^4.2.3        # Dairesel sayaç tasarımı için
   wakelock_plus: ^1.1.4            # Sayaç çalışırken ekran kapanmasın diye
-  flutter_local_notifications: ^16.0.0 # Süre bitince bildirim göndermek için
+  flutter_local_notifications: ^17.2.2 # Süre bitince bildirim göndermek için
   
   # Animasyon dosyan (loading_dent.json) var ama lottie paketi eksikti, onu da ekledim:
   lottie: ^3.1.0

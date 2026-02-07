@@ -670,7 +670,25 @@ class DashboardScreen extends StatelessWidget {
                         }
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                    child: _buildActionBtnVertical(
+                        'Bilgi\nKartları', // Alt satıra geçsin diye \n ekledik
+                        'Tekrar Et', 
+                        Icons.style, // Kart destesi ikonu
+                       Colors.green.shade400,
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("🚀 Bilgi Kartları modülü yakında hazırlanıyor!"),
+                              duration: Duration(seconds: 2),
+                              backgroundColor: Colors.green,
+                            )
+                          );  
+                        }
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _buildActionBtnVertical(
                         'Yanlışlar', 

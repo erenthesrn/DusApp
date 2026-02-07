@@ -1,0 +1,47 @@
+[
+  {
+    "id": 14001,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Trismus ile ilgili hangisi yanlıştır?",
+    "options": [
+      "A) İlgili bölgeye üst üste anestezi yapılması sonucu kas zedelenmesi sonucunda oluşabilir",
+      "B) Kas içerisinde hematom oluşursa lokal miyojenik spazm oluşur",
+      "C) Oluştuktan sonra kesinlikle sakız çiğnememeli ve lokal sıcak nemli uygulama yapmamalıdır",
+      "D) 48-72 saat içerisinde gerileme olmadığında antibiyotik uygulanmalıdır",
+      "E) Spontan iyileşebilir"
+    ],
+    "answer_index": 2,
+    "explanation": "Yanlış olan seçenek C şıkkıdır. Trismus tedavisinin temel prensibi 'Fizyoterapi ve Sıcak Uygulama'dır. Hasta ağzını açmaya teşvik edilmeli, sakız çiğneme gibi egzersizler verilmeli ve bölgeye sıcak nemli havlu uygulanmalıdır. Hareketsizlik ve soğuk uygulama trismusun çözülmesini engeller, hatta fibrozise yol açabilir."
+  },
+  {
+    "id": 14002,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "N.maxillaris ve n.mandibularisin kafayı terk ettiği foramen hangileridir?",
+    "options": [
+      "A) Foramen mentalis, foramen ovale ",
+      "B) Foramen rotundum, foramen mandibularis",
+      "C) Foramen mandibulare, foramen ovale",
+      "D) Foramen rotundum, foramen ovale",
+      "E) Foramen rotundum, Foramen mentalis"
+    ],
+    "answer_index": 3,
+    "explanation": "Nervus Trigeminus'un (CN V) üç dalı kafatasını şu deliklerden terk eder: \n1. N. Ophthalmicus (V1) -> Fissura Orbitalis Superior\n2. N. Maxillaris (V2) -> Foramen Rotundum\n3. N. Mandibularis (V3) -> Foramen Ovale.\nDoğru eşleşme Rotundum ve Ovale'dir."
+  },
+  {
+    "id": 14003,
+    "test_no": 1,
+    "level": "Orta",
+    "question": "Vazokonstrüktör olarak aşağıdakilerden hangisi kullanılmaz?",
+    "options": [
+      "A) Epinefrin",
+      "B) Adrenalin",
+      "C) Fenilefrin",
+      "D) Fentolamin",
+      "E) Vazopressin "
+    ],
+    "answer_index": 3,
+    "explanation": "Fentolamin (Phentolamine), bir vazokonstrüktör değil; aksine alfa-adrenerjik reseptör antagonistidir (blokeridir). Bu etkisiyle vazodilatasyon yapar. Diş hekimliğinde lokal anestezi etkisini (uyuşukluğu) daha hızlı geri döndürmek (reversal ajan) amacıyla kullanılır. Diğer şıkların hepsi vazokonstrüktördür."
+  }
+]
