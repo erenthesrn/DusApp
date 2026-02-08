@@ -1,13 +1,14 @@
 // lib/screens/profile_screen.dart
 
 import 'dart:async';
+import 'dart:ui'; // 🔥 CAM EFEKTİ İÇİN GEREKLİ
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/theme_provider.dart'; // --- TEMA İÇİN ŞART ---
-import 'login_page.dart'; // Çıkış yapınca login sayfasına dönmek için
+import '../services/theme_provider.dart'; 
+import 'login_page.dart'; 
 import 'edit_profile_page.dart';
-import 'achievements_screen.dart'; // --- YENİ EKLENEN IMPORT ---
+import 'achievements_screen.dart'; 
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,7 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 1. Verileri tutacak değişkenler
   String _name = "Yükleniyor...";
   String _email = "";
-  String _role = "free"; // Varsayılan ücretsiz
+  String _role = "free"; 
   int _streak = 0;
   bool _isLoading = true;
 
@@ -29,34 +30,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _listenUserData(); // Sayfa açılınca verileri çek
+    _listenUserData(); 
+  }
+
+  @override
+  void dispose() {
+    _userSubscription?.cancel();
+    super.dispose();
   }
 
   // 2. Firebase'den Veri Çekme Fonksiyonu
-void _listenUserData() {
+  void _listenUserData() {
     User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser != null) {
       _userSubscription = FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser.uid)
-          .snapshots() // 🔥 ÖNEMLİ: get() yerine snapshots() kullanıldı
+          .snapshots()
           .listen((snapshot) {
         
         if (snapshot.exists && snapshot.data() != null) {
-          // Veri her değiştiğinde burası çalışır ve ekranı günceller
           if (mounted) {
             setState(() {
               Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
               _name = data['name'] ?? "İsimsiz";
               _email = data['email'] ?? currentUser.email!;
               _role = data['role'] ?? "free";            
-              _streak = data['streak'] ?? 0; // 🔥 Streak değişince otomatik güncellenecek
+              _streak = data['streak'] ?? 0;
               _isLoading = false;
             });
           }
         } else {
-          // Kullanıcı dökümanı yoksa oluştur (Eski mantığını koruyoruz)
            if (mounted) {
              setState(() {
                _name = currentUser.displayName ?? "Kullanıcı";
@@ -162,16 +167,14 @@ void _listenUserData() {
             onPressed: () async {
               if (noteController.text.trim().isEmpty) return;
 
-              Navigator.pop(context); // Dialogu kapat
+              Navigator.pop(context); 
               
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Geri bildiriminiz alındı! Teşekkürler.")),
               );
 
-              // FIREBASE KAYIT İŞLEMİ
               try {
                 User? user = FirebaseAuth.instance.currentUser;
-                
                 await FirebaseFirestore.instance.collection('app_reports').add({
                   'reportType': 'General / Profile',
                   'userNote': noteController.text.trim(),
@@ -207,7 +210,6 @@ void _listenUserData() {
               const Text("Hedef Ayarları 🎯", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
               
-              // 1. Seçenek: Günlük Süre
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -218,14 +220,13 @@ void _listenUserData() {
                 subtitle: const Text("Dakika hedefini belirle"),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                 onTap: () {
-                  Navigator.pop(context); // Menüyü kapat
-                  _changeDailyGoal(); // Süre dialogunu aç
+                  Navigator.pop(context); 
+                  _changeDailyGoal(); 
                 },
               ),
               
               const Divider(),
 
-              // 2. Seçenek: Günlük Soru Hedefi (YENİ EKLENDİ)
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -236,14 +237,13 @@ void _listenUserData() {
                 subtitle: const Text("Çözülecek soru sayısını belirle"),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                 onTap: () {
-                  Navigator.pop(context); // Menüyü kapat
-                  _changeDailyQuestionGoal(); // Soru dialogunu aç
+                  Navigator.pop(context); 
+                  _changeDailyQuestionGoal(); 
                 },
               ),
 
               const Divider(),
 
-              // 3. Seçenek: Uzmanlık Alanı
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -254,8 +254,8 @@ void _listenUserData() {
                 subtitle: const Text("Bölüm tercihini değiştir"),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                 onTap: () {
-                  Navigator.pop(context); // Menüyü kapat
-                  _changeTargetBranch(); // Mevcut branş seçimini aç
+                  Navigator.pop(context); 
+                  _changeTargetBranch(); 
                 },
               ),
               const SizedBox(height: 10),
@@ -303,7 +303,6 @@ void _listenUserData() {
                 int? minutes = int.tryParse(goalController.text);
                 
                 if (minutes != null && minutes > 0) {
-                  // Firebase'e kaydet
                   User? user = FirebaseAuth.instance.currentUser;
                   if (user != null) {
                     await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
@@ -326,7 +325,8 @@ void _listenUserData() {
       ),
     );
   }
-  // --- 6.5. GÜNLÜK SORU HEDEFİ GİRME FONKSİYONU (YENİ) ---
+
+  // --- 6.5. GÜNLÜK SORU HEDEFİ GİRME FONKSİYONU ---
   void _changeDailyQuestionGoal() {
     TextEditingController questionController = TextEditingController();
 
@@ -363,7 +363,6 @@ void _listenUserData() {
                 int? questions = int.tryParse(questionController.text);
                 
                 if (questions != null && questions > 0) {
-                  // Firebase'e kaydet
                   User? user = FirebaseAuth.instance.currentUser;
                   if (user != null) {
                     await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
@@ -450,7 +449,6 @@ void _listenUserData() {
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        // Anlık durumu görmek için StreamBuilder kullanıyoruz
         return StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).snapshots(),
           builder: (context, snapshot) {
@@ -467,7 +465,6 @@ void _listenUserData() {
                   const Text("İstatistik Ayarları 📊", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
 
-                  // 1. Switch: Görünürlük
                   Container(
                     decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
                     child: SwitchListTile(
@@ -486,7 +483,6 @@ void _listenUserData() {
 
                   const SizedBox(height: 12),
 
-                  // 2. Buton: Sıfırlama
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -496,8 +492,8 @@ void _listenUserData() {
                     title: const Text("İstatistikleri Sıfırla", style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                     subtitle: const Text("Tüm soru geçmişini temizler"),
                     onTap: () {
-                      Navigator.pop(context); // Menüyü kapat
-                      _resetStatistics(context); // Sıfırlama dialogunu aç
+                      Navigator.pop(context); 
+                      _resetStatistics(context); 
                     },
                   ),
                   const SizedBox(height: 10),
@@ -510,7 +506,6 @@ void _listenUserData() {
     );
   }
 
-// Yardımcı Fonksiyon: Görünürlük Değiştir
   void _toggleSuccessRateVisibility(bool currentValue) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -520,7 +515,6 @@ void _listenUserData() {
     }
   }
 
-  // Yardımcı Fonksiyon: İstatistik Sıfırla
   void _resetStatistics(BuildContext context) async {
     bool confirm = await showDialog(
       context: context,
@@ -552,179 +546,222 @@ void _listenUserData() {
   }  
 
   @override
-  void dispose() {
-    _userSubscription?.cancel();
-    super.dispose();
-  }
-
-
-  @override
   Widget build(BuildContext context) {
-    // Tema verilerini anlık dinlemek için
     final themeProvider = ThemeProvider.instance;
+    final isDarkMode = themeProvider.isDarkMode;
+    final theme = Theme.of(context);
+
+    // --- ARKA PLAN (Glass Effect için Gradient) ---
+    Widget background = isDarkMode 
+      ? Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0A0E14), // Derin Uzay Siyahı
+                Color(0xFF161B22), // Antrasit
+              ]
+            )
+          ),
+        )
+      : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      extendBodyBehindAppBar: true, 
+      backgroundColor: Colors.transparent, 
       appBar: AppBar(
-        title: Text("Profilim", style: TextStyle(color: Theme.of(context).textTheme.titleLarge?.color, fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
+        title: Text("Profilim", style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        // 🔥 BURAYI GÜNCELLEDİM: Güneş/Ay değişimi
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDarkMode ? Icons.wb_sunny_rounded : Icons.nightlight_round, 
+              color: isDarkMode ? Colors.amber : Colors.indigo
+            ), 
+            onPressed: () => themeProvider.toggleTheme(!isDarkMode)
+          )
+        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator()) 
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  // --- 1. KİMLİK KARTI ---
-                  _buildProfileHeader(),
-
-                  const SizedBox(height: 24),
-
-                  // --- 2. İSTATİSTİK ---
-                  _buildStreakCard(),
-
-                  const SizedBox(height: 24),
-
-                  // --- 3. AYARLAR MENÜSÜ ---
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text("Hesap Ayarları", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor, 
-                      borderRadius: BorderRadius.circular(16)
+      body: Stack(
+        children: [
+          background, // 🔥 ARKA PLAN
+          
+          _isLoading
+            ? const Center(child: CircularProgressIndicator()) 
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 100, 20, 20), // AppBar için üstten boşluk
+                child: Column(
+                  children: [
+                    // --- 1. KİMLİK KARTI (GLASS) ---
+                    _buildGlassContainer(
+                      isDark: isDarkMode,
+                      child: _buildProfileContent(theme, isDarkMode),
                     ),
-                    child: Column(
-                      children: [
-                        // --- 🔥 KARANLIK MOD ŞALTERİ BURAYA EKLENDİ ---
-                        ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                            child: Icon(
-                              themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode, 
-                              color: Colors.blue
+
+                    const SizedBox(height: 24),
+
+                    // --- 2. İSTATİSTİK ---
+                    _buildStreakCard(),
+
+                    const SizedBox(height: 24),
+
+                    // --- 3. AYARLAR MENÜSÜ (GLASS) ---
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text("Hesap Ayarları", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : Colors.grey)),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildGlassContainer(
+                      isDark: isDarkMode,
+                      padding: const EdgeInsets.all(0), 
+                      child: Column(
+                        children: [
+                          // --- KARANLIK MOD ŞALTERİ ---
+                          ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                              child: Icon(
+                                isDarkMode ? Icons.dark_mode : Icons.light_mode, 
+                                color: Colors.blue
+                              ),
+                            ),
+                            title: Text("Karanlık Mod", style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black)),
+                            subtitle: Text(isDarkMode ? "Açık" : "Kapalı", style: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey)),
+                            trailing: Switch(
+                              value: isDarkMode,
+                              onChanged: (value) {
+                                setState(() {
+                                  themeProvider.toggleTheme(value);
+                                });
+                              },
+                              activeColor: const Color(0xFF0D47A1),
                             ),
                           ),
-                          title: const Text("Karanlık Mod", style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(themeProvider.isDarkMode ? "Açık" : "Kapalı"),
-                          trailing: Switch(
-                            value: themeProvider.isDarkMode,
-                            onChanged: (value) {
-                              setState(() {
-                                themeProvider.toggleTheme(value);
-                              });
-                            },
-                            activeColor: const Color(0xFF0D47A1),
-                          ),
-                        ),
-                        _buildDivider(),
-                        // ---------------------------------------------
+                          _buildDivider(isDarkMode),
 
-                        _buildMenuItem(
-                          Icons.person_outline, 
-                          "Kişisel Bilgilerim", 
-                          "İsim ve Şifre işlemleri", 
-                          () {
+                          _buildMenuItem(theme, Icons.person_outline, "Kişisel Bilgilerim", "İsim ve Şifre işlemleri", isDarkMode, () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilePage()));
-                          }
-                        ),
-                        _buildDivider(),
-                        
-                        _buildMenuItem(
-                          Icons.emoji_events_rounded, 
-                          "Rozetlerim & Başarılar", 
-                          "Kupa dolabına göz at", 
-                          () {
+                          }),
+                          _buildDivider(isDarkMode),
+                          
+                          _buildMenuItem(theme, Icons.emoji_events_rounded, "Rozetlerim & Başarılar", "Kupa dolabına göz at", isDarkMode, () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => const AchievementsScreen()));
-                          }
-                        ),
-                        _buildDivider(),
+                          }),
+                          _buildDivider(isDarkMode),
 
-                        // 🔥 YENİ EKLENEN BUTON BURADA 🔥
-                        _buildMenuItem(
-                          Icons.analytics_outlined, // Grafik ikonu
-                          "İstatistik Ayarları",
-                          "Başarı oranı ve sıfırlama",
-                          _showStatisticsOptions // Tıklayınca yukarıdaki fonksiyonu açacak
-                        ),
-                        _buildDivider(),
-                        // ---------------------------------
+                          // 6 Argüman hatası giderildi:
+                          _buildMenuItem(
+                            theme, 
+                            Icons.analytics_outlined, 
+                            "İstatistik Ayarları", 
+                            "Başarı oranı ve sıfırlama", 
+                            isDarkMode, 
+                            _showStatisticsOptions 
+                          ),
+                          _buildDivider(isDarkMode),
 
-                        _buildMenuItem(
-                          Icons.ads_click,
-                          "Hedeflerim",
-                          "Süre Hedefi ve Uzmanlık hedefini değiştir.",
-                          _showTargetOptions 
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(Icons.notifications_outlined, "Bildirimler", "Sınav hatırlatmaları", () {}),
+                          _buildMenuItem(theme, Icons.ads_click, "Hedeflerim", "Süre ve Branş tercihlerini yönet", isDarkMode, _showTargetOptions),
+                          _buildDivider(isDarkMode),
+                          _buildMenuItem(theme, Icons.notifications_outlined, "Bildirimler", "Sınav hatırlatmaları", isDarkMode, () {}),
 
-                        _buildDivider(),
+                          _buildDivider(isDarkMode),
 
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // --- 4. DESTEK VE DİĞER ---
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text("Diğer", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor, 
-                      borderRadius: BorderRadius.circular(16)
+                    // --- 4. DESTEK VE DİĞER (GLASS) ---
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text("Diğer", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : Colors.grey)),
                     ),
-                    child: Column(
-                      children: [
-                        _buildMenuItem(Icons.bug_report_outlined, "Hata Bildir", "Sorun mu var?", _showReportDialog),
-                        _buildDivider(),
-                        _buildMenuItem(Icons.share, "Arkadaşını Davet Et", "Kazan & Kazandır", () {}),
-                        _buildDivider(),
-                        _buildMenuItem(Icons.star_outline, "Bizi Değerlendir", "Mağaza puanı ver", () {}),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 40),
+                    const SizedBox(height: 12),
 
-                  // --- 5. ÇIKIŞ YAP ---
-                  TextButton.icon(
-                    onPressed: _signOut,
-                    icon: Icon(Icons.logout, color: Colors.red[300], size: 20),
-                    label: Text(
-                      "Hesaptan Çıkış Yap", 
-                      style: TextStyle(color: Colors.red[300], fontSize: 16, fontWeight: FontWeight.w600)
+                    _buildGlassContainer(
+                      isDark: isDarkMode,
+                      padding: const EdgeInsets.all(0),
+                      child: Column(
+                        children: [
+                          _buildMenuItem(theme, Icons.bug_report_outlined, "Hata Bildir", "Sorun mu var?", isDarkMode, _showReportDialog),
+                          _buildDivider(isDarkMode),
+                          _buildMenuItem(theme, Icons.share, "Arkadaşını Davet Et", "Kazan & Kazandır", isDarkMode, () {}),
+                          _buildDivider(isDarkMode),
+                          _buildMenuItem(theme, Icons.star_outline, "Bizi Değerlendir", "Mağaza puanı ver", isDarkMode, () {}),
+                        ],
+                      ),
                     ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      backgroundColor: Colors.red[50],
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    ),
-                  ),
+                    
+                    const SizedBox(height: 40),
 
-                  const SizedBox(height: 20),
-                  const Text("Versiyon 1.0.0", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  const SizedBox(height: 30),
-                ],
+                    // --- 5. ÇIKIŞ YAP ---
+                    TextButton.icon(
+                      onPressed: _signOut,
+                      icon: Icon(Icons.logout, color: Colors.red[300], size: 20),
+                      label: Text(
+                        "Hesaptan Çıkış Yap", 
+                        style: TextStyle(color: Colors.red[300], fontSize: 16, fontWeight: FontWeight.w600)
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        backgroundColor: Colors.red.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                    Text("Versiyon 1.0.0", style: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey, fontSize: 12)),
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
-            ),
+        ],
+      ),
     );
   }
 
-  // --- WIDGET PARÇALARI ---
+  // --- 🔥 YARDIMCI WIDGET: GLASS CONTAINER ---
+  Widget _buildGlassContainer({required Widget child, required bool isDark, EdgeInsetsGeometry padding = const EdgeInsets.all(20)}) {
+    if (!isDark) {
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
+        ),
+        child: child,
+      );
+    }
 
-  Widget _buildProfileHeader() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22).withOpacity(0.6), 
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  // --- İÇERİK PARÇALARI ---
+
+  Widget _buildProfileContent(ThemeData theme, bool isDark) {
     String initials = _name.isNotEmpty ? _name[0].toUpperCase() : "?";
     if (_name.contains(" ")) {
       var parts = _name.split(" ");
@@ -733,47 +770,43 @@ void _listenUserData() {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 70, height: 70,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D47A1).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(initials, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
+    Color textColor = isDark ? Colors.white : Colors.black;
+    Color subTextColor = isDark ? Colors.white60 : Colors.grey;
+
+    return Row(
+      children: [
+        Container(
+          width: 70, height: 70,
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withOpacity(isDark ? 0.2 : 0.1),
+            shape: BoxShape.circle,
+            border: isDark ? Border.all(color: theme.primaryColor.withOpacity(0.5)) : null
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(_email, style: const TextStyle(color: Colors.grey, fontSize: 13)), 
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildBadge(Icons.school, "DUS", Colors.orange), 
-                    const SizedBox(width: 8),
-                    _role == 'premium' 
-                        ? _buildBadge(Icons.workspace_premium, "Premium", Colors.purple)
-                        : _buildBadge(Icons.person_outline, "Ücretsiz", Colors.blueGrey),
-                  ],
-                )
-              ],
-            ),
-          )
-        ],
-      ),
+          alignment: Alignment.center,
+          child: Text(initials, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? theme.primaryColor.withOpacity(0.9) : const Color(0xFF0D47A1))),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+              const SizedBox(height: 4),
+              Text(_email, style: TextStyle(color: subTextColor, fontSize: 13)), 
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildBadge(Icons.school, "DUS", Colors.orange), 
+                  const SizedBox(width: 8),
+                  _role == 'premium' 
+                      ? _buildBadge(Icons.workspace_premium, "Premium", Colors.purple)
+                      : _buildBadge(Icons.person_outline, "Ücretsiz", isDark ? Colors.grey : Colors.blueGrey),
+                ],
+              )
+            ],
+          ),
+        )
+      ],
     );
   }
 
@@ -843,22 +876,24 @@ void _listenUserData() {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildMenuItem(ThemeData theme, IconData icon, String title, String subtitle, bool isDark, VoidCallback onTap) {
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.grey.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, color: Theme.of(context).primaryColor),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100], 
+          borderRadius: BorderRadius.circular(8)
+        ),
+        child: Icon(icon, color: isDark ? theme.primaryColor : Colors.blueGrey),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+      subtitle: Text(subtitle, style: TextStyle(color: isDark ? Colors.white54 : Colors.grey[500], fontSize: 12)),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: isDark ? Colors.white38 : Colors.grey),
       onTap: onTap,
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor.withOpacity(0.1), indent: 70);
+  Widget _buildDivider(bool isDark) {
+    return Divider(height: 1, thickness: 1, color: isDark ? Colors.white10 : Colors.grey[100], indent: 70);
   }
 }
-
