@@ -56,8 +56,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // --- FIREBASE VERİ CANLI TAKİP (STREAM) ---
-// lib/screens/home_screen.dart içerisinde
-
   void _listenToUserData() {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -73,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
           String today = DateTime.now().toIso8601String().split('T')[0];
           String lastDate = data['lastActivityDate'] ?? "";
           
-          // 🔥 EKSİK OLAN STREAK MANTIĞI BURAYA EKLENDİ
+          // 🔥 GÜNLÜK SIFIRLAMA MANTIĞI
           if (lastDate != today){
             await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
               'dailySolved': 0,
@@ -122,14 +120,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- 1. MODÜL: PRATİK (KONU SEÇİMİ) ---
   void _showTopicSelection(BuildContext context) {
+    // Tema kontrolü ve dinamik renkler
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    final Color titleColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    final Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent, 
       isScrollControlled: true,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: backgroundColor, // Arka plan rengini dinamik yaptık
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SafeArea(
@@ -141,13 +145,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   width: 40, height: 4, 
                   margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300, 
+                    borderRadius: BorderRadius.circular(2)
+                  )
                 ),
               ),
               
-              Text("Çalışma Alanı", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+              Text(
+                "Çalışma Alanı", 
+                style: GoogleFonts.inter(
+                  fontSize: 22, 
+                  fontWeight: FontWeight.w800, 
+                  color: titleColor 
+                )
+              ),
               const SizedBox(height: 4),
-              Text("Hangi alanda pratik yapmak istersin?", style: GoogleFonts.inter(fontSize: 14, color: Colors.blueGrey.shade400)),
+              Text(
+                "Hangi alanda pratik yapmak istersin?", 
+                style: GoogleFonts.inter(
+                  fontSize: 14, 
+                  color: subtitleColor
+                )
+              ),
               const SizedBox(height: 32),
               
               Row(
@@ -202,14 +222,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted) return;
 
+    // Tema Ayarları
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    Color bgColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    Color titleColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SafeArea(
@@ -224,9 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))
                 ),
               ),
-              Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+              Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor)),
               const SizedBox(height: 4),
-              Text("Toplam $count yanlışın var. Nasıl ilerleyelim?", style: GoogleFonts.inter(fontSize: 14, color: Colors.blueGrey.shade400)),
+              Text("Toplam $count yanlışın var. Nasıl ilerleyelim?", style: GoogleFonts.inter(fontSize: 14, color: subtitleColor)),
               const SizedBox(height: 32),
               Row(
                 children: [
@@ -299,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, // Burası liste içi, beyaz kalabilir veya koyu yapılabilir
       isScrollControlled: true, 
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) {
@@ -358,12 +384,19 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isWide = false,
     VoidCallback? onTapOverride
   }) {
+    // Koyu mod kontrolü
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    Color textColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    Color cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey;
+
     return Container(
       height: isWide ? 100 : 160,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: isDarkMode ? Colors.white10 : Colors.grey.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(color: color.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 5)),
           BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 2, offset: const Offset(0, 1)),
@@ -398,9 +431,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
                       if (subtitle != null)
-                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Colors.blueGrey)),
+                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor)),
                     ],
                   )
                 ],
@@ -417,9 +450,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B), height: 1.2)),
+                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor, height: 1.2)),
                       if (subtitle != null)
-                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500)),
+                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ],
@@ -432,16 +465,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Tema Durumunu Kontrol Et
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // 2. Renk Tanımlamaları
+    Color scaffoldColor = isDarkMode ? Colors.black : const Color.fromARGB(255, 224, 247, 250);
+    Color navBarColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    Color navShadowColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+
     List<Widget> currentPages = [
       DashboardScreen(
         targetBranch: _targetBranch,
         dailyGoal: _dailyGoal,
-        dailyQuestionGoal: _dailyQuestionGoal, // 🔥 YENİ: Buraya ekle
-
+        dailyQuestionGoal: _dailyQuestionGoal, 
         dailyMinutes: _dailyMinutes,
         dailySolved: _dailySolved,
         totalSolved: _totalSolved,
-
         totalCorrect: _totalCorrect,
         showSuccessRate: _showSuccessRate,
         onRefresh: () {}, 
@@ -449,12 +488,20 @@ class _HomeScreenState extends State<HomeScreen> {
         onPratikTap: () => _showTopicSelection(context), 
       ),
       const BlogScreen(),
-      const Scaffold(body: Center(child: Text("Analiz Ekranı Hazırlanıyor..."))),
+      Scaffold(
+        backgroundColor: Colors.transparent, 
+        body: Center(
+          child: Text(
+            "Analiz Ekranı Hazırlanıyor...",
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black54),
+          )
+        )
+      ),
       const ProfileScreen(),
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: scaffoldColor,
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
@@ -476,11 +523,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: navBarColor, 
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: navShadowColor, 
               blurRadius: 15, 
               offset: const Offset(0, -5),
             ),
@@ -490,7 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           child: NavigationBar(
             height: 80,
-            backgroundColor: Colors.white,
+            backgroundColor: navBarColor, 
             elevation: 0,
             indicatorColor: Colors.transparent,
             selectedIndex: _selectedIndex,
@@ -508,14 +555,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   NavigationDestination _buildNavDest(IconData icon, IconData activeIcon, int idx) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final inactiveColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+
     return NavigationDestination(
-      icon: Icon(icon, color: Colors.blueGrey.shade400, size: 28),
+      icon: Icon(icon, color: inactiveColor, size: 28),
       selectedIcon: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(activeIcon, color: const Color(0xFF0D9488), size: 28),
+          const Icon(Icons.home_filled, color: Color(0xFF0D9488), size: 28),
           const SizedBox(height: 4),
-          Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFF0D9488), shape: BoxShape.circle)),
+          Container(
+            width: 4, 
+            height: 4, 
+            decoration: const BoxDecoration(
+              color: Color(0xFF0D9488), 
+              shape: BoxShape.circle
+            )
+          ),
         ],
       ),
       label: '',
@@ -527,12 +584,10 @@ class _HomeScreenState extends State<HomeScreen> {
 // ||                          DASHBOARD EKRANI                               ||
 // =============================================================================
 
-// lib/screens/home_screen.dart içindeki DashboardScreen sınıfı
-
 class DashboardScreen extends StatelessWidget {
   final String targetBranch;
-  final int dailyGoal;         // Süre Hedefi
-  final int dailyQuestionGoal; // Soru Hedefi
+  final int dailyGoal;         
+  final int dailyQuestionGoal; 
   
   final int dailyMinutes;
   final int dailySolved;
@@ -578,6 +633,11 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tema kontrolü
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    Color cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    Color textColor = isDarkMode ? Colors.white : Colors.black87;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
@@ -627,7 +687,6 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 32),
                     Row(
                       children: [
-                        // Header'da genel toplam kalabilir, motive eder
                         _buildMiniStat(Icons.check_circle_outline, '$totalSolved', 'Toplam Soru', Colors.orange.shade400),
                         const SizedBox(width: 16),
                         _buildMiniStat(Icons.track_changes, _calculateSuccessRate(), 'Başarı Oranı', Colors.green.shade400),
@@ -647,7 +706,7 @@ class DashboardScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor, // Dinamik Kart Rengi
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 5))],
                 ),
@@ -656,7 +715,7 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(bottom: 24.0),
-                      child: Text("Bugünkü Hedefler", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18)),
+                      child: Text("Bugünkü Hedefler", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textColor)),
                     ),
                     
                     Row(
@@ -664,14 +723,14 @@ class DashboardScreen extends StatelessWidget {
                         Expanded(
                           child: _buildGoalCircle(
                             '$dailySolved',     
-                            '$dailyQuestionGoal Soru', // Dinamik Soru Hedefi
+                            '$dailyQuestionGoal Soru', 
                             Colors.teal,
                             dailyQuestionGoal > 0 
                                 ? (dailySolved / dailyQuestionGoal).clamp(0.0, 1.0) 
                                 : 0.0 
                           )
                         ),
-                        Container(width: 1, height: 60, color: Colors.blueGrey.shade100),
+                        Container(width: 1, height: 60, color: Colors.grey.withOpacity(0.2)),
                         Expanded(
                           child: _buildGoalCircle(
                             '$dailyMinutes',    
@@ -752,8 +811,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           
-          // 🔥 GENEL İLERLEME KISMI KALDIRILDI
-          // Sadece boşluk bırakıyoruz ki scroll yapınca en alt rahat görünsün
           const SizedBox(height: 100),
         ],
       ),

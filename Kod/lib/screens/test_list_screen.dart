@@ -1,9 +1,10 @@
 // lib/screens/test_list_screen.dart
+
 import 'dart:convert'; // JSON okumak için lazım
 import 'package:flutter/material.dart';
 import '../models/question_model.dart';
 import 'quiz_screen.dart';
-import 'result_screen.dart'; // 🔥 ResultScreen'e gideceğimiz için lazım
+import 'result_screen.dart'; 
 import '../services/quiz_service.dart';
 
 class TestListScreen extends StatefulWidget {
@@ -47,53 +48,88 @@ class _TestListScreenState extends State<TestListScreen> {
   @override
   Widget build(BuildContext context) {
     String cleanTitle = widget.topic.replaceAll(RegExp(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ ]'), '').trim();
+    
+    // 1. Tema Kontrolü
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // 2. Renk Tanımları
+    // Arkaplan: Koyu modda Siyah, Açık modda Mavi tonu
+    final Color scaffoldBackgroundColor = isDarkMode ? Colors.black : const Color(0xFFE3F2FD);
+    
+    // AppBar Yazı Rengi: Koyu modda Beyaz, Açık modda Siyah
+    final Color appBarTextColor = isDarkMode ? Colors.white : Colors.black87;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD),
+      backgroundColor: scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text("$cleanTitle Testleri"),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        iconTheme: IconThemeData(color: isDarkMode ? Colors.white : Colors.black87),
+        titleTextStyle: TextStyle(
+          color: appBarTextColor, 
+          fontSize: 20, 
+          fontWeight: FontWeight.bold
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _buildSectionHeader("Kolay Seviye", Colors.green),
-          _buildTestGrid(count: 8, startNumber: 1, color: Colors.green),
-          _buildDivider(),
-          _buildSectionHeader("Orta Seviye", Colors.orange),
-          _buildTestGrid(count: 8, startNumber: 9, color: Colors.orange),
-          _buildDivider(),
-          _buildSectionHeader("Zor Seviye", Colors.red),
-          _buildTestGrid(count: 8, startNumber: 17, color: Colors.red),
+          _buildSectionHeader("Kolay Seviye", Colors.green, isDarkMode),
+          _buildTestGrid(count: 8, startNumber: 1, color: Colors.green, isDarkMode: isDarkMode),
+          
+          _buildDivider(isDarkMode),
+          
+          _buildSectionHeader("Orta Seviye", Colors.orange, isDarkMode),
+          _buildTestGrid(count: 8, startNumber: 9, color: Colors.orange, isDarkMode: isDarkMode),
+          
+          _buildDivider(isDarkMode),
+          
+          _buildSectionHeader("Zor Seviye", Colors.red, isDarkMode),
+          _buildTestGrid(count: 8, startNumber: 17, color: Colors.red, isDarkMode: isDarkMode),
+          
           const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24.0),
-      child: Divider(color: Colors.grey.withOpacity(0.3), thickness: 1),
+      child: Divider(
+        color: isDarkMode ? Colors.white24 : Colors.grey.withOpacity(0.3), 
+        thickness: 1
+      ),
     );
   }
 
-  Widget _buildSectionHeader(String title, Color color) {
+  Widget _buildSectionHeader(String title, Color color, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
         children: [
           Icon(Icons.bar_chart_rounded, color: color),
           const SizedBox(width: 8),
-          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          Text(
+            title, 
+            style: TextStyle(
+              fontSize: 18, 
+              fontWeight: FontWeight.bold, 
+              color: color // Başlık rengi seviye rengiyle aynı kalsın (okunabilir)
+            )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTestGrid({required int count, required int startNumber, required Color color}) {
+  Widget _buildTestGrid({
+    required int count, 
+    required int startNumber, 
+    required Color color, 
+    required bool isDarkMode
+  }) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -107,6 +143,30 @@ class _TestListScreenState extends State<TestListScreen> {
       itemBuilder: (context, index) {
         int testNumber = startNumber + index;
         bool isCompleted = _completedTestNumbers.contains(testNumber);
+
+        // -- KUTU RENKLERİ --
+        Color boxColor;
+        Color borderColor;
+        
+        if (isCompleted) {
+          // Tamamlanmışsa: Koyu modda koyu yeşil, açık modda açık yeşil
+          boxColor = isDarkMode ? Colors.green.shade900.withOpacity(0.3) : Colors.green.shade50;
+          borderColor = Colors.green;
+        } else {
+          // Tamamlanmamışsa: Koyu modda Koyu Gri (Surface), Açık modda Beyaz
+          boxColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+          borderColor = isDarkMode ? Colors.white12 : color.withOpacity(0.3);
+        }
+
+        // -- YAZI RENKLERİ --
+        Color numberColor = isCompleted ? Colors.green : color;
+        
+        Color labelColor; 
+        if (isCompleted) {
+          labelColor = isDarkMode ? Colors.greenAccent : Colors.green.shade700;
+        } else {
+          labelColor = isDarkMode ? Colors.grey.shade400 : Colors.grey[600]!;
+        }
 
         return Material(
           color: Colors.transparent,
@@ -122,14 +182,18 @@ class _TestListScreenState extends State<TestListScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
-                color: isCompleted ? Colors.green.shade50 : Colors.white,
+                color: boxColor, // Dinamik Kutu Rengi
                 border: Border.all(
-                  color: isCompleted ? Colors.green : color.withOpacity(0.3),
+                  color: borderColor, // Dinamik Kenarlık
                   width: 2
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05), 
+                    blurRadius: 4, 
+                    offset: const Offset(0, 2)
+                  )
                 ]
               ),
               child: Column(
@@ -140,13 +204,13 @@ class _TestListScreenState extends State<TestListScreen> {
                   else
                     Text(
                       "$testNumber", 
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: numberColor)
                     ),
                   Text(
                     isCompleted ? "Bitti" : "Test", 
                     style: TextStyle(
                       fontSize: 10, 
-                      color: isCompleted ? Colors.green.shade700 : Colors.grey[600],
+                      color: labelColor,
                       fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal
                     )
                   ),
@@ -177,24 +241,35 @@ class _TestListScreenState extends State<TestListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Test $testNumber Tamamlandı ✅"),
-        content: const Text("Ne yapmak istersin?"),
+        // Koyu mod uyumlu Dialog
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          "Test $testNumber Tamamlandı ✅",
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black
+          ),
+        ),
+        content: Text(
+          "Ne yapmak istersin?",
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87
+          ),
+        ),
         actions: [
-          // 🔥 1. SEÇENEK: SONUCU İNCELE (ResultScreen'e gider)
+          // 1. SEÇENEK: SONUCU İNCELE
           TextButton.icon(
             icon: const Icon(Icons.receipt_long, color: Colors.blue),
             label: const Text("Cevapları İncele"),
             onPressed: () {
               Navigator.pop(context); 
-              // Soruları ve cevapları yükleyip ResultScreen'e giden fonksiyonu çağır
               _navigateToReview(testNumber);
             },
           ),
           
-          // 🔥 2. SEÇENEK: BAŞTAN BAŞLA
+          // 2. SEÇENEK: BAŞTAN BAŞLA
           ElevatedButton.icon(
-            icon: const Icon(Icons.refresh),
-            label: const Text("Baştan Çöz"),
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            label: const Text("Baştan Çöz", style: TextStyle(color: Colors.white)),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () {
               Navigator.pop(context); 
@@ -206,24 +281,19 @@ class _TestListScreenState extends State<TestListScreen> {
     );
   }
 
-  // 🔥 YENİ VE ÖNEMLİ: GEÇMİŞ TESTİ İNCELEMEK İÇİN YÜKLEME YAPAN FONKSİYON
   Future<void> _navigateToReview(int testNumber) async {
-    // Yükleniyor göster
     showDialog(context: context, barrierDismissible: false, builder: (c) => const Center(child: CircularProgressIndicator()));
 
     try {
-      // 1. Veritabanından kayıtlı sonucu çek
       Map<String, dynamic>? result = await QuizService.getQuizResult(widget.topic, testNumber);
       if (result == null || result['user_answers'] == null) {
-        if (mounted) Navigator.pop(context); // Loading kapat
+        if (mounted) Navigator.pop(context); 
         return;
       }
 
-      // 2. 'user_answers' listesini düzelt (JSON'dan List<int?>'e çevir)
       List<dynamic> rawList = result['user_answers'];
       List<int?> userAnswers = rawList.map((e) => e as int?).toList();
 
-      // 3. Soruları JSON dosyasından yükle (Aynı QuizScreen'deki mantık)
       String jsonFileName = "";
       String t = widget.topic;
       if (t.contains("Anatomi")) jsonFileName = "anatomi.json";
@@ -238,13 +308,10 @@ class _TestListScreenState extends State<TestListScreen> {
       List<dynamic> jsonList = json.decode(data);
       List<Question> allQuestions = jsonList.map((x) => Question.fromJson(x)).toList();
       
-      // Sadece o testin sorularını al
       List<Question> testQuestions = allQuestions.where((q) => q.testNo == testNumber).toList();
 
-      // Loading kapat
       if (mounted) Navigator.pop(context);
 
-      // 4. ResultScreen'e git
       if (mounted) {
         Navigator.push(
           context,
@@ -264,14 +331,8 @@ class _TestListScreenState extends State<TestListScreen> {
       }
 
     } catch (e) {
-      if (mounted) Navigator.pop(context); // Hata olursa loading kapat
+      if (mounted) Navigator.pop(context);
       debugPrint("İnceleme hatası: $e");
     }
-  }
-
-  // Eski özet fonksiyonunu silebiliriz veya 'Puanımı Gör' için tutabiliriz. 
-  // Ama yukarıdaki 'Cevapları İncele' çok daha işlevsel.
-  Future<void> _showScoreSummary(int testNumber) async {
-    // ... (Eski kod burada kalabilir ama _showChoiceDialog artık bunu kullanmıyor)
   }
 }
