@@ -1,6 +1,7 @@
 // lib/screens/home_screen.dart
 
 import 'dart:async';
+import 'dart:ui'; // 🔥 CAM EFEKTİ İÇİN EKLENDİ
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -86,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
             setState(() {
               _dailyGoalCelebrated = data['isDailyGoalCelebrated'] ?? false;
               
-              
               if (data.containsKey('targetBranch')) _targetBranch = data['targetBranch'];
               if (data.containsKey('dailyGoalMinutes')) _dailyGoal = (data['dailyGoalMinutes'] as num).toInt();
               if (data.containsKey('dailyQuestionGoal')) {
@@ -108,19 +108,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 🔥 YENİ: Sadece çağrıldığında kontrol edip patlatan fonksiyon
   void _checkAndCelebrate() {
-    // Hedefler tuttu mu?
     bool isQuestionGoalMet = _dailySolved >= _dailyQuestionGoal;
     bool isTimeGoalMet = _dailyMinutes >= _dailyGoal;
 
-    // İkisi de tamam ve henüz kutlamadık mı?
     if (isQuestionGoalMet && isTimeGoalMet && !_dailyGoalCelebrated) {
-      
-      _confettiController.play(); // 🎉 PATLAT!
+      _confettiController.play(); 
 
       setState(() {
-        _dailyGoalCelebrated = true; // Kilidi vur
+        _dailyGoalCelebrated = true; 
       });
 
       User? user = FirebaseAuth.instance.currentUser;
@@ -154,7 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // --- YARDIMCI: MISTAKE MAP -> QUESTION OBJECT DÖNÜŞÜMÜ ---
   List<Question> _convertMistakesToQuestions(List<Map<String, dynamic>> mistakes) {
     return mistakes.map((m) {
       return Question(
@@ -173,8 +168,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showTopicSelection(BuildContext context) {
     // Tema kontrolü ve dinamik renkler
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color backgroundColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
-    final Color titleColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    
+    // --- PREMIUM DARK PALETİ ---
+    final Color backgroundColor = isDarkMode ? const Color(0xFF161B22) : Colors.white; // Antrasit
+    final Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B); // Kırık Beyaz
     final Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
 
     showModalBottomSheet(
@@ -183,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: backgroundColor, // Arka plan rengini dinamik yaptık
+          color: backgroundColor, // Dinamik arka plan
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
@@ -197,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 40, height: 4, 
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300, 
+                    color: isDarkMode ? Colors.white24 : Colors.grey.shade300, 
                     borderRadius: BorderRadius.circular(2)
                   )
                 ),
@@ -235,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context, 
                           MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Temel Bilimler", topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"], themeColor: Colors.orange))
-                        ).then((_) => _checkAndCelebrate()); // <--- DÖNÜNCE KONTROL ET
+                        ).then((_) => _checkAndCelebrate()); 
                       }
                     ),
                   ),
@@ -252,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                          Navigator.push(
                           context, 
                           MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Klinik Bilimler", topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"], themeColor: Colors.blue))
-                        ).then((_) => _checkAndCelebrate()); // <--- DÖNÜNCE KONTROL ET
+                        ).then((_) => _checkAndCelebrate()); 
                       }
                     ),
                   ),
@@ -290,8 +287,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Tema Ayarları
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Color bgColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
-    Color titleColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
+    
+    // --- PREMIUM DARK RENKLER ---
+    Color bgColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
+    Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
     Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
 
     showModalBottomSheet(
@@ -313,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   width: 40, height: 4, 
                   margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))
+                  decoration: BoxDecoration(color: isDarkMode ? Colors.white24 : Colors.grey.shade300, borderRadius: BorderRadius.circular(2))
                 ),
               ),
               Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor)),
@@ -338,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         List<Map<String, dynamic>> shuffled = List.from(mistakes)..shuffle();
                         List<Question> questions = _convertMistakesToQuestions(shuffled);
                         Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı")))
-                        .then((_) => _checkAndCelebrate()); // 🔥 EKLENDİ
+                        .then((_) => _checkAndCelebrate()); 
                       }
                     ),
                   ),
@@ -390,9 +389,14 @@ class _HomeScreenState extends State<HomeScreen> {
       grouped[sub]!.add(m);
     }
 
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // Liste arka planı
+    Color bgColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
+    Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white, // Burası liste içi, beyaz kalabilir veya koyu yapılabilir
+      backgroundColor: bgColor, 
       isScrollControlled: true, 
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) {
@@ -403,18 +407,18 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Hangi Dersi Tekrar Edeceksin?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text("Hangi Dersi Tekrar Edeceksin?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 16),
                 Expanded(
                   child: ListView.separated(
                     itemCount: grouped.keys.length,
-                    separatorBuilder: (c, i) => const Divider(),
+                    separatorBuilder: (c, i) => Divider(color: isDarkMode ? Colors.white12 : Colors.grey.shade300),
                     itemBuilder: (context, index) {
                       String subject = grouped.keys.elementAt(index);
                       int count = grouped[subject]!.length;
                       return ListTile(
                         leading: CircleAvatar(backgroundColor: Colors.teal.shade50, child: Icon(Icons.book, color: Colors.teal)),
-                        title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        title: Text(subject, style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(12)),
@@ -428,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             questions: questions,
                             topic: "$subject Tekrarı",
                           )))
-                          .then((_) => _checkAndCelebrate()); // 🔥 EKLENDİ
+                          .then((_) => _checkAndCelebrate()); 
                         },
                       );
                     },
@@ -442,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- ORTAK WIDGET: MODERN KART ---
+  // --- KART YAPISI (PREMIUM DARK ENTEGRE EDİLDİ) ---
   Widget _buildModernCard(BuildContext context, {
     required String title, 
     required IconData icon, 
@@ -452,22 +456,26 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isWide = false,
     VoidCallback? onTapOverride
   }) {
-    // Koyu mod kontrolü
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
-    Color textColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
-    Color cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
-    Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey;
+    // --- PREMIUM KART RENKLERİ ---
+    Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+    Color cardColor = isDarkMode ? const Color(0xFF161B22) : Colors.white; // Antrasit Kart
+    Color subtitleColor = isDarkMode ? Colors.white60 : Colors.blueGrey;
+    Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1); // İnce parlak kenar
 
     return Container(
       height: isWide ? 100 : 160,
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDarkMode ? Colors.white10 : Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: borderColor),
         boxShadow: [
-          BoxShadow(color: color.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 5)),
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 2, offset: const Offset(0, 1)),
+          BoxShadow(
+            color: isDarkMode ? Colors.black.withOpacity(0.3) : color.withOpacity(0.08), 
+            blurRadius: 8, 
+            offset: const Offset(0, 5)
+          ),
         ]
       ),
       child: Material(
@@ -533,13 +541,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Tema Durumunu Kontrol Et
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // 2. Renk Tanımlamaları
-    Color scaffoldColor = isDarkMode ? Colors.black : const Color.fromARGB(255, 224, 247, 250);
-    Color navBarColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
-    Color navShadowColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+    // --- ARKA PLAN (Glass Effect için Gradient) ---
+    Widget background = isDarkMode 
+      ? Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0A0E14), // Derin Uzay Siyahı
+                Color(0xFF161B22), // Antrasit
+              ]
+            )
+          ),
+        )
+      : Container(color: const Color(0xFFF5F9FF));
+
+    // Nav bar rengi (Karanlık modda şeffaf)
+    Color navBarColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.8) : Colors.white;
 
     List<Widget> currentPages = [
       DashboardScreen(
@@ -561,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
         body: Center(
           child: Text(
             "Analiz Ekranı Hazırlanıyor...",
-            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black54),
+            style: TextStyle(color: isDarkMode ? const Color(0xFFE6EDF3) : Colors.black54),
           )
         )
       ),
@@ -569,10 +590,11 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: scaffoldColor,
+      extendBody: true, // Glass Nav Bar için gövdeyi aşağı uzatıyoruz
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
+          background, // 🔥 ARKA PLAN GRADIENT (ZEMİN)
           IndexedStack(
             index: _selectedIndex,
             children: currentPages,
@@ -589,33 +611,37 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: navBarColor, 
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          boxShadow: [
-            BoxShadow(
-              color: navShadowColor, 
-              blurRadius: 15, 
-              offset: const Offset(0, -5),
+      bottomNavigationBar: ClipRRect( // 🔥 NAV BAR GLASS EFFECT
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // BLUR
+          child: Container(
+            decoration: BoxDecoration(
+              color: navBarColor, 
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDarkMode ? 0.4 : 0.05), 
+                  blurRadius: 15, 
+                  offset: const Offset(0, -5),
+                ),
+              ],
+              border: isDarkMode ? Border(top: BorderSide(color: Colors.white.withOpacity(0.1))) : null,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          child: NavigationBar(
-            height: 80,
-            backgroundColor: navBarColor, 
-            elevation: 0,
-            indicatorColor: Colors.transparent,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
-            destinations: [
-              _buildNavDest(Icons.home_outlined, Icons.home, 0),
-              _buildNavDest(Icons.book_outlined, Icons.book, 1),
-              _buildNavDest(Icons.bar_chart_outlined, Icons.bar_chart, 2),
-              _buildNavDest(Icons.person_outline, Icons.person, 3),
-            ],
+            child: NavigationBar(
+              height: 80,
+              backgroundColor: Colors.transparent, // Transparan
+              elevation: 0,
+              indicatorColor: Colors.transparent,
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
+              destinations: [
+                _buildNavDest(Icons.home_outlined, Icons.home, 0),
+                _buildNavDest(Icons.book_outlined, Icons.book, 1),
+                _buildNavDest(Icons.bar_chart_outlined, Icons.bar_chart, 2),
+                _buildNavDest(Icons.person_outline, Icons.person, 3),
+              ],
+            ),
           ),
         ),
       ),
@@ -624,20 +650,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   NavigationDestination _buildNavDest(IconData icon, IconData activeIcon, int idx) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final inactiveColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+    
+    final inactiveColor = isDarkMode ? Colors.grey.shade600 : Colors.blueGrey.shade400;
+    final activeColor = isDarkMode ? const Color(0xFF448AFF) : const Color(0xFF0D9488);
 
     return NavigationDestination(
       icon: Icon(icon, color: inactiveColor, size: 28),
       selectedIcon: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.home_filled, color: Color(0xFF0D9488), size: 28),
+          Icon(activeIcon, color: activeColor, size: 28),
           const SizedBox(height: 4),
           Container(
             width: 4, 
             height: 4, 
-            decoration: const BoxDecoration(
-              color: Color(0xFF0D9488), 
+            decoration: BoxDecoration(
+              color: activeColor, 
               shape: BoxShape.circle
             )
           ),
@@ -701,83 +729,89 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tema kontrolü
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Color cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
-    Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    
+    // --- DASHBOARD PREMIUM RENKLER ---
+    Color cardColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.7) : Colors.white; // Hafif Saydam
+    Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
+    
+    // 🔥 HEADER GLASS EFEKTİ İÇİN DÜZENLEME
+    Color headerColor = isDarkMode ? const Color(0xFF1565C0).withOpacity(0.6) : const Color(0xFF0D47A1);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          // --- HEADER ---
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFF0D47A1), 
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 80), 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // --- 🔥 CAM EFEKTLİ HEADER ---
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
+            child: BackdropFilter(
+              filter: isDarkMode ? ImageFilter.blur(sigmaX: 10, sigmaY: 10) : ImageFilter.blur(sigmaX: 0, sigmaY: 0), // Sadece dark mode'da blur
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: headerColor, 
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
+                  border: isDarkMode ? Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))) : null // İnce alt çizgi
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 80), 
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${_getGreeting()}, Doktor', 
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Hedef: $targetBranch Uzmanlığı', 
-                                maxLines: 2, 
-                                overflow: TextOverflow.ellipsis, 
-                                style: GoogleFonts.inter(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold) 
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${_getGreeting()}, Doktor', 
+                                    style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Hedef: $targetBranch Uzmanlığı', 
+                                    maxLines: 2, 
+                                    overflow: TextOverflow.ellipsis, 
+                                    style: GoogleFonts.inter(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold) 
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                              child: const Icon(Icons.notifications_none, color: Colors.white),
+                            )
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(16)),
-                          child: const Icon(Icons.notifications_none, color: Colors.white),
-                        )
+                        const SizedBox(height: 32),
+                        Row(
+                          children: [
+                            _buildMiniStat(Icons.check_circle_outline, '$totalSolved', 'Toplam Soru', Colors.orange.shade400, isDarkMode),
+                            const SizedBox(width: 16),
+                            _buildMiniStat(Icons.track_changes, _calculateSuccessRate(), 'Başarı Oranı', Colors.green.shade400, isDarkMode),
+                          ],
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        _buildMiniStat(Icons.check_circle_outline, '$totalSolved', 'Toplam Soru', Colors.orange.shade400),
-                        const SizedBox(width: 16),
-                        _buildMiniStat(Icons.track_changes, _calculateSuccessRate(), 'Başarı Oranı', Colors.green.shade400),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
 
-          // --- HEDEF KARTLARI ---
+          // --- HEDEF KARTLARI (GLASS EFFECT) ---
           Transform.translate(
             offset: const Offset(0, -40),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: cardColor, // Dinamik Kart Rengi
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 5))],
-                ),
+              child: _buildGlassCard(
+                isDark: isDarkMode,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -785,7 +819,6 @@ class DashboardScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 24.0),
                       child: Text("Bugünkü Hedefler", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textColor)),
                     ),
-                    
                     Row(
                       children: [
                         Expanded(
@@ -795,16 +828,22 @@ class DashboardScreen extends StatelessWidget {
                             Colors.teal,
                             dailyQuestionGoal > 0 
                                 ? (dailySolved / dailyQuestionGoal).clamp(0.0, 1.0) 
-                                : 0.0 
+                                : 0.0,
+                            isDarkMode
                           )
                         ),
-                        Container(width: 1, height: 60, color: Colors.grey.withOpacity(0.2)),
+                        Container(
+                          width: 1, 
+                          height: 60, 
+                          color: isDarkMode ? Colors.white10 : Colors.grey.withOpacity(0.2)
+                        ),
                         Expanded(
                           child: _buildGoalCircle(
                             '$dailyMinutes',    
                             '$dailyGoal Dakika', 
                             Colors.orange,
-                            dailyGoal > 0 ? (dailyMinutes / dailyGoal).clamp(0.0, 1.0) : 0.0 
+                            dailyGoal > 0 ? (dailyMinutes / dailyGoal).clamp(0.0, 1.0) : 0.0,
+                            isDarkMode
                           )
                         ),
                       ],
@@ -815,7 +854,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // --- BUTON YAPISI ---
+          // --- BUTON YAPISI (GLASS + GLOW) ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -827,7 +866,8 @@ class DashboardScreen extends StatelessWidget {
                         'Pratik', 
                         'Soru Çöz', 
                         Icons.play_arrow, 
-                        const Color(0xFF0D47A1),
+                        isDarkMode ? const Color(0xFF1E3A8A) : const Color(0xFF0D47A1), // Derin Mavi
+                        isDarkMode,
                         onTap: () {
                           if (onPratikTap != null) onPratikTap!();
                         }
@@ -839,7 +879,8 @@ class DashboardScreen extends StatelessWidget {
                         'Bilgi\nKartları',
                         'Tekrar Et', 
                         Icons.style,
-                       Colors.green.shade400,
+                       isDarkMode ? const Color(0xFF065F46) : Colors.green.shade400, // Derin Yeşil
+                       isDarkMode,
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -855,9 +896,10 @@ class DashboardScreen extends StatelessWidget {
                     Expanded(
                       child: _buildActionBtnVertical(
                         'Yanlışlar', 
-                        'Hatalarını Gör', 
+                        'Hataları Gör', 
                         Icons.refresh, 
-                        const Color.fromARGB(255, 205, 16, 35),
+                        isDarkMode ? const Color(0xFF7F1D1D) : const Color.fromARGB(255, 205, 16, 35), // Derin Kırmızı
+                        isDarkMode,
                         onTap: () {
                           if (onMistakesTap != null) onMistakesTap!();
                         }
@@ -870,7 +912,8 @@ class DashboardScreen extends StatelessWidget {
                   'Odak Modu (Timer)', 
                   'Pomodoro ile verimli çalış', 
                   Icons.track_changes, 
-                  Colors.deepPurple,
+                  isDarkMode ? const Color(0xFF4C1D95) : Colors.deepPurple, // Derin Mor
+                  isDarkMode,
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const FocusScreen()));
                   }
@@ -886,67 +929,140 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // --- YARDIMCI WIDGET'LAR ---
+
+  // 🔥 GLASS CARD YARDIMCISI
+  Widget _buildGlassCard({required Widget child, required bool isDark}) {
+    if (!isDark) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 5))],
+        ),
+        child: child,
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // BLUR
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22).withOpacity(0.6), // Yarı Saydam
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
   
-  Widget _buildActionBtnVertical(String title, String sub, IconData icon, Color color, {required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 160,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color, 
-          borderRadius: BorderRadius.circular(24), 
-          boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: Colors.white, size: 28)),
-            const Spacer(),
-            Text(title, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-            Text(sub, style: GoogleFonts.inter(color: Colors.white70, fontSize: 11)),
-          ],
-        ),
+  Widget _buildActionBtnVertical(String title, String sub, IconData icon, Color color, bool isDark, {required VoidCallback onTap}) {
+    // Glass Taban Rengi
+    Color baseColor = isDark ? color.withOpacity(0.2) : color;
+
+    Widget content = Container(
+      height: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: baseColor, 
+        gradient: isDark ? LinearGradient(colors: [baseColor, baseColor.withOpacity(0.4)], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+        borderRadius: BorderRadius.circular(24), 
+        border: isDark ? Border.all(color: color.withOpacity(0.5)) : null,
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? color.withOpacity(0.3) : color.withOpacity(0.3), 
+            blurRadius: isDark ? 15 : 8, 
+            offset: const Offset(0, 4)
+          )
+        ]
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: Colors.white, size: 28)),
+          const Spacer(),
+          Text(title, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(sub, style: GoogleFonts.inter(color: Colors.white70, fontSize: 10)),
+        ],
       ),
     );
+
+    if (isDark) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // Buton içi blur
+          child: GestureDetector(onTap: onTap, child: content),
+        ),
+      );
+    }
+    return GestureDetector(onTap: onTap, child: content);
   }
 
-  Widget _buildActionBtnHorizontal(String title, String sub, IconData icon, Color color, {required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: color, 
-          borderRadius: BorderRadius.circular(24), 
-          boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
-        ),
-        child: Row(
-          children: [
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(16)), child: Icon(icon, color: Colors.white, size: 32)),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                  Text(sub, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
-                ],
-              ),
+  Widget _buildActionBtnHorizontal(String title, String sub, IconData icon, Color color, bool isDark, {required VoidCallback onTap}) {
+    Color baseColor = isDark ? color.withOpacity(0.2) : color;
+
+    Widget content = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: baseColor, 
+        gradient: isDark ? LinearGradient(colors: [baseColor, baseColor.withOpacity(0.4)], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+        borderRadius: BorderRadius.circular(24), 
+        border: isDark ? Border.all(color: color.withOpacity(0.5)) : null,
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? color.withOpacity(0.3) : color.withOpacity(0.3), 
+            blurRadius: isDark ? 15 : 8, 
+            offset: const Offset(0, 4)
+          )
+        ]
+      ),
+      child: Row(
+        children: [
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(16)), child: Icon(icon, color: Colors.white, size: 32)),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(sub, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+              ],
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-          ],
-        ),
+          ),
+          const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+        ],
       ),
     );
+
+    if (isDark) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: GestureDetector(onTap: onTap, child: content),
+        ),
+      );
+    }
+    return GestureDetector(onTap: onTap, child: content);
   }
 
-  Widget _buildMiniStat(IconData icon, String val, String label, Color color) {
+  Widget _buildMiniStat(IconData icon, String val, String label, Color color, bool isDark) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.1))),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(isDark ? 0.08 : 0.1), 
+          borderRadius: BorderRadius.circular(20),
+          border: isDark ? Border.all(color: Colors.white10) : Border.all(color: Colors.white.withOpacity(0.1))
+        ),
         child: Row(
           children: [
             Icon(icon, color: color, size: 22),
@@ -966,7 +1082,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGoalCircle(String val, String sub, Color color, double progress) {
+  Widget _buildGoalCircle(String val, String sub, Color color, double progress, bool isDark) {
     return Column(
       children: [
         SizedBox(
@@ -981,7 +1097,7 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Text(sub, style: GoogleFonts.inter(color: Colors.blueGrey.shade400, fontSize: 11, fontWeight: FontWeight.w500)),
+        Text(sub, style: GoogleFonts.inter(color: isDark ? Colors.white38 : Colors.blueGrey.shade400, fontSize: 11, fontWeight: FontWeight.w500)),
       ],
     );
   }

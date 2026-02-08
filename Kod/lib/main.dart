@@ -7,7 +7,7 @@ import 'firebase_options.dart';
 
 // --- SERVİS İMPORTLARI ---
 import 'services/focus_service.dart';
-import 'services/theme_provider.dart'; // Tema sağlayıcısını ekledik
+import 'services/theme_provider.dart';
 
 // Sayfalar
 import 'screens/home_screen.dart';
@@ -15,13 +15,11 @@ import 'screens/login_page.dart';
 import 'package:dus_app_1/screens/blog_screen.dart';
 import 'package:dus_app_1/screens/quiz_screen.dart';
 
-// --- 1. ADIM: GLOBAL NAVIGATOR KEY ---
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // --- PLATFORM AYARLARI ---
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
@@ -49,7 +47,6 @@ void main() async {
     );
   }
 
-  // --- FOCUS SERVICE BAŞLATMA ---
   FocusService.instance; 
 
   runApp(const DusApp());
@@ -60,7 +57,6 @@ class DusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- LİSTENABLBUİLDER: Tema değişimini tüm uygulamada anlık tetikler ---
     return ListenableBuilder(
       listenable: ThemeProvider.instance,
       builder: (context, child) {
@@ -68,37 +64,45 @@ class DusApp extends StatelessWidget {
           navigatorKey: navigatorKey, 
           title: 'DUS Asistanı',
           debugShowCheckedModeBanner: false,
-          
-          // --- TEMA MODU SEÇİMİ ---
           themeMode: ThemeProvider.instance.themeMode,
 
-          // --- 1. AYDINLIK TEMA AYARLARI ---
+          // --- 1. PREMIUM AYDINLIK TEMA ---
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.light,
             primaryColor: const Color(0xFF0D47A1),
             scaffoldBackgroundColor: const Color(0xFFF5F9FF),
+            cardColor: Colors.white,
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(0xFF0D47A1),
               primary: const Color(0xFF0D47A1),
-              secondary: const Color(0xFF00BFA5),
-              brightness: Brightness.light,
+              surface: Colors.white,
+              onSurface: const Color(0xFF1E293B),
             ),
             inputDecorationTheme: _buildInputDecorationTheme(Brightness.light),
             elevatedButtonTheme: _buildElevatedButtonTheme(),
           ),
 
-          // --- 2. KARANLIK TEMA AYARLARI ---
+          // --- 2. PREMIUM KARANLIK TEMA (DEEP DARK) ---
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
-            primaryColor: const Color(0xFF0D47A1),
-            scaffoldBackgroundColor: const Color(0xFF121212),
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF0D47A1),
-              primary: const Color(0xFF0D47A1),
-              secondary: const Color(0xFF00BFA5),
-              brightness: Brightness.dark,
+            // Saf siyah yerine derin bir gece mavisi-antrasit tonu
+            scaffoldBackgroundColor: const Color(0xFF0A0E14),
+            primaryColor: const Color(0xFF1565C0),
+            cardColor: const Color(0xFF161B22), // GitHub Dark stili kartlar
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF448AFF), // Karanlıkta parlayan açık mavi
+              surface: Color(0xFF161B22),
+              onSurface: Color(0xFFE6EDF3), // Kırık beyaz (göz yormaz)
+              secondary: Color(0xFF00BFA5),
+              error: Color(0xFFF85149),
+            ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF0A0E14),
+              elevation: 0,
+              centerTitle: true,
+              titleTextStyle: TextStyle(color: Color(0xFFE6EDF3), fontSize: 20, fontWeight: FontWeight.bold),
             ),
             inputDecorationTheme: _buildInputDecorationTheme(Brightness.dark),
             elevatedButtonTheme: _buildElevatedButtonTheme(),
@@ -108,9 +112,7 @@ class DusApp extends StatelessWidget {
             stream: FirebaseAuth.instance.authStateChanges(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
               if (snapshot.hasData) {
                 return const HomeScreen();
@@ -123,15 +125,22 @@ class DusApp extends StatelessWidget {
     );
   }
 
-  // Ortak Tasarım Metodları (Kod tekrarını önlemek için)
   InputDecorationTheme _buildInputDecorationTheme(Brightness brightness) {
+    bool isDark = brightness == Brightness.dark;
     return InputDecorationTheme(
       filled: true,
-      fillColor: brightness == Brightness.light ? Colors.grey[100] : Colors.grey[900],
+      fillColor: isDark ? const Color(0xFF0D1117) : Colors.grey[100],
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: brightness == Brightness.light ? Colors.grey[300]! : Colors.grey[800]!)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12), 
+        borderSide: BorderSide(color: isDark ? const Color(0xFF30363D) : Colors.grey[300]!)
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12), 
+        borderSide: const BorderSide(color: Color(0xFF448AFF), width: 2)
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
     );
   }
 
@@ -143,6 +152,7 @@ class DusApp extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        elevation: 2,
       ),
     );
   }
