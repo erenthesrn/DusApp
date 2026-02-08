@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _totalCorrect = 0; 
 
   late ConfettiController _confettiController;
+  bool _dailyGoalCelebrated = false;
   StreamSubscription<DocumentSnapshot>? _userSubscription;
 
   @override
@@ -77,11 +78,15 @@ class _HomeScreenState extends State<HomeScreen> {
               'dailySolved': 0,
               'dailyMinutes': 0,
               'lastActivityDate': today,
+              'isDailyGoalCelebrated': false, 
             });
           }
 
           if (mounted) {
             setState(() {
+              _dailyGoalCelebrated = data['isDailyGoalCelebrated'] ?? false;
+              
+              
               if (data.containsKey('targetBranch')) _targetBranch = data['targetBranch'];
               if (data.containsKey('dailyGoalMinutes')) _dailyGoal = (data['dailyGoalMinutes'] as num).toInt();
               if (data.containsKey('dailyQuestionGoal')) {
@@ -100,6 +105,52 @@ class _HomeScreenState extends State<HomeScreen> {
       }, onError: (e) {
         debugPrint("Veri dinleme hatası: $e");
       });
+    }
+  }
+
+  // 🔥 YENİ: Sadece çağrıldığında kontrol edip patlatan fonksiyon
+  void _checkAndCelebrate() {
+    // Hedefler tuttu mu?
+    bool isQuestionGoalMet = _dailySolved >= _dailyQuestionGoal;
+    bool isTimeGoalMet = _dailyMinutes >= _dailyGoal;
+
+    // İkisi de tamam ve henüz kutlamadık mı?
+    if (isQuestionGoalMet && isTimeGoalMet && !_dailyGoalCelebrated) {
+      
+      _confettiController.play(); // 🎉 PATLAT!
+
+      setState(() {
+        _dailyGoalCelebrated = true; // Kilidi vur
+      });
+
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null){
+        FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'isDailyGoalCelebrated': true
+      });
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Center(child: Text("GÜNÜN ŞAMPİYONU! 🏆", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange))),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Text("Harikasın! Hem soru hedefini hem de süre hedefini tamamladın.", textAlign: TextAlign.center),
+              SizedBox(height: 10),
+              Text("Zinciri kırmadın! ⛓️🔥", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Devam Et", style: TextStyle(fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
+      );
     }
   }
 
@@ -178,7 +229,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: "Temel\nBilimler", 
                       icon: Icons.biotech_outlined, 
                       color: Colors.orange, 
-                      topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"]
+                      topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"],
+                      onTapOverride: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Temel Bilimler", topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"], themeColor: Colors.orange))
+                        ).then((_) => _checkAndCelebrate()); // <--- DÖNÜNCE KONTROL ET
+                      }
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -188,7 +246,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: "Klinik\nBilimler", 
                       icon: Icons.health_and_safety_outlined, 
                       color: Colors.blue, 
-                      topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"]
+                      topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"],
+                      onTapOverride: () {
+                         Navigator.pop(context);
+                         Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Klinik Bilimler", topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"], themeColor: Colors.blue))
+                        ).then((_) => _checkAndCelebrate()); // <--- DÖNÜNCE KONTROL ET
+                      }
                     ),
                   ),
                 ],
@@ -205,7 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 isWide: true,
                 onTapOverride: () {
                    Navigator.pop(context);
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen(isTrial: true, fixedDuration: 150)));
+                   Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen(isTrial: true, fixedDuration: 150)))
+                   .then((_) => _checkAndCelebrate());
                 }
               ),
             ],
@@ -271,7 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                         List<Map<String, dynamic>> shuffled = List.from(mistakes)..shuffle();
                         List<Question> questions = _convertMistakesToQuestions(shuffled);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı")));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı")))
+                        .then((_) => _checkAndCelebrate()); // 🔥 EKLENDİ
                       }
                     ),
                   ),
@@ -360,7 +427,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             isTrial: true,
                             questions: questions,
                             topic: "$subject Tekrarı",
-                          )));
+                          )))
+                          .then((_) => _checkAndCelebrate()); // 🔥 EKLENDİ
                         },
                       );
                     },
