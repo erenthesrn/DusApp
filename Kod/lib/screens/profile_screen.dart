@@ -217,7 +217,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               
               const Divider(),
 
-              // 2. Seçenek: Uzmanlık Alanı
+              // 2. Seçenek: Günlük Soru Hedefi (YENİ EKLENDİ)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.quiz, color: Colors.purple),
+                ),
+                title: const Text("Günlük Soru Hedefi"),
+                subtitle: const Text("Çözülecek soru sayısını belirle"),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                onTap: () {
+                  Navigator.pop(context); // Menüyü kapat
+                  _changeDailyQuestionGoal(); // Soru dialogunu aç
+                },
+              ),
+
+              const Divider(),
+
+              // 3. Seçenek: Uzmanlık Alanı
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -288,6 +306,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Günlük hedef $minutes dk olarak güncellendi! 🔥"))
+                      );
+                    }
+                  }
+                }
+              }
+            },
+            child: const Text("Kaydet"),
+          ),
+        ],
+      ),
+    );
+  }
+  // --- 6.5. GÜNLÜK SORU HEDEFİ GİRME FONKSİYONU (YENİ) ---
+  void _changeDailyQuestionGoal() {
+    TextEditingController questionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Soru Hedefi 📝"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Günde kaç soru çözmeyi hedefliyorsun?"),
+            const SizedBox(height: 15),
+            TextField(
+              controller: questionController,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: "Soru Sayısı",
+                hintText: "Örn: 50",
+                suffixText: "adet",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("İptal")
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (questionController.text.isNotEmpty) {
+                int? questions = int.tryParse(questionController.text);
+                
+                if (questions != null && questions > 0) {
+                  // Firebase'e kaydet
+                  User? user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                      'dailyQuestionGoal': questions
+                    });
+                    
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Günlük hedef $questions soru olarak güncellendi! 🚀"))
                       );
                     }
                   }

@@ -84,8 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
             setState(() {
               if (data.containsKey('targetBranch')) _targetBranch = data['targetBranch'];
               if (data.containsKey('dailyGoalMinutes')) _dailyGoal = (data['dailyGoalMinutes'] as num).toInt();
-              if (data.containsKey('dailyGoalQuestions')) {
-                _dailyQuestionGoal = (data['dailyGoalQuestions'] as num).toInt();
+              if (data.containsKey('dailyQuestionGoal')) {
+                _dailyQuestionGoal = (data['dailyQuestionGoal'] as num).toInt();
               }
               if (data.containsKey('showSuccessRate')) _showSuccessRate = data['showSuccessRate'];
 

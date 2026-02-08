@@ -74,7 +74,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
           'status': _selectedStatus,
           'dailyGoalMinutes': _selectedDailyGoal,   // Süre Hedefi
-          'dailyGoalQuestions': questionGoal,       // 🔥 YENİ: Soru Hedefi
+          'dailyQuestionGoal': questionGoal,       // 🔥 YENİ: Soru Hedefi
           'targetBranch': _selectedBranch,
           'isOnboardingComplete': true, // Artık bu ekranı görmesin
         });
