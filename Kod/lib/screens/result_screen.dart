@@ -42,7 +42,7 @@ class _ResultScreenState extends State<ResultScreen> {
   void initState() {
     super.initState();
     
-    // Rozet ve İstatistik işlemleri (MANTIK KORUNDU)
+    // Rozet ve İstatistik işlemleri
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AchievementService.instance.incrementCategory(
         context, 
@@ -60,7 +60,7 @@ class _ResultScreenState extends State<ResultScreen> {
     });
   }
 
-  // 🔥 MEVCUT FONKSİYON KORUNDU
+  // 🔥 İSTATİSTİK GÜNCELLEME FONKSİYONU
   Future<void> _updateStreakAndStats() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -118,7 +118,7 @@ class _ResultScreenState extends State<ResultScreen> {
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
     Color subTextColor = isDarkMode ? Colors.white60 : Colors.black54;
 
-    // Arka Plan Gradient (Diğer sayfalarla uyumlu)
+    // Arka Plan Gradient
     Widget background = isDarkMode 
       ? Container(
           decoration: const BoxDecoration(
@@ -135,7 +135,8 @@ class _ResultScreenState extends State<ResultScreen> {
       : Container(color: const Color(0xFFF5F9FF));
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // Arka plan Stack'ten gelecek
+      backgroundColor: Colors.transparent, 
+      extendBodyBehindAppBar: true, // ✅ GÖVDE APPBAR ARKASINA TAŞAR (Sorun Çözümü)
       appBar: AppBar(
         title: Text("Sınav Sonucu 📝", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor)),
         backgroundColor: Colors.transparent,
@@ -146,161 +147,162 @@ class _ResultScreenState extends State<ResultScreen> {
       ),
       body: Stack(
         children: [
-          background, // 1. Katman: Zemin
+          background, // 1. Katman: Zemin (Ekranı tam kaplar)
 
           // 2. Katman: İçerik
-          Column(
-            children: [
-              // --- ÖZET KARTI (GLASS EFFECT) ---
-              _buildGlassCard(
-                isDark: isDarkMode,
-                margin: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    // Skor Halkası veya Metni
-                    Text(
-                      "${widget.score}", 
-                      // 🔥 HATA DÜZELTİLDİ: robotoMono kullanıldı
-                      style: GoogleFonts.robotoMono( 
-                        fontSize: 64, 
-                        fontWeight: FontWeight.bold, 
-                        color: widget.score >= 70 
-                          ? (isDarkMode ? Colors.greenAccent : Colors.green) 
-                          : (isDarkMode ? Colors.orangeAccent : Colors.orange)
+          SafeArea( // ✅ İÇERİĞİ KORUR
+            child: Column(
+              children: [
+                // --- ÖZET KARTI ---
+                _buildGlassCard(
+                  isDark: isDarkMode,
+                  margin: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Skor
+                      Text(
+                        "${widget.score}", 
+                        style: GoogleFonts.robotoMono( 
+                          fontSize: 64, 
+                          fontWeight: FontWeight.bold, 
+                          color: widget.score >= 70 
+                            ? (isDarkMode ? Colors.greenAccent : Colors.green) 
+                            : (isDarkMode ? Colors.orangeAccent : Colors.orange)
+                        ),
                       ),
-                    ),
-                    Text(
-                      "PUAN", 
-                      style: GoogleFonts.inter(
-                        fontSize: 14, 
-                        fontWeight: FontWeight.bold, 
-                        color: subTextColor,
-                        letterSpacing: 2
+                      Text(
+                        "PUAN", 
+                        style: GoogleFonts.inter(
+                          fontSize: 14, 
+                          fontWeight: FontWeight.bold, 
+                          color: subTextColor,
+                          letterSpacing: 2
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // İstatistikler Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatItem("Doğru", widget.correctCount, Colors.green, isDarkMode),
-                        _buildStatItem("Yanlış", widget.wrongCount, Colors.red, isDarkMode),
-                        _buildStatItem("Boş", widget.emptyCount, Colors.grey, isDarkMode),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Cevap Anahtarı (İncelemek için tıkla)", 
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: subTextColor, fontSize: 14)
+                      const SizedBox(height: 24),
+                      
+                      // İstatistikler Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatItem("Doğru", widget.correctCount, Colors.green, isDarkMode),
+                          _buildStatItem("Yanlış", widget.wrongCount, Colors.red, isDarkMode),
+                          _buildStatItem("Boş", widget.emptyCount, Colors.grey, isDarkMode),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
 
-              // --- SORU NUMARALARI GRID ---
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Cevap Anahtarı (İncelemek için tıkla)", 
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: subTextColor, fontSize: 14)
+                    ),
                   ),
-                  itemCount: widget.questions.length, 
-                  itemBuilder: (context, index) {
-                    int? userAnswer = widget.userAnswers[index]; 
-                    int correctAnswer = widget.questions[index].answerIndex;
-                    
-                    Color bgColor;
-                    Color txtColor = Colors.white;
-                    Border? border;
+                ),
 
-                    // Grid Renk Mantığı (Premium)
-                    if (userAnswer == null) {
-                      // Boş
-                      bgColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade300; 
-                      txtColor = isDarkMode ? Colors.white38 : Colors.black54;
-                    } else if (userAnswer == correctAnswer) {
-                      // Doğru
-                      bgColor = isDarkMode ? Colors.green.withOpacity(0.2) : Colors.green; 
-                      border = isDarkMode ? Border.all(color: Colors.greenAccent.withOpacity(0.5)) : null;
-                      txtColor = isDarkMode ? Colors.greenAccent : Colors.white;
-                    } else {
-                      // Yanlış
-                      bgColor = isDarkMode ? Colors.red.withOpacity(0.2) : Colors.red; 
-                      border = isDarkMode ? Border.all(color: Colors.redAccent.withOpacity(0.5)) : null;
-                      txtColor = isDarkMode ? Colors.redAccent : Colors.white;
-                    }
+                // --- SORU NUMARALARI GRID ---
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: widget.questions.length, 
+                    itemBuilder: (context, index) {
+                      int? userAnswer = widget.userAnswers[index]; 
+                      int correctAnswer = widget.questions[index].answerIndex;
+                      
+                      Color bgColor;
+                      Color txtColor = Colors.white;
+                      Border? border;
 
-                    return InkWell(
-                      onTap: () {
-                        // İnceleme moduna git
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QuizScreen(
-                              isTrial: false,
-                              topic: widget.topic,
-                              testNo: widget.testNo,
-                              questions: widget.questions,
-                              userAnswers: widget.userAnswers,
-                              initialIndex: index,
-                              isReviewMode: true,
+                      // Grid Renk Mantığı
+                      if (userAnswer == null) {
+                        // Boş
+                        bgColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade300; 
+                        txtColor = isDarkMode ? Colors.white38 : Colors.black54;
+                      } else if (userAnswer == correctAnswer) {
+                        // Doğru
+                        bgColor = isDarkMode ? Colors.green.withOpacity(0.2) : Colors.green; 
+                        border = isDarkMode ? Border.all(color: Colors.greenAccent.withOpacity(0.5)) : null;
+                        txtColor = isDarkMode ? Colors.greenAccent : Colors.white;
+                      } else {
+                        // Yanlış
+                        bgColor = isDarkMode ? Colors.red.withOpacity(0.2) : Colors.red; 
+                        border = isDarkMode ? Border.all(color: Colors.redAccent.withOpacity(0.5)) : null;
+                        txtColor = isDarkMode ? Colors.redAccent : Colors.white;
+                      }
+
+                      return InkWell(
+                        onTap: () {
+                          // İnceleme moduna git
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuizScreen(
+                                isTrial: false,
+                                topic: widget.topic,
+                                testNo: widget.testNo,
+                                questions: widget.questions,
+                                userAnswers: widget.userAnswers,
+                                initialIndex: index,
+                                isReviewMode: true,
+                              ),
                             ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: border,
                           ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: border,
+                          alignment: Alignment.center,
+                          child: Text(
+                            "${index + 1}",
+                            style: TextStyle(color: txtColor, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          "${index + 1}",
-                          style: TextStyle(color: txtColor, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // --- ANA SAYFAYA DÖN BUTONU ---
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context); // Mantık korundu: Sadece 1 pop.
+                      );
                     },
-                    icon: const Icon(Icons.home_rounded, size: 22),
-                    label: const Text("Listeye Dön", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDarkMode ? const Color(0xFF1E3A8A) : const Color(0xFF1565C0),
-                      foregroundColor: Colors.white,
-                      elevation: isDarkMode ? 0 : 4,
-                      shadowColor: isDarkMode ? Colors.transparent : Colors.blue.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: isDarkMode ? BorderSide(color: Colors.white.withOpacity(0.1)) : BorderSide.none
+                  ),
+                ),
+
+                // --- ANA SAYFAYA DÖN BUTONU ---
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.home_rounded, size: 22),
+                      label: const Text("Listeye Dön", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDarkMode ? const Color(0xFF1E3A8A) : const Color(0xFF1565C0),
+                        foregroundColor: Colors.white,
+                        elevation: isDarkMode ? 0 : 4,
+                        shadowColor: isDarkMode ? Colors.transparent : Colors.blue.withOpacity(0.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: isDarkMode ? BorderSide(color: Colors.white.withOpacity(0.1)) : BorderSide.none
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -318,7 +320,6 @@ class _ResultScreenState extends State<ResultScreen> {
       children: [
         Text(
           "$count", 
-          // 🔥 HATA DÜZELTİLDİ: robotoMono kullanıldı
           style: GoogleFonts.robotoMono(
             fontSize: 24, 
             fontWeight: FontWeight.bold, 
@@ -337,7 +338,6 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  // Cam Kart Efekti (Diğer sayfalardakiyle aynı yapı)
   Widget _buildGlassCard({required Widget child, required bool isDark, EdgeInsetsGeometry? margin}) {
     if (!isDark) {
       // Aydınlık Mod: Düz Beyaz Kart
