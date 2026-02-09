@@ -735,8 +735,8 @@ class DashboardScreen extends StatelessWidget {
     Color cardColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.7) : Colors.white; // Hafif Saydam
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
     
-    // 🔥 HEADER GLASS EFEKTİ İÇİN DÜZENLEME
-    Color headerColor = isDarkMode ? const Color(0xFF1565C0).withOpacity(0.6) : const Color(0xFF0D47A1);
+    // 🔥 RENK GÜNCELLEMESİ (HEADER): Daha canlı mavi
+    Color headerColor = isDarkMode ? const Color(0xFF2563EB).withOpacity(0.6) : const Color(0xFF0D47A1);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -854,7 +854,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // --- BUTON YAPISI (GLASS + GLOW) ---
+          // --- BUTON YAPISI (RENKLER GÜNCELLENDİ) ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -866,7 +866,8 @@ class DashboardScreen extends StatelessWidget {
                         'Pratik', 
                         'Soru Çöz', 
                         Icons.play_arrow, 
-                        isDarkMode ? const Color(0xFF1E3A8A) : const Color(0xFF0D47A1), // Derin Mavi
+                        // 🔥 GÜNCELLEME: Koyu Mavi (0xFF1E3A8A) yerine Canlı Mavi (0xFF3B82F6)
+                        isDarkMode ? const Color(0xFF3B82F6) : const Color(0xFF0D47A1), 
                         isDarkMode,
                         onTap: () {
                           if (onPratikTap != null) onPratikTap!();
@@ -879,7 +880,8 @@ class DashboardScreen extends StatelessWidget {
                         'Bilgi\nKartları',
                         'Tekrar Et', 
                         Icons.style,
-                       isDarkMode ? const Color(0xFF065F46) : Colors.green.shade400, // Derin Yeşil
+                       // 🔥 GÜNCELLEME: Koyu Yeşil (0xFF065F46) yerine Canlı Zümrüt Yeşili (0xFF10B981)
+                       isDarkMode ? const Color(0xFF10B981) : Colors.green.shade400, 
                        isDarkMode,
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -898,7 +900,8 @@ class DashboardScreen extends StatelessWidget {
                         'Yanlışlar', 
                         'Hataları Gör', 
                         Icons.refresh, 
-                        isDarkMode ? const Color(0xFF7F1D1D) : const Color.fromARGB(255, 205, 16, 35), // Derin Kırmızı
+                        // 🔥 GÜNCELLEME: Koyu Kırmızı (0xFF7F1D1D) yerine Canlı Kırmızı (0xFFEF4444)
+                        isDarkMode ? const Color(0xFFEF4444) : const Color.fromARGB(255, 205, 16, 35), 
                         isDarkMode,
                         onTap: () {
                           if (onMistakesTap != null) onMistakesTap!();
@@ -912,7 +915,8 @@ class DashboardScreen extends StatelessWidget {
                   'Odak Modu (Timer)', 
                   'Pomodoro ile verimli çalış', 
                   Icons.track_changes, 
-                  isDarkMode ? const Color(0xFF4C1D95) : Colors.deepPurple, // Derin Mor
+                  // 🔥 GÜNCELLEME: Koyu Mor (0xFF4C1D95) yerine Canlı Mor (0xFF8B5CF6)
+                  isDarkMode ? const Color(0xFF8B5CF6) : Colors.deepPurple, 
                   isDarkMode,
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const FocusScreen()));
