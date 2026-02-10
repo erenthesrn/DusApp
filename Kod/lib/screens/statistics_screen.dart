@@ -34,7 +34,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     _fetchRealStatistics();
   }
 
-  Future<void> _fetchRealStatistics() async {
+Future<void> _fetchRealStatistics() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -46,49 +46,72 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
       if (userDoc.exists) {
         Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
-        
-        // 1. Temel Sayaçlar
+
+        // 1. Temel Sayaçlar (Yoksa 0 ata)
         int solved = data['totalSolved'] ?? 0;
         int correct = data['totalCorrect'] ?? 0;
-        
-        // "stats" haritasını güvenli çek
-        Map<String, dynamic> stats = data['stats'] != null 
+
+        // "stats" haritasını güvenli çek. Eğer yoksa boş map ata.
+        Map<String, dynamic> stats = (data['stats'] is Map<String, dynamic>) 
             ? data['stats'] as Map<String, dynamic> 
             : {};
 
+        // ----------------------------------------------------
         // 2. Ders Bazlı Performans İşleme
+        // ----------------------------------------------------
         Map<String, double> newSubjectPerf = {};
-        if (stats.containsKey('subjects')) {
-          Map<String, dynamic> subjects = stats['subjects'];
-          
+        
+        if (stats.containsKey('subjects') && stats['subjects'] is Map) {
+          Map<String, dynamic> subjects = stats['subjects'] as Map<String, dynamic>;
+
           subjects.forEach((key, value) {
             // value şuna benzer: { "correct": 10, "total": 20 }
-            int sTotal = value['total'] ?? 0;
-            int sCorrect = value['correct'] ?? 0;
-            
-            if (sTotal > 0) {
-              newSubjectPerf[key] = sCorrect / sTotal;
-            } else {
-              newSubjectPerf[key] = 0.0;
+            if (value is Map) {
+              int sTotal = value['total'] ?? 0;
+              int sCorrect = value['correct'] ?? 0;
+
+              if (sTotal > 0) {
+                newSubjectPerf[key] = sCorrect / sTotal; // Örn: 0.85
+              } else {
+                newSubjectPerf[key] = 0.0;
+              }
             }
           });
         }
 
+        // ----------------------------------------------------
         // 3. Haftalık Grafik Verisi Hazırlama (Son 7 Gün)
+        // ----------------------------------------------------
         List<FlSpot> spots = [];
         List<String> labels = [];
-        Map<String, dynamic> history = stats['dailyHistory'] ?? {};
         
+        // stats['dailyHistory'] verisini güvenli al
+        Map<String, dynamic> history = (stats['dailyHistory'] is Map<String, dynamic>) 
+            ? stats['dailyHistory'] as Map<String, dynamic> 
+            : {};
+
         DateTime now = DateTime.now();
+        
         // Bugünden geriye 7 gün git
         for (int i = 6; i >= 0; i--) {
           DateTime dateToCheck = now.subtract(Duration(days: i));
-          String dateKey = DateFormat('yyyy-MM-dd').format(dateToCheck); // Örn: 2024-02-10
-          String dayLabel = DateFormat('EEE', 'tr_TR').format(dateToCheck); // Örn: Pzt (Locale tr ayarlıysa)
-
-          double solvedCount = (history[dateKey] ?? 0).toDouble();
           
-          // X ekseni 0..6 arası index, Y ekseni soru sayısı
+          // ResultScreen'de kaydettiğimiz format: "2024-02-10"
+          String dateKey = DateFormat('yyyy-MM-dd').format(dateToCheck);
+          
+          // Grafik altında görünecek gün ismi: "Pzt", "Sal"
+          // 'tr_TR' kullanmak için main.dart'ta initializeDateFormatting yapılmış olmalı,
+          // yapılmadıysa varsayılan dil İngilizce görünür (Mon, Tue).
+          String dayLabel = DateFormat('EEE', 'tr_TR').format(dateToCheck);
+
+          // O günkü çözülen sayıyı al, yoksa 0
+          double solvedCount = 0;
+          if (history.containsKey(dateKey)) {
+             solvedCount = (history[dateKey] as num).toDouble();
+          }
+
+          // X ekseni: 0, 1, 2...6 (Grafikte soldan sağa dizilim)
+          // Y ekseni: Çözülen soru sayısı
           spots.add(FlSpot((6 - i).toDouble(), solvedCount));
           labels.add(dayLabel);
         }
@@ -97,13 +120,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           setState(() {
             _totalSolved = solved;
             _totalCorrect = correct;
-            _totalWrong = solved - correct;
+            _totalWrong = solved - correct; // Basit hesap
             _subjectPerformance = newSubjectPerf;
             _weeklyProgress = spots;
             _weeklyLabels = labels;
             _isLoading = false;
           });
         }
+      } else {
+        // Kullanıcı dökümanı yoksa yüklemeyi bitir
+        if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint("İstatistik hatası: $e");

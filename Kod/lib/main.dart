@@ -2,6 +2,7 @@
 import 'package:dus_app_1/screens/email_verification_page.dart';
 import 'package:dus_app_1/screens/onboarding_page.dart';
 import 'package:dus_app_1/screens/profile_screen.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Bunu ekle
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,6 +23,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('tr_TR', null); // Bunu ekle
 
   if (kIsWeb) {
     await Firebase.initializeApp(

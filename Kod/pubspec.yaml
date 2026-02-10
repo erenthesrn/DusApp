@@ -8,7 +8,7 @@ environment:
   sdk: ^3.10.7
 
 dependencies:
-  intl: ^0.18.0
+  intl: ^0.20.2
   flutter:
     sdk: flutter
   
@@ -22,7 +22,7 @@ dependencies:
   shared_preferences: ^2.5.4
 
   # --- ODAK MODU İÇİN YENİ EKLENENLER ---
-  percent_indicator: ^4.2.3        # Dairesel sayaç tasarımı için
+  percent_indicator: ^4.2.5        # Dairesel sayaç tasarımı için
   wakelock_plus: ^1.1.4            # Sayaç çalışırken ekran kapanmasın diye
   flutter_local_notifications: ^17.2.2 # Süre bitince bildirim göndermek için
   
@@ -30,7 +30,7 @@ dependencies:
   lottie: ^3.1.0
 
   # --- İSTATİSTİK SAYFASI İÇİN EKLENEN ---
-  fl_chart: ^0.68.0  # Grafikleri çizdirmek için gerekli paket
+  fl_chart: ^1.1.1  # Grafikleri çizdirmek için gerekli paket
 
 dev_dependencies:
   flutter_test:
