@@ -3,60 +3,225 @@
     "id": 1,
     "test_no": 1,
     "level": "Kolay",
-    "question": "Mandibular anestezi sırasında 'Nervus Alveolaris Inferior' bloğu yapılırken, enjektör iğnesi hangi anatomik oluşumun hizasında konumlandırılmalıdır?",
+    "question": "Yüzdeki mimik kaslarını (gülme, kaş çatma vb.) uyaran ve felcinde yüz felci (Bell paralizisi) görülen kafa çifti hangisidir?",
     "options": [
-      "A) Pterygomandibular raphe",
-      "B) Lingula mandibulae",
-      "C) Foramen mentale",
-      "D) Processus coronoideus",
-      "E) Fovea pterygoidea"
+      "A) Nervus Trigeminus",
+      "B) Nervus Facialis",
+      "C) Nervus Vagus",
+      "D) Nervus Olfactorius",
+      "E) Nervus Opticus"
     ],
     "answer_index": 1,
-    "explanation": "Doğru cevap B şıkkıdır. Mandibular anestezide (IANB), iğne Lingula mandibulae hizasında, foramen mandibulare'nin hemen üzerindeki sulcus mandibularis'e doğru yönlendirilir. Lingula, anestezik solüsyonun depolanacağı bölge için en önemli kemik referans noktasıdır."
+    "explanation": "Doğru cevap B (Nervus Facialis). 7. kafa çifti olan N. Facialis, yüzün mimik kaslarının motor siniridir."
   },
   {
     "id": 2,
     "test_no": 1,
     "level": "Kolay",
-    "question": "Dilin 2/3 ön kısmının tat duyusunu taşıyan sinir aşağıdakilerden hangisidir?",
+    "question": "Vücuttaki en büyük tükürük bezi olan ve kulak önünde yerleşen bez hangisidir?",
     "options": [
-      "A) N. Lingualis",
-      "B) Chorda Tympani",
-      "C) N. Glossopharyngeus",
-      "D) N. Hypoglossus",
-      "E) N. Vagus"
+      "A) Glandula Submandibularis",
+      "B) Glandula Sublingualis",
+      "C) Glandula Parotidea",
+      "D) Glandula Thyroidea",
+      "E) Glandula Lacrimalis"
     ],
-    "answer_index": 1,
-    "explanation":"Açıklama eklenecek"
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Glandula Parotidea). Parotis bezi en büyük tükürük bezidir ve N. Facialis bu bezin içinden geçer."
   },
   {
     "id": 3,
-    "test_no": 2,
-    "level": "Orta",
-    "question": "Foramen rotundum’dan geçen ve maksiller dişlerin innervasyonunu sağlayan sinir hangisidir?",
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Göğüs boşluğu ile karın boşluğunu birbirinden ayıran temel solunum kası hangisidir?",
     "options": [
-      "A) N. Ophthalmicus",
-      "B) N. Mandibularis",
-      "C) N. Maxillaris",
-      "D) N. Facialis",
-      "E) N. Trigeminus (Ganglionu)"
+      "A) Diaphragma",
+      "B) Musculus Intercostalis",
+      "C) Musculus Pectoralis Major",
+      "D) Musculus Rectus Abdominis",
+      "E) Musculus Latissimus Dorsi"
     ],
-    "answer_index": 2,
-    "explanation":""
+    "answer_index": 0,
+    "explanation": "Doğru cevap A (Diaphragma). Diyafram, solunumun en temel kasıdır ve toraks ile abdomen boşluklarını ayırır."
   },
   {
     "id": 4,
-    "test_no": 2,
-    "level": "Zor",
-    "question": "Çiğneme kaslarından hangisi mandibulayı açan (depresyon yaptıran) kastır?",
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Kalpten çıkan temiz kanı tüm vücuda dağıtan ana atardamar hangisidir?",
     "options": [
-      "A) M. Masseter",
-      "B) M. Temporalis",
-      "C) M. Pterygoideus Medialis",
-      "D) M. Pterygoideus Lateralis",
-      "E) M. Buccinator"
+      "A) Arteria Pulmonalis",
+      "B) Vena Cava Superior",
+      "C) Aorta",
+      "D) Vena Portae",
+      "E) Arteria Carotis"
     ],
-    "answer_index": 3,
-    "explanation":""
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Aorta). Sol ventrikülden çıkan aorta, oksijenlenmiş kanı sistemik dolaşıma verir."
+  },
+  {
+    "id": 5,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Kafatasında hareket yeteneği olan tek kemik (alt çene kemiği) hangisidir?",
+    "options": [
+      "A) Maxilla",
+      "B) Mandibula",
+      "C) Os Zygomaticum",
+      "D) Os Frontale",
+      "E) Os Occipitale"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B (Mandibula). Temporomandibular eklem aracılığıyla kafatasında hareket eden tek kemiktir."
+  },
+  {
+    "id": 6,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Yutkunma sırasında gıdaların soluk borusuna kaçmasını engelleyen kıkırdak yapı hangisidir?",
+    "options": [
+      "A) Cricoid kıkırdak",
+      "B) Thyroid kıkırdak",
+      "C) Epiglottis",
+      "D) Trachea",
+      "E) Bronchus"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Epiglottis). Yutkunma esnasında larinksin girişini kapatarak aspirasyonu önler."
+  },
+  {
+    "id": 7,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Çiğneme kasları arasında çeneyi kapatan en güçlü kas hangisidir?",
+    "options": [
+      "A) Musculus Buccinator",
+      "B) Musculus Orbicularis Oris",
+      "C) Musculus Masseter",
+      "D) Musculus Digastricus",
+      "E) Musculus Risorius"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Musculus Masseter). Mandibulanın en güçlü kapatıcısıdır ve çiğnemede ana rol oynar."
+  },
+  {
+    "id": 8,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Dilin hareketlerini (dışarı çıkarma, sağa-sola döndürme) sağlayan kafa çifti hangisidir?",
+    "options": [
+      "A) Nervus Hypoglossus",
+      "B) Nervus Glossopharyngeus",
+      "C) Nervus Lingualis",
+      "D) Nervus Vagus",
+      "E) Nervus Accessorius"
+    ],
+    "answer_index": 0,
+    "explanation": "Doğru cevap A (Nervus Hypoglossus). 12. kafa çiftidir ve dilin motor inervasyonunu sağlar."
+  },
+  {
+    "id": 9,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "İnsan vücudundaki en uzun ve en ağır kemik hangisidir?",
+    "options": [
+      "A) Humerus (Kol kemiği)",
+      "B) Tibia (Kaval kemiği)",
+      "C) Femur (Uyluk kemiği)",
+      "D) Fibula (Kamış kemiği)",
+      "E) Radius"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Femur). Uyluk bölgesinde bulunan femur, iskelet sisteminin en büyük kemiğidir."
+  },
+  {
+    "id": 10,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Karaciğer (Hepar), karın boşluğunun anatomik olarak hangi bölgesinde yoğunlaşmıştır?",
+    "options": [
+      "A) Sağ üst kadran",
+      "B) Sol alt kadran",
+      "C) Sol üst kadran",
+      "D) Sağ alt kadran",
+      "E) Umbilikal bölge"
+    ],
+    "answer_index": 0,
+    "explanation": "Doğru cevap A (Sağ üst kadran). Karaciğerin büyük bir kısmı sağ hipokondriyak bölgeyi kaplar."
+  },
+  {
+    "id": 11,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Böbreğin kanı süzen ve idrar oluşturan en küçük fonksiyonel birimine ne ad verilir?",
+    "options": [
+      "A) Nöron",
+      "B) Nefron",
+      "C) Alveol",
+      "D) Villus",
+      "E) Lobül"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B (Nefron). Her bir böbrekte yaklaşık 1 milyon adet bulunan işlevsel birimdir."
+  },
+  {
+    "id": 12,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Görmeyi sağlayan sinir (2. Kafa Çifti) aşağıdakilerden hangisidir?",
+    "options": [
+      "A) Nervus Olfactorius",
+      "B) Nervus Oculomotorius",
+      "C) Nervus Opticus",
+      "D) Nervus Trochlearis",
+      "E) Nervus Abducens"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Nervus Opticus). Retinadan aldığı görsel uyarıları beyne ileten duyu siniridir."
+  },
+  {
+    "id": 13,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Boynun yan tarafında bulunan, başı karşı tarafa çevirmeyi sağlayan belirgin kas hangisidir?",
+    "options": [
+      "A) Musculus Trapezius",
+      "B) Musculus Sternocleidomastoideus",
+      "C) Musculus Platysma",
+      "D) Musculus Scalenus",
+      "E) Musculus Deltoideus"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B (M. Sternocleidomastoideus - SCM). Boynun en belirgin kasıdır, başa rotasyon yaptırır."
+  },
+  {
+    "id": 14,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Mide içeriğinin yemek borusuna (özofagus) geri kaçmasını önleyen kapakçık sistemi hangisidir?",
+    "options": [
+      "A) Pilor sfinkteri",
+      "B) İleoçekal valv",
+      "C) Alt özofagus sfinkteri",
+      "D) Triküspit kapak",
+      "E) Mitral kapak"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C (Alt özofagus sfinkteri). Mide girişinde bulunur ve reflüyü engelleyen mekanizmadır."
+  },
+  {
+    "id": 15,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Halk arasında 'Adem Elması' olarak bilinen gırtlak çıkıntısını hangi kıkırdak oluşturur?",
+    "options": [
+      "A) Cartilago Thyroidea",
+      "B) Cartilago Cricoidea",
+      "C) Cartilago Arytenoidea",
+      "D) Epiglottis",
+      "E) Os Hyoid"
+    ],
+    "answer_index": 0,
+    "explanation": "Doğru cevap A (Cartilago Thyroidea). Larinksin en büyük kıkırdağıdır ve boyunda belirgin bir çıkıntı yapar."
   }
 ]
