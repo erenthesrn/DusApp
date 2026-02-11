@@ -45,20 +45,17 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  Future<void> _loadTestStatus() async {
-    Set<int> completed = {};
-    for (int i = 1; i <= 50; i++) {
-      var result = await QuizService.getQuizResult(widget.topic, i);
-      if (result != null) {
-        completed.add(i);
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _completedTestNumbers = completed;
-      });
-    }
+Future<void> _loadTestStatus() async {
+  // Tek tek 50 kere sormak yerine, o konudaki bitmiş tüm testleri tek seferde alıyoruz.
+  // Bu hem çok daha hızlıdır hem de anlık güncellenir.
+  List<int> completedList = await QuizService.getCompletedTests(widget.topic);
+  
+  if (mounted) {
+    setState(() {
+      _completedTestNumbers = completedList.toSet();
+    });
   }
+}
 
   @override
   Widget build(BuildContext context) {

@@ -4,43 +4,78 @@ import 'package:shared_preferences/shared_preferences.dart'; // Yedek olarak kal
 
 class QuizService {
 
-  // 🔥 Tek Bir Sınavın Sonucunu Getir (Review için)
-  static Future<Map<String, dynamic>?> getQuizResult(String topic, int testNo) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
+// 🔥 DÜZELTME: ID'ye göre değil, İçeriğe (Konu ve Test No) göre arama yap
+static Future<Map<String, dynamic>?> getQuizResult(String topic, int testNo) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return null;
 
-    try {
-      // O konuya ve test numarasına ait en son çözülen sınavı getir
-      var snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('results')
-          .where('topic', isEqualTo: topic)
-          .where('testNo', isEqualTo: testNo)
-          .orderBy('timestamp', descending: true) // En son çözüleni al
-          .limit(1)
-          .get();
+  try {
+    // 1. Önce Firebase'den Sorgula (En son çözülen testi getir)
+    var querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('results')
+        .where('topic', isEqualTo: topic)
+        .where('testNo', isEqualTo: testNo)
+        .orderBy('timestamp', descending: true) // En yeniyi al
+        .limit(1)
+        .get();
 
-      if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.first.data();
-      }
-      return null;
-    } catch (e) {
-      print("Hata (getQuizResult): $e");
-      return null;
+    if (querySnapshot.docs.isNotEmpty) {
+      return querySnapshot.docs.first.data();
     }
+    
+    // 2. Firebase'de bulamazsa Yerel Hafızaya (SharedPrefs) bak
+    // (İnternet yokken çözülenler için)
+    final prefs = await SharedPreferences.getInstance();
+    List<String> localResults = prefs.getStringList('quiz_results') ?? [];
+    
+    // Format: "Konu|TestNo|Puan|Dogru|Yanlis|Tarih"
+    for (String res in localResults.reversed) { // Tersten bak (en son eklenen)
+      List<String> parts = res.split('|');
+      if (parts.length >= 5 && parts[0] == topic && int.parse(parts[1]) == testNo) {
+        return {
+          'topic': parts[0],
+          'testNo': int.parse(parts[1]),
+          'score': int.parse(parts[2]),
+          'correct': int.parse(parts[3]),
+          'wrong': int.parse(parts[4]),
+          'date': parts[5] // Tarih
+        };
+      }
+    }
+
+  } catch (e) {
+    print("Sonuç getirme hatası: $e");
   }
+  return null;
+}
   
   // 🔥 Çözülen Testlerin Numaralarını Getir (Firebase'den)
-  static Future<List<int>> getCompletedTests(String topic) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    
-    // Eğer kullanıcı giriş yapmamışsa boş döndür (veya yerel bakılabilir)
-    if (user == null) return [];
+  // 🔥 Çözülen Testlerin Numaralarını Getir (HEM LOCAL HEM FIREBASE - HİBRİT)
+static Future<List<int>> getCompletedTests(String topic) async {
+  Set<int> completedTests = {};
 
+  try {
+    // 1. ÖNCE YEREL VERİYİ ÇEK (HIZ İÇİN 🚀)
+    final prefs = await SharedPreferences.getInstance();
+    List<String> localResults = prefs.getStringList('quiz_results') ?? [];
+    
+    for (String res in localResults) {
+      // Format: "Konu|TestNo|Puan|Dogru|Yanlis|Tarih"
+      List<String> parts = res.split('|');
+      if (parts.isNotEmpty && parts[0] == topic) {
+        completedTests.add(int.parse(parts[1]));
+      }
+    }
+  } catch (e) {
+    print("Local okuma hatası: $e");
+  }
+
+  // 2. SONRA FIREBASE'DEN ÇEK (SENKRONİZASYON İÇİN ☁️)
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
     try {
-      // 'results' koleksiyonunda, şu anki konuyla ilgili tüm sonuçları çek
-      // Sadece 'testNo' alanını çekmek yeterli, gereksiz veri indirmeyelim.
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -48,24 +83,19 @@ class QuizService {
           .where('topic', isEqualTo: topic)
           .get();
 
-      // Dökümanlardan test numaralarını alıp listeye çevir
-      // Set kullanarak aynı testin 2 kere listeye girmesini engelleriz
-      Set<int> completedTests = {};
-      
       for (var doc in snapshot.docs) {
         var data = doc.data() as Map<String, dynamic>;
         if (data.containsKey('testNo')) {
           completedTests.add(data['testNo'] as int);
         }
       }
-
-      return completedTests.toList();
-      
     } catch (e) {
-      print("Hata (getCompletedTests): $e");
-      return [];
+      print("Firebase okuma hatası: $e");
     }
   }
+
+  return completedTests.toList();
+}
 
   // 🔥 Sonuç Kaydetme (Hem Local Hem Firebase Destekli)
 static Future<void> saveQuizResult({
