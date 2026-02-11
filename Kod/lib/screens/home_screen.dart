@@ -1,7 +1,7 @@
 // lib/screens/home_screen.dart
 
 import 'dart:async';
-import 'dart:ui'; // 🔥 CAM EFEKTİ İÇİN EKLENDİ
+import 'dart:ui'; 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,9 +16,9 @@ import 'profile_screen.dart';
 import 'quiz_screen.dart'; 
 import 'mistakes_screen.dart';
 import 'blog_screen.dart';
-import 'focus_screen.dart'; // Odak Modu Importu
-import 'analysis_screen.dart'; // Analiz Ekranı Importu
-import 'flashcards_screen.dart'; // 🔥 YENİ EKLENDİ: Bilgi Kartları Sayfası
+import 'focus_screen.dart'; 
+import 'analysis_screen.dart'; 
+import 'flashcards_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _listenToUserData(); 
+    // 🔥 EKLENEN SATIR: Hata vermemesi için
     MistakesService.syncLocalToFirebase();
     _runMigration();
   }
@@ -81,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
           String today = DateTime.now().toIso8601String().split('T')[0];
           String lastDate = data['lastActivityDate'] ?? "";
           
-          // 🔥 GÜNLÜK SIFIRLAMA MANTIĞI
           if (lastDate != today){
             await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
               'dailySolved': 0,
@@ -161,13 +161,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Question> _convertMistakesToQuestions(List<Map<String, dynamic>> mistakes) {
     return mistakes.map((m) {
       return Question(
-        id: m['id'],
+        id: m['questionIndex'] ?? 0, // 🔥 Düzeltildi
         question: m['question'],
         options: List<String>.from(m['options']),
         answerIndex: m['correctIndex'],
         explanation: m['explanation'] ?? "",
-        testNo: 0, 
-        level: m['subject'] ?? "Genel", 
+        testNo: m['testNo'] ?? 0, 
+        level: m['topic'] ?? m['subject'] ?? "Genel", 
       );
     }).toList();
   }
@@ -373,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showSubjectSelectionList(BuildContext context, List<Map<String, dynamic>> mistakes) {
     Map<String, List<Map<String, dynamic>>> grouped = {};
     for (var m in mistakes) {
-      String sub = m['subject'] ?? "Diğer";
+      String sub = m['subject'] ?? m['topic'] ?? "Diğer";
       if (!grouped.containsKey(sub)) grouped[sub] = [];
       grouped[sub]!.add(m);
     }
@@ -547,7 +547,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Color navBarColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.8) : Colors.white;
 
-    // 🔥🔥 BURASI DEĞİŞTİ: Artık Analiz Ekranı açılacak!
     List<Widget> currentPages = [
       DashboardScreen(
         targetBranch: _targetBranch,
@@ -563,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPratikTap: () => _showTopicSelection(context), 
       ),
       const BlogScreen(),
-      const AnalysisScreen(), // 🔥 BURAYI DÜZELTTİK: Placeholder yerine Gerçek Ekran!
+      const AnalysisScreen(),
       const ProfileScreen(),
     ];
 
@@ -716,7 +715,6 @@ class DashboardScreen extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          // --- 🔥 CAM EFEKTLİ HEADER ---
           ClipRRect(
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
             child: BackdropFilter(
@@ -779,7 +777,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // --- HEDEF KARTLARI (GLASS EFFECT) ---
           Transform.translate(
             offset: const Offset(0, -40),
             child: Padding(
@@ -828,7 +825,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // --- BUTON YAPISI (RENKLER GÜNCELLENDİ) ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -856,7 +852,6 @@ class DashboardScreen extends StatelessWidget {
                        isDarkMode ? const Color(0xFF10B981) : Colors.green.shade400, 
                        isDarkMode,
                         onTap: () {
-                           // 🔥 GÜNCELLENEN KISIM: YENİ SAYFAYA YÖNLENDİRME
                            Navigator.push(
                             context, 
                             MaterialPageRoute(builder: (context) => const FlashcardsScreen())

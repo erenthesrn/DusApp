@@ -20,8 +20,25 @@ class MistakesService {
 
       return snapshot.docs.map((doc) {
         var data = doc.data();
-        data['id'] = doc.id;
         
+        // 🛠️ ID ÇAKIŞMASINI VE EKSİK VERİYİ ÖNLEME
+        String docId = doc.id;
+        data['id'] = docId; // String ID'yi sakla (örn: Anatomi_1_5)
+        
+        // Konu veya TestNo eksikse Document ID'den kurtar
+        List<String> parts = docId.split('_');
+        if (parts.length >= 3) {
+          if (data['topic'] == null || data['topic'] == "genel" || data['topic'] == "") {
+            data['topic'] = parts[0]; 
+          }
+          if (data['testNo'] == null) {
+            data['testNo'] = int.tryParse(parts[1]) ?? 0;
+          }
+          if (data['questionIndex'] == null) {
+            data['questionIndex'] = int.tryParse(parts[2]) ?? 0;
+          }
+        }
+
         if (data['options'] != null) {
           if (data['options'] is List) {
             data['options'] = List<String>.from(data['options']);
@@ -40,7 +57,7 @@ class MistakesService {
     }
   }
 
-  // 🔥 YENİ YANLIŞ EKLE (HAYALET VERİ KORUMALI)
+  // 🔥 YENİ YANLIŞ EKLE
   static Future<void> addMistakes(List<Map<String, dynamic>> mistakes) async {
     User? user = _auth.currentUser;
     if (user == null) return;
@@ -52,12 +69,8 @@ class MistakesService {
       int testNo = int.tryParse(mistake['testNo'].toString()) ?? 0;
       int qIndex = int.tryParse(mistake['questionIndex'].toString()) ?? 0;
 
-      // 🛡️ GÜVENLİK KAPISI: 
-      // Eğer hem TestNo 0 hem de SoruIndex 0 ise bu hatalı bir kayıttır.
-      // Bunu veritabanına sokma!
       if (testNo == 0 && qIndex == 0) {
-        print("⚠️ Hatalı veri engellendi: ${topic}_0_0");
-        continue; // Döngünün bu adımını atla
+        continue; 
       }
 
       String uniqueId = "${topic}_${testNo}_$qIndex";
@@ -85,7 +98,7 @@ class MistakesService {
     await batch.commit();
   }
 
-  // SİLME İŞLEMİ
+  // TEK SİLME İŞLEMİ
   static Future<void> removeMistake(dynamic id, String topic) async {
     User? user = _auth.currentUser;
     if (user == null) return;
@@ -99,18 +112,23 @@ class MistakesService {
     }
   }
   
-  static Future<void> removeMistakeList(List<Map<String, dynamic>> items) async {
+  // 🔥 DÜZELTİLDİ: ÇOKLU SİLME (LİSTE HALİNDE STRING ID ALIR)
+  static Future<void> removeMistakeList(List<String> idsToRemove) async {
     User? user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null || idsToRemove.isEmpty) return;
+    
     WriteBatch batch = _firestore.batch();
-    for(var item in items) {
-       if(item['id'] is String) {
-         DocumentReference docRef = _firestore.collection('users').doc(user.uid).collection('mistakes').doc(item['id']);
-         batch.delete(docRef);
-       }
+    
+    for(String id in idsToRemove) {
+       DocumentReference docRef = _firestore.collection('users').doc(user.uid).collection('mistakes').doc(id);
+       batch.delete(docRef);
     }
+    
     await batch.commit();
   }
 
-  static Future<void> syncLocalToFirebase() async {}
+  // 🔥 EKLENDİ: HOME SCREEN HATASINI ÖNLEMEK İÇİN
+  static Future<void> syncLocalToFirebase() async {
+    // Burası şimdilik boş kalabilir, hata vermemesi için ekledik.
+  }
 }

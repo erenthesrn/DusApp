@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert'; 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +15,6 @@ class QuizScreen extends StatefulWidget {
   final String? topic;   
   final int? testNo;     
   
-  // 🔥 İnceleme ve Yanlış Çözme Modu İçin Parametreler
   final List<Question>? questions; 
   final List<int?>? userAnswers; 
   final bool isReviewMode; 
@@ -39,7 +37,6 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  // --- DEĞİŞKENLER ---
   List<Question> _questions = []; 
   bool _isLoading = true; 
   
@@ -50,28 +47,21 @@ class _QuizScreenState extends State<QuizScreen> {
   int _seconds = 0;
   bool _isTimerRunning = false;
 
-  
   @override
   void initState() {
     super.initState();
-    
-    // Eğer dışarıdan soru geldiyse (Yanlışlarım veya Sonuç İnceleme)
     if (widget.questions != null && widget.questions!.isNotEmpty) {
       _questions = widget.questions!;
-      
       if (widget.userAnswers != null) {
-        // İnceleme Modu: Cevaplar hazır gelir
         _userAnswers = widget.userAnswers!;
         _currentQuestionIndex = widget.initialIndex;
         _isLoading = false;
       } else {
-        // Yanlışları Çözme Modu: Cevaplar boş başlar
         _userAnswers = List.filled(_questions.length, null);
         _isLoading = false;
         _initializeTimer(); 
       }
     } else {
-      // Normal Mod: Firebase'den yükle (Eskiden JSON idi)
       _loadQuestions(); 
     }
   }
@@ -82,16 +72,12 @@ class _QuizScreenState extends State<QuizScreen> {
     super.dispose();
   }
 
-  // --- 🔥 GÜNCELLENEN: FIREBASE'DEN SORU ÇEKME ---
   Future<void> _loadQuestions() async {
     try {
-      // JSON dosya adı yerine "Konu Adı" (topic) ile sorgu yapacağız.
-      // Soru yükleyici servisinde dosya adlarını topic olarak kullanmıştık (anatomi, biyokimya...)
       String dbTopic = "";
-      
-      // Gelen topic ismini veritabanındaki formata çeviriyoruz
       if (widget.topic != null) {
         String t = widget.topic!;
+        // Basit eşleştirme
         if (t.contains("Anatomi")) dbTopic = "anatomi";
         else if (t.contains("Biyokimya")) dbTopic = "biyokimya";
         else if (t.contains("Fizyoloji")) dbTopic = "fizyoloji";
@@ -101,44 +87,37 @@ class _QuizScreenState extends State<QuizScreen> {
         else if (t.contains("Mikrobiyoloji")) dbTopic = "mikrobiyoloji";
         else if (t.contains("Biyoloji")) dbTopic = "biyoloji";
         else if (t.contains("Cerrahi")) dbTopic = "cerrahi";
-        else if (t.contains("Endodonti")) dbTopic = "endo"; // Dosya adı endo.json idi
+        else if (t.contains("Endodonti")) dbTopic = "endo";
         else if (t.contains("Perio")) dbTopic = "perio";
         else if (t.contains("Orto")) dbTopic = "orto";
         else if (t.contains("Pedo")) dbTopic = "pedo";
         else if (t.contains("Protetik")) dbTopic = "protetik";
         else if (t.contains("Radyoloji")) dbTopic = "radyoloji";
         else if (t.contains("Restoratif")) dbTopic = "resto";
-        else dbTopic = t.toLowerCase(); // Varsayılan
+        else dbTopic = t.toLowerCase(); 
       }
 
       QuerySnapshot snapshot;
 
-      // 1. Firebase Sorgusu
       if (widget.isTrial) {
-        // Deneme Modu: O konudan rastgele veya limitli soru çek (Şimdilik ilk 50)
-        // İleride burayı random hale getirebiliriz.
         snapshot = await FirebaseFirestore.instance
             .collection('questions')
             .where('topic', isEqualTo: dbTopic)
             .limit(50) 
             .get();
       } else {
-        // Test Modu: Konu ve Test No'ya göre çek
         snapshot = await FirebaseFirestore.instance
             .collection('questions')
             .where('topic', isEqualTo: dbTopic)
             .where('testNo', isEqualTo: widget.testNo)
-            .orderBy('questionIndex') // Sıralı gelmesi önemli
+            .orderBy('questionIndex') 
             .get();
       }
 
-      // 2. Veriyi Modele Çevir
       List<Question> fetchedQuestions = snapshot.docs.map((doc) {
         var data = doc.data() as Map<String, dynamic>;
-        // Question.fromJson veya fromMap kullanabiliriz.
-        // Senin Question modelinde 'id' alanı olmayabilir, onu manuel ekleyebiliriz.
         return Question(
-          id: data['questionIndex'] ?? 0, // veya doc.id kullanabilirsin ama int istiyorsa index ver
+          id: data['questionIndex'] ?? 0,
           question: data['question'] ?? "",
           options: List<String>.from(data['options'] ?? []),
           answerIndex: data['correctIndex'] ?? 0,
@@ -157,13 +136,8 @@ class _QuizScreenState extends State<QuizScreen> {
 
         if (_questions.isNotEmpty) {
            _initializeTimer();
-        } else {
-          // Eğer Firebase boş dönerse (henüz yüklenmemişse) fallback olarak JSON deneyebilirsin
-          // Ama şimdilik "Soru bulunamadı" desin.
-          debugPrint("Firebase'den soru gelmedi: $dbTopic - Test: ${widget.testNo}");
-        }
+        } 
       }
-
     } catch (e) {
       debugPrint("Firebase Soru Yükleme Hatası: $e");
       if (mounted) {
@@ -175,28 +149,21 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  // --- SAYAÇ ---
   void _initializeTimer() {
-    // Eğer yanlış çözüyorsak sayaç yukarı saysın (0'dan başla)
     if (widget.questions != null && widget.questions!.isNotEmpty) {
-       setState(() {
-         _seconds = 0; 
-       });
+       setState(() => _seconds = 0);
        _startTimer();
        return;
     }
 
     if (widget.isTrial) {
       if (widget.fixedDuration != null) {
-        setState(() {
-          _seconds = widget.fixedDuration! * 60;
-        });
+        setState(() => _seconds = widget.fixedDuration! * 60);
         _startTimer();
       } else {
         Future.delayed(Duration.zero, () => _showDurationPickerDialog());
       }
     } else {
-      // Normal test modu (Süre tut ama yukarı say)
       _startTimer();
     }
   }
@@ -212,7 +179,6 @@ class _QuizScreenState extends State<QuizScreen> {
       }
       setState(() {
         if (widget.isTrial && widget.fixedDuration != null) { 
-          // Geri sayım (Sadece süreli denemede)
           if (_seconds > 0) {
             _seconds--;
           } else {
@@ -220,14 +186,11 @@ class _QuizScreenState extends State<QuizScreen> {
             _showFinishDialog(timeUp: true);
           }
         } else {
-          // İleri sayım (Normal test ve yanlış çözümü)
           _seconds++;
         }
       });
     });
   }
-
-  // --- YARDIMCI FONKSİYONLAR ---
 
   Future<bool> _onWillPop() async {
     if (widget.isReviewMode) return true; 
@@ -357,9 +320,9 @@ class _QuizScreenState extends State<QuizScreen> {
               int empty = 0;
               
               List<Map<String, dynamic>> wrongQuestionsToSave = [];
-              List<Map<String, dynamic>> correctQuestionsToRemove = [];
+              // 🔥 DÜZELTME: Artık Map değil, String ID listesi tutuyoruz
+              List<String> correctQuestionsToRemove = [];
 
-              // Eğer "Yanlışlarım" listesinden gelmişse, bildiklerini silmemiz gerek
               bool isMistakeReview = widget.questions != null && !widget.isReviewMode;
 
               for (int i = 0; i < _questions.length; i++) {
@@ -368,17 +331,16 @@ class _QuizScreenState extends State<QuizScreen> {
 
                 if (answer == null) {
                   empty++;
-                  // Yanlışlara ekle (Boşlar da yanlış sayılır)
                   if (!isMistakeReview) {
                     wrongQuestionsToSave.add({
                       'id': _questions[i].id,
                       'question': _questions[i].question,
                       'options': _questions[i].options,
                       'correctIndex': _questions[i].answerIndex,
-                      'userIndex': -1, // -1 Boş olduğunu belirtir
-                      'topic': widget.topic ?? "Genel", // subject yerine topic kullan
-                      'testNo': widget.testNo ?? 0,
-                      'questionIndex': _questions[i].id, // id olarak index kullanıyoruz
+                      'userIndex': -1, 
+                      'topic': widget.topic ?? _questions[i].level, 
+                      'testNo': widget.testNo ?? _questions[i].testNo,
+                      'questionIndex': _questions[i].id, 
                       'explanation': _questions[i].explanation,
                       'date': DateTime.now().toIso8601String(),
                     });
@@ -386,15 +348,17 @@ class _QuizScreenState extends State<QuizScreen> {
                 } else if (answer == trueIndex) {
                   correct++;
                   if (isMistakeReview) {
-                     // Yanlışlarım modundaysak ve doğru yaptıysak, listeden SİL
-                     correctQuestionsToRemove.add({
-                       'id': _questions[i].id,
-                       'subject': widget.topic ?? _questions[i].level 
-                     });
+                     // 🔥 DÜZELTME: Soru objesinden Firestore ID'sini oluştur
+                     String topic = widget.topic ?? _questions[i].level;
+                     int testNo = widget.testNo ?? _questions[i].testNo;
+                     int qId = _questions[i].id;
+                     
+                     // Format: Konu_TestNo_SoruNo
+                     String docId = "${topic}_${testNo}_$qId";
+                     correctQuestionsToRemove.add(docId);
                   }
                 } else {
                   wrong++;
-                  // Yanlış yapılan soruyu kaydet
                   if (!isMistakeReview) {
                     wrongQuestionsToSave.add({
                       'id': _questions[i].id,
@@ -402,8 +366,8 @@ class _QuizScreenState extends State<QuizScreen> {
                       'options': _questions[i].options,
                       'correctIndex': _questions[i].answerIndex,
                       'userIndex': answer,
-                      'topic': widget.topic ?? "Genel",
-                      'testNo': widget.testNo ?? 0,
+                      'topic': widget.topic ?? _questions[i].level,
+                      'testNo': widget.testNo ?? _questions[i].testNo,
                       'questionIndex': _questions[i].id,
                       'explanation': _questions[i].explanation,
                       'date': DateTime.now().toIso8601String(),
@@ -418,25 +382,20 @@ class _QuizScreenState extends State<QuizScreen> {
               }
 
               // --- KAYIT İŞLEMLERİ ---
-              
-              // 1. Yeni Yanlışları Ekle (Boşlar dahil)
               if (wrongQuestionsToSave.isNotEmpty) {
-                // Burada id'leri int olarak değil, doküman oluşturmak için Map olarak gönderiyoruz
-                // MistakesService'i güncellememiz gerekebilir ama şimdilik mevcut yapıyı koruyalım
                 await MistakesService.addMistakes(wrongQuestionsToSave);
               }
               
-              // 2. Öğrenilenleri Sil (Yanlışlarım Modu)
+              // 🔥 GÜNCELLENEN SİLME İŞLEMİ
               if (correctQuestionsToRemove.isNotEmpty) {
+                // Artık doğrudan String listesi gönderiyoruz
                 await MistakesService.removeMistakeList(correctQuestionsToRemove);
               }
 
-              // 3. İstatistikleri Güncelle (Firebase)
               if (!widget.isReviewMode) {
                 await _updateFirebaseStats(correct, wrong + empty); 
               }
 
-              // Test sonucunu kaydet
               if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
                 await QuizService.saveQuizResult(
                   topic: widget.topic!,
@@ -449,7 +408,6 @@ class _QuizScreenState extends State<QuizScreen> {
                 );
               }
 
-              // 4. Sonuç Ekranına Git
               if (mounted) {
                 await Navigator.push(
                   context,
@@ -466,7 +424,6 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   ),
                 );
-                // Listeyi yenilemesi için dönüşte true gönder
                 if(mounted){
                   Navigator.pop(context, true);
                 }
@@ -480,14 +437,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _updateFirebaseStats(int correct, int totalSolved) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      // İstatistik servisi buraya eklenebilir
-    } catch (e) {
-      debugPrint("İstatistik hatası: $e");
-    }
+    // İstatistik güncelleme (opsiyonel)
   }
 
   void _showQuestionMap() {
@@ -517,14 +467,13 @@ class _QuizScreenState extends State<QuizScreen> {
                     bool isAnswered = _userAnswers[index] != null;
                     bool isCurrent = index == _currentQuestionIndex;
                     
-                    // Renk Mantığı
                     Color boxColor;
                     if (widget.isReviewMode) {
                       int correctIndex = _questions[index].answerIndex;
                       int? userAnswer = _userAnswers[index];
-                      if (userAnswer == correctIndex) boxColor = Colors.green; // Doğru
-                      else if (userAnswer != null) boxColor = Colors.red; // Yanlış
-                      else boxColor = Colors.grey; // Boş
+                      if (userAnswer == correctIndex) boxColor = Colors.green; 
+                      else if (userAnswer != null) boxColor = Colors.red; 
+                      else boxColor = Colors.grey; 
                     } else {
                       boxColor = isCurrent ? Colors.orange 
                       : (isAnswered 
@@ -581,7 +530,6 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     final isDarkMode = ThemeProvider.instance.isDarkMode;
     
-    // Renkler
     Color scaffoldBg = isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFE3F2FD);
     Color cardBg = isDarkMode ? const Color(0xFF161B22) : Colors.white;
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
@@ -661,7 +609,6 @@ class _QuizScreenState extends State<QuizScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Soru Sayısı ve Konu
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -680,7 +627,6 @@ class _QuizScreenState extends State<QuizScreen> {
                       
                       const SizedBox(height: 12),
                       
-                      // Soru Metni
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -694,10 +640,8 @@ class _QuizScreenState extends State<QuizScreen> {
                       
                       const SizedBox(height: 24),
                       
-                      // Şıklar
                       ...List.generate(currentQuestion.options.length, (index) => _buildOptionButton(index, currentQuestion.options[index], isDarkMode)),
                       
-                      // İnceleme Modu Açıklaması
                       if (widget.isReviewMode && (currentQuestion.explanation.isNotEmpty)) ...[
                         const SizedBox(height: 24),
                         Container(
@@ -738,14 +682,12 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
               ),
               
-              // Alt Navigasyon
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), 
                 decoration: BoxDecoration(color: bottomBarBg, borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, -5))]), 
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Önceki Butonu
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerLeft, 
@@ -759,7 +701,6 @@ class _QuizScreenState extends State<QuizScreen> {
                       )
                     ), 
                     
-                    // Harita Butonu
                     InkWell(
                       onTap: _showQuestionMap, 
                       borderRadius: BorderRadius.circular(30), 
@@ -774,7 +715,6 @@ class _QuizScreenState extends State<QuizScreen> {
                       )
                     ), 
                     
-                    // Sonraki / Bitir Butonu
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerRight, 
@@ -804,51 +744,41 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
   
-  // 🔥 ŞIK BUTONU OLUŞTURUCU (RENKLENDİRME MANTIĞI)
   Widget _buildOptionButton(int index, String optionText, bool isDarkMode) {
     int? userAnswer = _userAnswers[_currentQuestionIndex];
     int correctAnswer = _questions[_currentQuestionIndex].answerIndex;
     
-    // Varsayılan Renkler
     Color borderColor = Colors.transparent;
     Color bgColor = isDarkMode ? const Color(0xFF0D1117) : Colors.white; 
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
     IconData? icon;
 
-    // --- İNCELEME MODU RENKLERİ ---
     if (widget.isReviewMode) {
       if (index == correctAnswer) {
-        // Doğru Cevap (Her zaman yeşil görünür)
         bgColor = isDarkMode ? Colors.green.withOpacity(0.2) : Colors.green.shade100;
         borderColor = Colors.green;
         textColor = isDarkMode ? Colors.green.shade200 : Colors.green.shade900;
         icon = Icons.check_circle;
       } else if (index == userAnswer) {
-        // Kullanıcının Yanlış Cevabı (Kırmızı görünür)
         bgColor = isDarkMode ? Colors.red.withOpacity(0.2) : Colors.red.shade100;
         borderColor = Colors.red;
         textColor = isDarkMode ? Colors.red.shade200 : Colors.red.shade900;
         icon = Icons.cancel;
       }
     } 
-    // --- NORMAL TEST MODU RENKLERİ ---
     else {
       if (userAnswer == index) {
-        // Seçili Şık
         borderColor = const Color(0xFF1565C0); 
         bgColor = isDarkMode ? const Color(0xFF1565C0).withOpacity(0.2) : const Color(0xFFE3F2FD); 
         textColor = isDarkMode ? const Color(0xFF64B5F6) : const Color(0xFF1565C0);
         icon = Icons.check_circle_outline;
       } else {
-        // Seçilmemiş Şık
         borderColor = isDarkMode ? Colors.white10 : Colors.transparent;
       }
     }
     
-    // Şık Harfi (A, B, C...)
     String optionLetter = String.fromCharCode(65 + index);
     
-    // Metin temizleme (Eğer şıklar "A) Metin" formatındaysa sadece "Metin" al)
     String displayText = optionText;
     if (optionText.length > 3 && optionText[1] == ')') {
        displayText = optionText.substring(3).trim();
@@ -874,7 +804,6 @@ class _QuizScreenState extends State<QuizScreen> {
             ), 
             child: Row(
               children: [
-                // Harf Yuvarlağı
                 Container(
                   width: 32, height: 32, 
                   alignment: Alignment.center, 
@@ -896,7 +825,6 @@ class _QuizScreenState extends State<QuizScreen> {
                 ), 
                 const SizedBox(width: 16), 
                 
-                // Şık Metni
                 Expanded(
                   child: Text(
                     displayText, 
@@ -908,7 +836,6 @@ class _QuizScreenState extends State<QuizScreen> {
                   )
                 ), 
                 
-                // İkon (Varsa)
                 if (icon != null) ...[
                   const SizedBox(width: 8),
                   Icon(icon, color: textColor, size: 22)
