@@ -82,9 +82,9 @@ class _QuizScreenState extends State<QuizScreen> {
         else if (t.contains("Biyokimya")) dbTopic = "biyokimya";
         else if (t.contains("Fizyoloji")) dbTopic = "fizyoloji";
         else if (t.contains("Histoloji")) dbTopic = "histoloji";
-        else if (t.contains("Farmakoloji")) dbTopic = "farmakoloji";
+        else if (t.contains("Farmakoloji")) dbTopic = "farma";
         else if (t.contains("Patoloji")) dbTopic = "patoloji";
-        else if (t.contains("Mikrobiyoloji")) dbTopic = "mikrobiyoloji";
+        else if (t.contains("Mikrobiyoloji")) dbTopic = "mikrobiyo";
         else if (t.contains("Biyoloji")) dbTopic = "biyoloji";
         else if (t.contains("Cerrahi")) dbTopic = "cerrahi";
         else if (t.contains("Endodonti")) dbTopic = "endo";

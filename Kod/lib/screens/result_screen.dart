@@ -105,25 +105,27 @@ class _ResultScreenState extends State<ResultScreen> {
       // Konu ismini güvenli hale getir
       String safeTopic = widget.topic.trim(); 
 
+      // 1. GENEL SAYAÇLARI GÜNCELLE (Burası kalsın, çünkü QuizService burayı yapmıyor olabilir)
       await userDocRef.update({
-        // 1. Genel Veriler
         'lastStudyDate': today,           
         'streak': newStreak,              
         'totalSolved': FieldValue.increment(widget.questions.length), 
         'totalCorrect': FieldValue.increment(widget.correctCount),    
         'dailySolved': FieldValue.increment(widget.questions.length), 
 
-        // 2. HAFTALIK GRAFİK İÇİN (stats.dailyHistory.2024-02-10)
+        // HAFTALIK GRAFİK İÇİN
         'stats.dailyHistory.$today': FieldValue.increment(widget.questions.length),
 
-        // 3. DERS BAZLI GRAFİK İÇİN (stats.subjects.Anatomi.total / correct)
+        // DERS BAZLI GRAFİK İÇİN
         'stats.subjects.$safeTopic.total': FieldValue.increment(widget.questions.length),
         'stats.subjects.$safeTopic.correct': FieldValue.increment(widget.correctCount),
       });
 
-      // 4. DETAYLI SINAV SONUCUNU KAYDET (Analiz ekranı burayı okuyor)
+      // 🚨 DÜZELTME: SONUÇ KARTI KAYDINI KALDIRDIK 🚨
+      // Bu kısım AnalysisScreen'de çift görünüme sebep oluyordu çünkü
+      // büyük ihtimalle QuizService veya önceki ekran bunu zaten kaydediyor.
+      /*
       String uniqueResultId = "${widget.topic}_${widget.testNo}_${DateTime.now().millisecondsSinceEpoch}";
-      
       await userDocRef.collection('results').doc(uniqueResultId).set({
         'topic': widget.topic,
         'testNo': widget.testNo,
@@ -132,12 +134,14 @@ class _ResultScreenState extends State<ResultScreen> {
         'wrong': widget.wrongCount,
         'empty': widget.emptyCount,
         'total': widget.questions.length,
-        'user_answers': widget.userAnswers, // Cevap anahtarını da kaydedelim
-        'date': DateTime.now().toIso8601String(), // String formatında tarih
-        'timestamp': FieldValue.serverTimestamp(), // Sıralama için server saati
+        'user_answers': widget.userAnswers, 
+        'date': DateTime.now().toIso8601String(), 
+        'timestamp': FieldValue.serverTimestamp(), 
       });
+      */
 
       // 5. YANLIŞLARI BULUT "MISTAKES" KOLEKSİYONUNA EKLE
+      // (Burası kalmalı, çünkü yanlışları kaydetmek önemli ve QuizService yapmıyor olabilir)
       List<Map<String, dynamic>> mistakesToSave = [];
       
       for (int i = 0; i < widget.questions.length; i++) {
@@ -165,7 +169,7 @@ class _ResultScreenState extends State<ResultScreen> {
         debugPrint("✅ ${mistakesToSave.length} yanlış soru Firebase'e kaydedildi.");
       }
       
-      debugPrint("🔥 Firebase Tam Güncellendi: Streak, Grafik, Sonuçlar ve Yanlışlar işlendi.");
+      debugPrint("🔥 Firebase Güncellendi: Streak ve Yanlışlar işlendi. Sonuç kartı kaydı atlandı (Duplicate önleme).");
 
     } catch (e) {
       debugPrint("❌ İstatistik güncelleme hatası: $e");
