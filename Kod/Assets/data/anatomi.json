@@ -4,13 +4,13 @@
     "test_no": 1,
     "level": "Kolay",
     "question": "Yukarıdaki görselde sarı alan ile ifade edilen, vücudun orta hattından geçerek vücudu dikey doğrultuda sağ (dexter) ve sol (sinister) olmak üzere iki eşit parçaya ayıran düzlem aşağıdakilerden hangisidir?",
-    "image_url":"gs://dusapp-17b00.firebasestorage.app/Gemini_Generated_Image_m2xdfim2xdfim2xd.png",
+    "image_url": "gs://dusapp-17b00.firebasestorage.app/Gemini_Generated_Image_m2xdfim2xdfim2xd.png",
     "options": [
-        "A) Planum sagittale",
-        "B) Planum frontale (coronale)",
-        "C) Planum medianum",
-        "D) Planum transversum",
-        "E) Planum horizontale"
+      "A) Planum sagittale",
+      "B) Planum frontale (coronale)",
+      "C) Planum medianum",
+      "D) Planum transversum",
+      "E) Planum horizontale"
     ],
     "answer_index": 2,
     "explanation": "Doğru cevap C. Vücudun tam ortasından geçen, yere dik inen ve vücudu sağ-sol olmak üzere iki simetrik/eşit yarıma bölen düzlemdir. Görseldeki kırmızı kesikli çizgi (Axis verticalis) bu düzlemin içinde kalır."
@@ -299,5 +299,230 @@
     ],
     "answer_index": 3,
     "explanation": "Dilin tüm intrinsik ve ekstrinsik kasları N. hypoglossus tarafından uyarılır; ancak M. palatoglossus bir damak kası kökenli olduğu için Plexus pharyngeus (N. vagus) tarafından uyarılır."
+  },
+  {
+    "id": 21,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Aşağıdaki kaslardan hangisi Nervus Facialis (CN VII) tarafından innerve edilmez?",
+    "options": [
+      "A) M. orbicularis oris",
+      "B) M. buccinator",
+      "C) M. platysma",
+      "D) M. levator palpebrae superioris",
+      "E) M. stylohyoideus"
+    ],
+    "answer_index": 3,
+    "explanation": "Doğru cevap D şıkkıdır. M. levator palpebrae superioris, Nervus Oculomotorius (CN III) tarafından uyarılır. Diğer şıkların hepsi mimik kasları veya hyoid üstü kaslar grubunda olup N. Facialis tarafından uyarılır."
+  },
+  {
+    "id": 22,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Diaphragma üzerindeki 'hiatus oesophageus'tan özofagus ile birlikte geçen anatomik yapı aşağıdakilerden hangisidir?",
+    "options": [
+      "A) N. phrenicus",
+      "B) Truncus vagalis anterior ve posterior",
+      "C) Ductus thoracicus",
+      "D) V. azygos",
+      "E) N. splanchnicus major"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B şıkkıdır. T10 seviyesindeki hiatus oesophageus'tan yemek borusu (özofagus) ile birlikte her iki nervus vagus (truncus vagalis anterior ve posterior) geçer."
+  },
+  {
+    "id": 23,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Ductus parotideus (Stensen kanalı), ağız boşluğuna açılmadan önce aşağıdaki kaslardan hangisini deler?",
+    "options": [
+      "A) M. masseter",
+      "B) M. temporalis",
+      "C) M. buccinator",
+      "D) M. pterygoideus medialis",
+      "E) M. zygomaticus major"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C şıkkıdır. Parotis bezinin kanalı olan ductus parotideus, M. masseter'in üzerinden geçtikten sonra M. buccinator'u delerek üst 2. molar diş hizasında vestibül ağza açılır."
+  },
+  {
+    "id": 24,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Karın ön duvarında bulunan 'Linea arcuata'nın altında, M. rectus abdominis'in arka yüzünü doğrudan örten yapı hangisidir?",
+    "options": [
+      "A) M. obliquus internus abdominis aponörozu",
+      "B) M. transversus abdominis aponörozu",
+      "C) Peritoneum parietale",
+      "D) Fascia transversalis",
+      "E) Fascia superficialis"
+    ],
+    "answer_index": 3,
+    "explanation": "Doğru cevap D şıkkıdır. Linea arcuata'nın altında rektus kılıfının arka yaprağı bulunmaz; M. rectus abdominis doğrudan Fascia transversalis ile komşuluk yapar."
+  },
+  {
+    "id": 25,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Aşağıdaki arterlerden hangisi Truncus coeliacus'un doğrudan (primer) dallarından biri değildir?",
+    "options": [
+      "A) A. gastrica sinistra",
+      "B) A. splenica (lienalis)",
+      "C) A. hepatica communis",
+      "D) A. gastroduodenalis",
+      "E) Hepsi doğrudan daldır"
+    ],
+    "answer_index": 3,
+    "explanation": "Doğru cevap D şıkkıdır. Truncus coeliacus'un üç ana dalı vardır: A. gastrica sinistra, A. lienalis ve A. hepatica communis. A. gastroduodenalis ise A. hepatica communis'in bir dalıdır."
+  },
+  {
+    "id": 26,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Sinus cavernosus'un içinden (lümeninden) geçen kranial sinir aşağıdakilerden hangisidir?",
+    "options": [
+      "A) N. oculomotorius (CN III)",
+      "B) N. trochlearis (CN IV)",
+      "C) N. abducens (CN VI)",
+      "D) N. ophthalmicus (CN V1)",
+      "E) N. maxillaris (CN V2)"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C şıkkıdır. Diğer sinirler (III, IV, V1, V2) sinüsün dış duvarında seyrederken, N. abducens (CN VI) ve A. carotis interna sinüsün lümeni içinden geçer."
+  },
+  {
+    "id": 27,
+    "test_no": 3,
+    "level": "Kolay",
+    "question": "Atlas (C1) omurunun en belirgin ayırt edici anatomik özelliği nedir?",
+    "options": [
+      "A) Corpus vertebrae (gövde) bulunmaz.",
+      "B) Processus spinosus'u çok uzundur.",
+      "C) Foramen transversarium içermez.",
+      "D) Dens axis ile kaynaşmıştır.",
+      "E) Promontorium yapar."
+    ],
+    "answer_index": 0,
+    "explanation": "Doğru cevap A şıkkıdır. Atlas'ın (C1) bir gövdesi (corpus) yoktur; bunun yerine arcus anterior ve posterior ile massa lateralis'lerden oluşur. Gövdesi embriyolojik olarak Axis'in dens'ini oluşturmuştur."
+  },
+  {
+    "id": 28,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Aşağıdaki kaslardan hangisi çiğneme kası olup, kasıldığında çeneyi açan (depresyon) ve öne çıkaran (protrüzyon) tek kastır?",
+    "options": [
+      "A) M. temporalis",
+      "B) M. masseter",
+      "C) M. pterygoideus medialis",
+      "D) M. pterygoideus lateralis",
+      "E) M. buccinator"
+    ],
+    "answer_index": 3,
+    "explanation": "Doğru cevap D şıkkıdır. M. pterygoideus lateralis, mandibula başını ve diski öne çekerek çenenin açılmasını sağlayan ana kastır. Diğer çiğneme kasları (Masseter, Temporalis, Pterygoideus medialis) çeneyi kapatır."
+  },
+  {
+    "id": 29,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Vena portae hepatis'i oluşturan iki ana ven aşağıdakilerin hangisinde doğru verilmiştir?",
+    "options": [
+      "A) V. mesenterica superior ve V. renalis",
+      "B) V. lienalis (splenica) ve V. mesenterica superior",
+      "C) V. cava inferior ve V. hepatica",
+      "D) V. mesenterica inferior ve V. renalis",
+      "E) V. gastrica sinistra ve V. azygos"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B şıkkıdır. Vena portae hepatis, pankreas boynunun arkasında V. lienalis (splenica) ve V. mesenterica superior'un birleşmesiyle oluşur."
+  },
+  {
+    "id": 30,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Mediastinum posterius'ta (arka mediastinum) aşağıdaki anatomik yapılardan hangisi BULUNMAZ?",
+    "options": [
+      "A) Oesophagus",
+      "B) Aorta thoracica",
+      "C) Ductus thoracicus",
+      "D) Cor (Kalp)",
+      "E) V. azygos"
+    ],
+    "answer_index": 3,
+    "explanation": "Doğru cevap D şıkkıdır. Kalp (Cor), mediastinum medium'da (orta mediastinum) bulunur. Diğer yapılar (özofagus, inen aort, ductus thoracicus, azigos veni) arka mediastinumdadır."
+  },
+  {
+    "id": 31,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Femoral üçgenin (Trigonum femorale) tabanını oluşturan kaslar aşağıdakilerden hangisidir?",
+    "options": [
+      "A) M. rectus femoris ve M. sartorius",
+      "B) M. iliopsoas ve M. pectineus",
+      "C) M. gracilis ve M. adductor longus",
+      "D) M. tensor fasciae latae ve M. gluteus medius",
+      "E) M. vastus medialis ve M. adductor magnus"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B şıkkıdır. Trigonum femorale'nin döşemesini (tabanını) dıştan içe doğru M. iliopsoas ve M. pectineus (bazen M. adductor longus'un bir kısmı) oluşturur."
+  },
+  {
+    "id": 32,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Larinksin kıkırdakları arasında bulunan ve ses tellerini (plica vocalis) uzaklaştırarak rima glottidis'i açan tek kas hangisidir?",
+    "options": [
+      "A) M. cricoarytenoideus lateralis",
+      "B) M. cricoarytenoideus posterior",
+      "C) M. thyroarytenoideus",
+      "D) M. arytenoideus transversus",
+      "E) M. cricothyroideus"
+    ],
+    "answer_index": 1,
+    "explanation": "Doğru cevap B şıkkıdır. M. cricoarytenoideus posterior (Posticus), ses tellerini abduksiyona uğratan (uzaklaştıran) ve böylece solunum yolunu açan tek larinks kasıdır."
+  },
+  {
+    "id": 33,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "Aşağıdaki yapılardan hangisi Foramen Jugulare'den geçmez?",
+    "options": [
+      "A) N. glossopharyngeus (CN IX)",
+      "B) N. vagus (CN X)",
+      "C) N. accessorius (CN XI)",
+      "D) V. jugularis interna",
+      "E) N. hypoglossus (CN XII)"
+    ],
+    "answer_index": 4,
+    "explanation": "Doğru cevap E şıkkıdır. N. hypoglossus (CN XII), kendisine ait olan Canalis nervi hypoglossi'den geçer. Foramen jugulare'den 9, 10 ve 11. kranial sinirler ile V. jugularis interna geçer."
+  },
+  {
+    "id": 34,
+    "test_no": 3,
+    "level": "Orta",
+    "question": "M. latissimus dorsi kasının siniri aşağıdakilerden hangisidir?",
+    "options": [
+      "A) N. thoracicus longus",
+      "B) N. dorsalis scapulae",
+      "C) N. thoracodorsalis",
+      "D) N. axillaris",
+      "E) N. suprascapularis"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C şıkkıdır. M. latissimus dorsi, pleksus brachialis'in arka kordonundan çıkan N. thoracodorsalis tarafından uyarılır. N. thoracicus longus ise M. serratus anterior'u uyarır."
+  },
+  {
+    "id": 35,
+    "test_no": 3,
+    "level": "Kolay",
+    "question": "Kalbin venöz kanının büyük çoğunluğunu toplayıp sağ atriuma boşaltan ana venöz yapı hangisidir?",
+    "options": [
+      "A) Vena cava superior",
+      "B) Vena cava inferior",
+      "C) Sinus coronarius",
+      "D) Venae pulmonales",
+      "E) Vena cordis magna"
+    ],
+    "answer_index": 2,
+    "explanation": "Doğru cevap C şıkkıdır. Kalbin kendi venöz drenajı (V. cordis magna, media, parva vb.) büyük oranda Sinus coronarius'ta toplanır ve oradan sağ atriuma dökülür."
   }
 ]
