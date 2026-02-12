@@ -19,6 +19,7 @@ import 'blog_screen.dart';
 import 'focus_screen.dart'; 
 import 'analysis_screen.dart'; 
 import 'flashcards_screen.dart'; 
+import 'bookmarks_screen.dart'; // 🔥 YENİ: Favoriler sayfası importu
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _listenToUserData(); 
-    // 🔥 EKLENEN SATIR: Hata vermemesi için
     MistakesService.syncLocalToFirebase();
     _runMigration();
   }
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // --- FIREBASE VERİ CANLI TAKİP (STREAM) ---
+  // --- FIREBASE VERİ CANLI TAKİP ---
   void _listenToUserData() {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -161,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Question> _convertMistakesToQuestions(List<Map<String, dynamic>> mistakes) {
     return mistakes.map((m) {
       return Question(
-        id: m['questionIndex'] ?? 0, // 🔥 Düzeltildi
+        id: m['questionIndex'] ?? 0, 
         question: m['question'],
         options: List<String>.from(m['options']),
         answerIndex: m['correctIndex'],
@@ -753,7 +753,21 @@ class DashboardScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            
+                            // 🔥 FAVORİLER BUTONU (SAĞ ÜST KÖŞE)
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => const BookmarksScreen()));
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 12),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                                child: const Icon(Icons.bookmark_rounded, color: Colors.orangeAccent),
+                              ),
+                            ),
+
+                            // BİLDİRİM BUTONU
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
@@ -825,6 +839,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
+          // --- ESKİ 3'LÜ BUTTON YAPISI ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(

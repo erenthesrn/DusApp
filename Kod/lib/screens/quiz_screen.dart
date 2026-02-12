@@ -7,6 +7,7 @@ import '../models/question_model.dart';
 import '../services/quiz_service.dart';
 import '../services/theme_provider.dart'; 
 import '../services/mistakes_service.dart';
+import '../services/bookmark_service.dart'; // 🔥 YENİ: Bookmark servisi eklendi
 import 'result_screen.dart'; 
 
 class QuizScreen extends StatefulWidget {
@@ -47,6 +48,9 @@ class _QuizScreenState extends State<QuizScreen> {
   int _seconds = 0;
   bool _isTimerRunning = false;
 
+  // 🔥 YENİ: Bookmark durumu
+  bool _isBookmarked = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,10 +60,12 @@ class _QuizScreenState extends State<QuizScreen> {
         _userAnswers = widget.userAnswers!;
         _currentQuestionIndex = widget.initialIndex;
         _isLoading = false;
+        _checkBookmarkStatus(); // 🔥 YENİ: İlk açılışta kontrol et
       } else {
         _userAnswers = List.filled(_questions.length, null);
         _isLoading = false;
         _initializeTimer(); 
+        _checkBookmarkStatus(); // 🔥 YENİ
       }
     } else {
       _loadQuestions(); 
@@ -72,12 +78,59 @@ class _QuizScreenState extends State<QuizScreen> {
     super.dispose();
   }
 
+  // 🔥 YENİ: Soru Favorilerde mi Kontrol Et
+  Future<void> _checkBookmarkStatus() async {
+    if (_questions.isEmpty) return;
+    
+    Question currentQ = _questions[_currentQuestionIndex];
+    
+    // Konu adını belirle (Widget'tan gelmiyorsa sorunun level/topic alanından al)
+    String topic = widget.topic ?? currentQ.level;
+    
+    // ID oluşturma (Servis ile aynı mantıkta olmalı)
+    String safeTopic = topic.replaceAll(' ', '_').toLowerCase();
+    String uniqueId = "${safeTopic}_${currentQ.testNo}_${currentQ.id}";
+    
+    bool status = await BookmarkService.isBookmarked(uniqueId);
+    
+    if (mounted) {
+      setState(() {
+        _isBookmarked = status;
+      });
+    }
+  }
+
+  // 🔥 YENİ: Favoriye Ekle/Çıkar
+  Future<void> _toggleBookmark() async {
+    if (_questions.isEmpty) return;
+
+    Question currentQ = _questions[_currentQuestionIndex];
+    String topic = widget.topic ?? currentQ.level;
+    
+    bool newState = await BookmarkService.toggleBookmark(currentQ, topic);
+    
+    if (mounted) {
+      setState(() {
+        _isBookmarked = newState;
+      });
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(newState ? "Soru kaydedildi 📌" : "Kaydedilenlerden çıkarıldı"),
+          duration: const Duration(seconds: 1),
+          backgroundColor: newState ? Colors.green : Colors.grey,
+          behavior: SnackBarBehavior.floating,
+        )
+      );
+    }
+  }
+
   Future<void> _loadQuestions() async {
     try {
       String dbTopic = "";
       if (widget.topic != null) {
         String t = widget.topic!;
-        // Basit eşleştirme
         if (t.contains("Anatomi")) dbTopic = "anatomi";
         else if (t.contains("Biyokimya")) dbTopic = "biyokimya";
         else if (t.contains("Fizyoloji")) dbTopic = "fizyoloji";
@@ -137,6 +190,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
         if (_questions.isNotEmpty) {
            _initializeTimer();
+           _checkBookmarkStatus(); // 🔥 YENİ: Sorular yüklenince kontrol et
         } 
       }
     } catch (e) {
@@ -275,6 +329,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void _nextQuestion() {
     if (_currentQuestionIndex < _questions.length - 1) {
       setState(() => _currentQuestionIndex++);
+      _checkBookmarkStatus(); // 🔥 YENİ: Soru değişince bookmark kontrol et
     } else {
       if (widget.isReviewMode) {
         Navigator.pop(context); 
@@ -287,6 +342,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void _prevQuestion() {
     if (_currentQuestionIndex > 0) {
       setState(() => _currentQuestionIndex--);
+      _checkBookmarkStatus(); // 🔥 YENİ: Soru değişince bookmark kontrol et
     }
   }
   
@@ -321,7 +377,6 @@ class _QuizScreenState extends State<QuizScreen> {
               int empty = 0;
               
               List<Map<String, dynamic>> wrongQuestionsToSave = [];
-              // 🔥 DÜZELTME: Artık Map değil, String ID listesi tutuyoruz
               List<String> correctQuestionsToRemove = [];
 
               bool isMistakeReview = widget.questions != null && !widget.isReviewMode;
@@ -349,12 +404,9 @@ class _QuizScreenState extends State<QuizScreen> {
                 } else if (answer == trueIndex) {
                   correct++;
                   if (isMistakeReview) {
-                     // 🔥 DÜZELTME: Soru objesinden Firestore ID'sini oluştur
                      String topic = widget.topic ?? _questions[i].level;
                      int testNo = widget.testNo ?? _questions[i].testNo;
                      int qId = _questions[i].id;
-                     
-                     // Format: Konu_TestNo_SoruNo
                      String docId = "${topic}_${testNo}_$qId";
                      correctQuestionsToRemove.add(docId);
                   }
@@ -387,9 +439,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 await MistakesService.addMistakes(wrongQuestionsToSave);
               }
               
-              // 🔥 GÜNCELLENEN SİLME İŞLEMİ
               if (correctQuestionsToRemove.isNotEmpty) {
-                // Artık doğrudan String listesi gönderiyoruz
                 await MistakesService.removeMistakeList(correctQuestionsToRemove);
               }
 
@@ -486,7 +536,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     Color boxTextColor = (isCurrent || isAnswered || widget.isReviewMode) ? Colors.white : (isDarkMode ? Colors.white60 : Colors.black54);
 
                     return GestureDetector(
-                      onTap: () { Navigator.pop(context); setState(() => _currentQuestionIndex = index); },
+                      onTap: () { Navigator.pop(context); setState(() => _currentQuestionIndex = index); _checkBookmarkStatus(); }, // 🔥 YENİ: Haritadan geçince de kontrol et
                       child: Container(
                         decoration: BoxDecoration(
                           color: boxColor, 
@@ -590,7 +640,21 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
               ],
             ),
-          actions: [const SizedBox(width: 48)],
+          
+          // 🔥 YENİ EKLENEN BUTONLAR (SAĞ ÜST)
+          actions: [
+            IconButton(
+              onPressed: _toggleBookmark,
+              icon: Icon(
+                _isBookmarked ? Icons.bookmark : Icons.bookmark_border_rounded,
+                color: _isBookmarked ? Colors.orange : (isDarkMode ? Colors.white70 : Colors.grey),
+                size: 26,
+              ),
+              tooltip: "Soruyu Kaydet",
+            ),
+            const SizedBox(width: 16),
+          ],
+
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(6.0), 
             child: LinearProgressIndicator(
@@ -628,7 +692,6 @@ class _QuizScreenState extends State<QuizScreen> {
                       
                       const SizedBox(height: 12),
 
-                      // --- 2. FOTOĞRAF ALANI (Row'dan sonra, Column içinde) ---
                       if (currentQuestion.imageUrl != null && currentQuestion.imageUrl!.isNotEmpty)
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -661,7 +724,6 @@ class _QuizScreenState extends State<QuizScreen> {
                             ),
                           ),
                         ),
-                      // --- FOTOĞRAF ALANI BİTİŞ ---
                       
                       Container(
                         padding: const EdgeInsets.all(24),
