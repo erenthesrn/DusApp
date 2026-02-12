@@ -6,6 +6,8 @@ class Question {
   final String explanation;
   final String level;
   final int testNo;
+  final String? imageUrl;
+
 
   Question({
     required this.id,
@@ -15,6 +17,7 @@ class Question {
     required this.level,
     required this.testNo,
     this.explanation = "",
+    this.imageUrl,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
@@ -42,14 +45,15 @@ class Question {
       }
     }
 
-    return Question(
+return Question(
       id: parsedId,
       question: json['question'] ?? "Soru yüklenemedi",
       options: json['options'] != null ? List<String>.from(json['options']) : [],
-      answerIndex: json['answerIndex'] ?? json['correctIndex'] ?? json['answer_index'] ?? 0, // Farklı isimlendirmeleri kapsa
+      answerIndex: json['answerIndex'] ?? json['correctIndex'] ?? json['answer_index'] ?? 0,
       explanation: json['explanation'] ?? "Açıklama bulunmuyor.",
       level: json['level'] ?? json['topic'] ?? "Kolay", 
-      testNo: json['testNo'] ?? json['test_no'] ?? 1,    
+      testNo: json['testNo'] ?? json['test_no'] ?? 1,
+      imageUrl: json['image_url'], // 🔥 YENİ EKLENEN: JSON'dan 'image_url'yi çek
     );
   }
 }

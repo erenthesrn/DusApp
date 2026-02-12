@@ -124,6 +124,7 @@ class _QuizScreenState extends State<QuizScreen> {
           explanation: data['explanation'] ?? "",
           testNo: data['testNo'] ?? 0,
           level: data['topic'] ?? "Genel",
+          imageUrl: data['image_url'], 
         );
       }).toList();
 
@@ -626,6 +627,41 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                       
                       const SizedBox(height: 12),
+
+                      // --- 2. FOTOĞRAF ALANI (Row'dan sonra, Column içinde) ---
+                      if (currentQuestion.imageUrl != null && currentQuestion.imageUrl!.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          height: 250, 
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.black26 : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(
+                              currentQuestion.imageUrl!,
+                              fit: BoxFit.contain,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey));
+                              },
+                            ),
+                          ),
+                        ),
+                      // --- FOTOĞRAF ALANI BİTİŞ ---
                       
                       Container(
                         padding: const EdgeInsets.all(24),

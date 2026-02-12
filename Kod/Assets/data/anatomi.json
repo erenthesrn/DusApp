@@ -3,16 +3,17 @@
     "id": 1,
     "test_no": 1,
     "level": "Kolay",
-    "question": "Yüzdeki mimik kaslarını (gülme, kaş çatma vb.) uyaran ve felcinde yüz felci (Bell paralizisi) görülen kafa çifti hangisidir?",
+    "question": "Yukarıdaki görselde sarı alan ile ifade edilen, vücudun orta hattından geçerek vücudu dikey doğrultuda sağ (dexter) ve sol (sinister) olmak üzere iki eşit parçaya ayıran düzlem aşağıdakilerden hangisidir?",
+    "image_url":"gs://dusapp-17b00.firebasestorage.app/Gemini_Generated_Image_m2xdfim2xdfim2xd.png",
     "options": [
-      "A) Nervus Trigeminus",
-      "B) Nervus Facialis",
-      "C) Nervus Vagus",
-      "D) Nervus Olfactorius",
-      "E) Nervus Opticus"
+        "A) Planum sagittale",
+        "B) Planum frontale (coronale)",
+        "C) Planum medianum",
+        "D) Planum transversum",
+        "E) Planum horizontale"
     ],
-    "answer_index": 1,
-    "explanation": "Doğru cevap B (Nervus Facialis). 7. kafa çifti olan N. Facialis, yüzün mimik kaslarının motor siniridir."
+    "answer_index": 2,
+    "explanation": "Doğru cevap C. Vücudun tam ortasından geçen, yere dik inen ve vücudu sağ-sol olmak üzere iki simetrik/eşit yarıma bölen düzlemdir. Görseldeki kırmızı kesikli çizgi (Axis verticalis) bu düzlemin içinde kalır."
   },
   {
     "id": 2,
