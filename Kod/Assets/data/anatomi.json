@@ -302,7 +302,7 @@
   },
   {
     "id": 21,
-    "test_no": 3,
+    "test_no":9,
     "level": "Orta",
     "question": "Aşağıdaki kaslardan hangisi Nervus Facialis (CN VII) tarafından innerve edilmez?",
     "options": [
@@ -317,7 +317,7 @@
   },
   {
     "id": 22,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Diaphragma üzerindeki 'hiatus oesophageus'tan özofagus ile birlikte geçen anatomik yapı aşağıdakilerden hangisidir?",
     "options": [
@@ -332,7 +332,7 @@
   },
   {
     "id": 23,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Ductus parotideus (Stensen kanalı), ağız boşluğuna açılmadan önce aşağıdaki kaslardan hangisini deler?",
     "options": [
@@ -347,7 +347,7 @@
   },
   {
     "id": 24,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Karın ön duvarında bulunan 'Linea arcuata'nın altında, M. rectus abdominis'in arka yüzünü doğrudan örten yapı hangisidir?",
     "options": [
@@ -362,7 +362,7 @@
   },
   {
     "id": 25,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Aşağıdaki arterlerden hangisi Truncus coeliacus'un doğrudan (primer) dallarından biri değildir?",
     "options": [
@@ -377,7 +377,7 @@
   },
   {
     "id": 26,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Sinus cavernosus'un içinden (lümeninden) geçen kranial sinir aşağıdakilerden hangisidir?",
     "options": [
@@ -392,7 +392,7 @@
   },
   {
     "id": 27,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Kolay",
     "question": "Atlas (C1) omurunun en belirgin ayırt edici anatomik özelliği nedir?",
     "options": [
@@ -407,7 +407,7 @@
   },
   {
     "id": 28,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Aşağıdaki kaslardan hangisi çiğneme kası olup, kasıldığında çeneyi açan (depresyon) ve öne çıkaran (protrüzyon) tek kastır?",
     "options": [
@@ -422,7 +422,7 @@
   },
   {
     "id": 29,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Vena portae hepatis'i oluşturan iki ana ven aşağıdakilerin hangisinde doğru verilmiştir?",
     "options": [
@@ -437,7 +437,7 @@
   },
   {
     "id": 30,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Mediastinum posterius'ta (arka mediastinum) aşağıdaki anatomik yapılardan hangisi BULUNMAZ?",
     "options": [
@@ -452,7 +452,7 @@
   },
   {
     "id": 31,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Femoral üçgenin (Trigonum femorale) tabanını oluşturan kaslar aşağıdakilerden hangisidir?",
     "options": [
@@ -467,7 +467,7 @@
   },
   {
     "id": 32,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Larinksin kıkırdakları arasında bulunan ve ses tellerini (plica vocalis) uzaklaştırarak rima glottidis'i açan tek kas hangisidir?",
     "options": [
@@ -482,7 +482,7 @@
   },
   {
     "id": 33,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "Aşağıdaki yapılardan hangisi Foramen Jugulare'den geçmez?",
     "options": [
@@ -497,7 +497,7 @@
   },
   {
     "id": 34,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Orta",
     "question": "M. latissimus dorsi kasının siniri aşağıdakilerden hangisidir?",
     "options": [
@@ -512,7 +512,7 @@
   },
   {
     "id": 35,
-    "test_no": 3,
+    "test_no": 9,
     "level": "Kolay",
     "question": "Kalbin venöz kanının büyük çoğunluğunu toplayıp sağ atriuma boşaltan ana venöz yapı hangisidir?",
     "options": [
