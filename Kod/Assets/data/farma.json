@@ -1,0 +1,77 @@
+[
+{
+"id": 5000,
+"test_no": 1,
+"level": "Kolay",
+"question": "Aşağıdakilerden hangisi ilaçların hücre zarından en yaygın geçiş mekanizmasıdır?",
+"options": [
+"A) Aktif transport",
+"B) Pasif difüzyon",
+"C) Kolaylaştırılmış difüzyon",
+"D) Pinositoz",
+"E) Filtrasyon"
+],
+"answer_index": 1,
+"explanation": "İlaçların büyük bir çoğunluğu, konsantrasyon farkına dayanarak enerji harcanmadan gerçekleşen pasif difüzyon ile hücre zarından geçer."
+},
+{
+"id": 5001,
+"test_no": 1,
+"level": "Kolay",
+"question": "Bir ilacın sistemik dolaşıma değişmeden ulaşan miktarının, verilen toplam miktara oranına ne ad verilir?",
+"options": [
+"A) Klirens",
+"B) Yarılanma ömrü",
+"C) Biyoyararlanım",
+"D) Dağılım hacmi",
+"E) İlk geçiş etkisi"
+],
+"answer_index": 2,
+"explanation": "Biyoyararlanım, ilacın uygulama bölgesinden sistemik dolaşıma değişmeden geçme oranını ifade eder. İntravenöz (IV) uygulamada bu oran %100 kabul edilir."
+},
+{
+"id": 5002,
+"test_no": 1,
+"level": "Kolay",
+"question": "Aşağıdaki uygulama yollarından hangisinde 'İlk Geçiş Etkisi' (First-Pass Effect) en belirgin şekilde görülür?",
+"options": [
+"A) İntravenöz",
+"B) Sublingual",
+"C) Oral",
+"D) İntramüsküler",
+"E) İnhalasyon"
+],
+"answer_index": 2,
+"explanation": "Oral yoldan alınan ilaçlar gastrointestinal sistemden emildikten sonra portal ven aracılığıyla karaciğere gider ve burada sistemik dolaşıma girmeden önce metabolize edilirler. Buna ilk geçiş etkisi denir."
+},
+{
+"id": 5003,
+"test_no": 1,
+"level": "Kolay",
+"question": "Karaciğerde ilaçların metabolize edilmesinden sorumlu olan en önemli enzim sistemi aşağıdakilerden hangisidir?",
+"options": [
+"A) Monoamin oksidaz (MAO)",
+"B) Sitokrom P450 (CYP450)",
+"C) Kolinesteraz",
+"D) Alkol dehidrogenaz",
+"E) Ksantin oksidaz"
+],
+"answer_index": 1,
+"explanation": "İlaç metabolizmasının (biyotransformasyon) Faz I reaksiyonlarında görev alan en temel enzim ailesi karaciğerdeki mikrozomal Sitokrom P450 enzimleridir."
+},
+{
+"id": 5004,
+"test_no": 1,
+"level": "Kolay",
+"question": "Bir reseptöre bağlanarak onu aktive eden ve maksimal etki oluşturan maddelere ne ad verilir?",
+"options": [
+"A) Antagonist",
+"B) Parsiyel agonist",
+"C) Ters agonist",
+"D) Tam agonist",
+"E) Kompetitif inhibitör"
+],
+"answer_index": 3,
+"explanation": "Reseptöre bağlandığında tam biyolojik yanıt oluşturan maddelere agonist (tam agonist) denir. Antagonist ise bağlanır ancak bir etki oluşturmaz, agonistlerin etkisini engeller."
+}
+]

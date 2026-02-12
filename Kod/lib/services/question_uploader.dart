@@ -29,13 +29,23 @@ class QuestionUploader {
     final firestore = FirebaseFirestore.instance;
     
     // JSON dosya isimlerin
-    final files = [
+final files = [
       'anatomi', 
       'biyokimya', 
+      'fizyoloji',
+      'histoloji',
+      'farma',
+      'patoloji',
+      'mikrobiyoloji',
+      'biyoloji',
       'cerrahi', 
-      'perio', 
+      'endo',      // Endodonti için
+      'perio',     // Periodontoloji için
+      'orto',      // Ortodonti için
+      'pedo',      // Pedodonti için
       'protetik',
-      // Diğer dosyalarını buraya ekle...
+      'radyoloji',
+      'resto'      // Restoratif için
     ];
 
     print("🚀 Yükleme (Düz Liste Modu) Başlatılıyor...");

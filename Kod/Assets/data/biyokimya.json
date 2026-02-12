@@ -1,20 +1,20 @@
 [
   {
-    "id": 101,
+    "id": 1001,
     "test_no": 1,
     "level": "Kolay",
-    "question": "DENEMEEEE Aşağıdaki amino asitlerden hangisi optikçe aktif değildir (asimetrik karbon atomu içermez)?",
+    "question": "Aşağıdaki amino asitlerden hangisi optikçe aktif değildir (asimetrik karbon atomu içermez)?",
     "options": [
-      "A) DENEME Alanin",
+      "A) Alanin",
       "B) Glisin",
       "C) Valin",
-      "D) DENEME Lösin",
+      "D) Lösin",
       "E) Prolin"
     ],
     "answer_index": 1
   },
   {
-    "id": 102,
+    "id": 1002,
     "test_no": 1,
     "level": "Orta",
     "question": "Glikoliz yolunun en önemli hız kısıtlayıcı basamağını katalizleyen enzim hangisidir?",
@@ -28,7 +28,7 @@
     "answer_index": 2
   },
   {
-    "id": 103,
+    "id": 1003,
     "test_no": 2,
     "level": "Orta",
     "question": "Steroid hormonların, safra asitlerinin ve D vitamininin ortak öncül maddesi aşağıdakilerden hangisidir?",
@@ -42,7 +42,7 @@
     "answer_index": 0
   },
   {
-    "id": 104,
+    "id": 1004,
     "test_no": 2,
     "level": "Zor",
     "question": "Beriberi hastalığı, Wernicke-Korsakoff sendromu gibi tablolar hangi vitaminin eksikliğinde görülür?",

@@ -223,5 +223,80 @@
     ],
     "answer_index": 0,
     "explanation": "Doğru cevap A (Cartilago Thyroidea). Larinksin en büyük kıkırdağıdır ve boyunda belirgin bir çıkıntı yapar."
+  },
+  {
+    "id": 16,
+    "test_no": 2,
+    "level": "Kolay",
+    "question": "Yüzün mimik kaslarının motor inervasyonu aşağıdaki kranial sinirlerden hangisi tarafından sağlanır?",
+    "options": [
+      "A) N. trigeminus",
+      "B) N. facialis",
+      "C) N. glossopharyngeus",
+      "D) N. vagus",
+      "E) N. hypoglossus"
+    ],
+    "answer_index": 1,
+    "explanation": "Mimik kasları 2. brankiyal ark (yutak kavsi) türevidir ve motor inervasyonları N. facialis (CN VII) tarafından sağlanır. N. trigeminus ise çiğneme kaslarını inerve eder."
+  },
+  {
+    "id": 17,
+    "test_no": 2,
+    "level": "Kolay",
+    "question": "Mandibulaya protrüzyon (öne hareket) yaptıran ve ağzın açılmasına yardımcı olan temel çiğneme kası hangisidir?",
+    "options": [
+      "A) M. temporalis",
+      "B) M. masseter",
+      "C) M. pterygoideus medialis",
+      "D) M. pterygoideus lateralis",
+      "E) M. buccinator"
+    ],
+    "answer_index": 3,
+    "explanation": "M. pterygoideus lateralis, çeneyi açan ve protrüzyon yaptıran tek asıl çiğneme kasıdır. Diğer çiğneme kasları (Masseter, Temporal, Medial Pterygoid) çeneyi kapatır (elevasyon)."
+  },
+  {
+    "id": 18,
+    "test_no": 2,
+    "level": "Kolay",
+    "question": "Dilin 2/3 ön kısmının tat duyusunu taşıyan sinir aşağıdakilerden hangisidir?",
+    "options": [
+      "A) N. lingualis",
+      "B) Chorda tympani",
+      "C) N. glossopharyngeus",
+      "D) N. vagus",
+      "E) N. hypoglossus"
+    ],
+    "answer_index": 1,
+    "explanation": "Dilin 2/3 ön kısmının genel duyusunu (ağrı, ısı, dokunma) N. lingualis taşırken, tat duyusunu N. facialis'in dalı olan Chorda tympani taşır. 1/3 arka kısmın tat ve genel duyusu N. glossopharyngeus'a aittir."
+  },
+  {
+    "id": 19,
+    "test_no": 2,
+    "level": "Kolay",
+    "question": "Sert damağın (palatum durum) mukozasının duyusunu temel olarak sağlayan sinir hangisidir?",
+    "options": [
+      "A) N. palatinus major",
+      "B) N. palatinus minor",
+      "C) N. nasopalatinus",
+      "D) N. infraorbitalis",
+      "E) N. alveolaris inferior"
+    ],
+    "answer_index": 0,
+    "explanation": "N. palatinus major, sert damağın premolarlar bölgesinden arkaya kadar olan kısmını inerve eder. Ön kısmı (kesici dişler arkası) N. nasopalatinus, yumuşak damağı ise N. palatinus minor inerve eder."
+  },
+  {
+    "id": 20,
+    "test_no": 2,
+    "level": "Kolay",
+    "question": "Aşağıdaki kaslardan hangisi N. hypoglossus (CN XII) tarafından uyarılmaz?",
+    "options": [
+      "A) M. genioglossus",
+      "B) M. hyoglossus",
+      "C) M. styloglossus",
+      "D) M. palatoglossus",
+      "E) M. longitudinalis superior"
+    ],
+    "answer_index": 3,
+    "explanation": "Dilin tüm intrinsik ve ekstrinsik kasları N. hypoglossus tarafından uyarılır; ancak M. palatoglossus bir damak kası kökenli olduğu için Plexus pharyngeus (N. vagus) tarafından uyarılır."
   }
 ]

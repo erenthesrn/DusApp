@@ -1,6 +1,6 @@
 [
   {
-    "id": 14001,
+    "id": 3000,
     "test_no": 1,
     "level": "Kolay",
     "question": "Trismus ile ilgili hangisi yanlıştır?",
@@ -15,7 +15,7 @@
     "explanation": "Yanlış olan seçenek C şıkkıdır. Trismus tedavisinin temel prensibi 'Fizyoterapi ve Sıcak Uygulama'dır. Hasta ağzını açmaya teşvik edilmeli, sakız çiğneme gibi egzersizler verilmeli ve bölgeye sıcak nemli havlu uygulanmalıdır. Hareketsizlik ve soğuk uygulama trismusun çözülmesini engeller, hatta fibrozise yol açabilir."
   },
   {
-    "id": 14002,
+    "id": 3001,
     "test_no": 1,
     "level": "Kolay",
     "question": "N.maxillaris ve n.mandibularisin kafayı terk ettiği foramen hangileridir?",
@@ -30,7 +30,7 @@
     "explanation": "Nervus Trigeminus'un (CN V) üç dalı kafatasını şu deliklerden terk eder: \n1. N. Ophthalmicus (V1) -> Fissura Orbitalis Superior\n2. N. Maxillaris (V2) -> Foramen Rotundum\n3. N. Mandibularis (V3) -> Foramen Ovale.\nDoğru eşleşme Rotundum ve Ovale'dir."
   },
   {
-    "id": 14003,
+    "id": 3002,
     "test_no": 1,
     "level": "Orta",
     "question": "Vazokonstrüktör olarak aşağıdakilerden hangisi kullanılmaz?",

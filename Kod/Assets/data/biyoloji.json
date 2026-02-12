@@ -1,0 +1,77 @@
+[
+  {
+    "id": 2000,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Proteinlerin primer (birincil) yapısını oluşturan amino asitler, birbirlerine hangi bağ türü ile bağlanarak polipeptid zincirini oluştururlar?",
+    "options": [
+      "A) Hidrojen bağları",
+      "B) Peptid bağları",
+      "C) Disülfit köprüleri",
+      "D) İyonik bağlar",
+      "E) Van der Waals etkileşimleri"
+    ],
+    "answer_index": 1,
+    "explanation": "Proteinlerin primer yapısı, amino asitlerin belirli bir dizilimde peptid bağları (kovalent bağlar) ile birbirine bağlanmasıyla oluşur. Sekonder ve tersiyer yapılarda ise hidrojen ve disülfit bağları rol oynar."
+  },
+  {
+    "id": 2001,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Hücrede lipid sentezi, steroid hormon yapımı ve ilaç detoksifikasyonundan sorumlu olan organel aşağıdakilerden hangisidir?",
+    "options": [
+      "A) Granüllü Endoplazmik Retikulum",
+      "B) Golgi Aygıtı",
+      "C) Lizozom",
+      "D) Düz Endoplazmik Retikulum",
+      "E) Peroksizom"
+    ],
+    "answer_index": 3,
+    "explanation": "Düz Endoplazmik Retikulum (DER), üzerinde ribozom bulundurmaz ve temel görevi lipid/steroid sentezi ile detoksifikasyondur. Granüllü ER (GER) ise protein sentezinden sorumludur."
+  },
+  {
+    "id": 2002,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "DNA dizisinde meydana gelen bir nokta mutasyonu sonucunda, mRNA'da normal bir kodon yerine erken bir 'dur' (stop) kodonunun oluşmasına ne ad verilir?",
+    "options": [
+      "A) Missense mutasyon",
+      "B) Sessiz mutasyon",
+      "C) Nonsense mutasyon",
+      "D) Çerçeve kayması (Frameshift)",
+      "E) Translokasyon"
+    ],
+    "answer_index": 2,
+    "explanation": "Nonsense mutasyon, bir amino asidi kodlayan kodonun mutasyon sonucu stop kodonuna (UAA, UAG, UGA) dönüşmesi ve protein sentezinin erken sonlanmasıdır. Bu durum genellikle işlevsiz, kısa bir protein oluşumuna neden olur."
+  },
+  {
+    "id": 2003,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Hücre bölünmesi sırasında homolog kromozomlar arasında parça değişimi (krossing-over) gerçekleşerek genetik çeşitliliğin sağlandığı evre hangisidir?",
+    "options": [
+      "A) Mitoz - Profaz",
+      "B) Mayoz I - Profaz I",
+      "C) Mayoz II - Profaz II",
+      "D) Mitoz - Metafaz",
+      "E) Mayoz I - Anafaz I"
+    ],
+    "answer_index": 1,
+    "explanation": "Krossing-over, sadece mayoz bölünmenin birinci profaz evresinde (Profaz I) gerçekleşir. Bu olay sayesinde genetik materyal karışır ve tür içi çeşitlilik sağlanır."
+  },
+  {
+    "id": 2004,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Bağırsak epiteli gibi emilim yapan hücrelerin yüzey alanını artırmak amacıyla oluşturdukları, aktin filamentleri içeren parmaksı çıkıntılara ne ad verilir?",
+    "options": [
+      "A) Silya",
+      "B) Mikrovillus",
+      "C) Flagellum",
+      "D) Stereosilya",
+      "E) Bazal lamina"
+    ],
+    "answer_index": 1,
+    "explanation": "Mikrovilluslar, hücre zarının emilim yüzeyini artırmak için oluşturduğu hareketsiz, parmaksı çıkıntılardır ve iskeletinde aktin bulunur. Silyalar (tüycükler) ise hareketli yapılardır ve mikrotübül içerirler."
+  }
+]
