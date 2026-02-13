@@ -11,6 +11,11 @@ import '../services/theme_provider.dart';
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
 
+  // Performans için static formatlayıcılar (Her döngüde yeniden oluşturulmaz)
+  static final DateFormat _ymdFormat = DateFormat('yyyy-MM-dd');
+  static final DateFormat _dayMonthFormat = DateFormat('d MMM');
+  static final DateFormat _dayNameFormat = DateFormat('E');
+
   Map<String, dynamic> _processPremiumData(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return {};
 
@@ -24,22 +29,25 @@ class AnalysisScreen extends StatelessWidget {
     List<double> recentNets = [];
     
     Map<String, int> dailyActivity = {};
+    // DateTime.now()'ı döngü dışında bir kere al
     DateTime now = DateTime.now();
+    
+    // 7 günlük veriyi initialize et
     for (int i = 6; i >= 0; i--) {
-      dailyActivity[DateFormat('yyyy-MM-dd').format(now.subtract(Duration(days: i)))] = 0;
+      dailyActivity[_ymdFormat.format(now.subtract(Duration(days: i)))] = 0;
     }
 
     // SON 7 GÜNLÜK SABİT TARİHLER
     List<String> last7Days = [];
     for (int i = 6; i >= 0; i--) {
-      last7Days.add(DateFormat('d MMM').format(now.subtract(Duration(days: i))));
+      last7Days.add(_dayMonthFormat.format(now.subtract(Duration(days: i))));
     }
 
     // Günlere göre net toplamları
     Map<String, double> dailyNets = {};
     Map<String, int> dailyCounts = {};
     for (int i = 6; i >= 0; i--) {
-      String dayKey = DateFormat('yyyy-MM-dd').format(now.subtract(Duration(days: i)));
+      String dayKey = _ymdFormat.format(now.subtract(Duration(days: i)));
       dailyNets[dayKey] = 0;
       dailyCounts[dayKey] = 0;
     }
@@ -47,8 +55,6 @@ class AnalysisScreen extends StatelessWidget {
     Map<String, int> timeOfDayStats = {
       'Sabah': 0, 'Öğlen': 0, 'Akşam': 0, 'Gece': 0
     };
-
-    List<Map<String, dynamic>> last30Days = [];
     
     for (var doc in docs) {
       var data = doc.data() as Map<String, dynamic>;
@@ -61,10 +67,20 @@ class AnalysisScreen extends StatelessWidget {
 
       String topic = data['topic'] ?? "Genel";
       DateTime date = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
-      String dayKey = DateFormat('yyyy-MM-dd').format(date);
+      String dayKey = _ymdFormat.format(date);
       
       int hour = date.hour;
-      String timeSlot = hour < 12 ? 'Sabah' : hour < 17 ? 'Öğlen' : hour < 21 ? 'Akşam' : 'Gece';
+      // Basit if-else zinciri map lookup'tan hızlıdır
+      String timeSlot;
+      if (hour < 12) {
+        timeSlot = 'Sabah';
+      } else if (hour < 17) {
+        timeSlot = 'Öğlen';
+      } else if (hour < 21) {
+        timeSlot = 'Akşam';
+      } else {
+        timeSlot = 'Gece';
+      }
       timeOfDayStats[timeSlot] = (timeOfDayStats[timeSlot] ?? 0) + 1;
 
       totalCorrect += c;
@@ -89,16 +105,17 @@ class AnalysisScreen extends StatelessWidget {
         };
       }
       
-      subjectData[topic]!['correct'] += c;
-      subjectData[topic]!['wrong'] += w;
-      subjectData[topic]!['empty'] += e;
-      subjectData[topic]!['total'] += t;
-      subjectData[topic]!['nets'].add(net);
-      subjectData[topic]!['accuracies'].add(accuracy);
-      subjectData[topic]!['testCount'] += 1;
+      var topicStats = subjectData[topic]!;
+      topicStats['correct'] += c;
+      topicStats['wrong'] += w;
+      topicStats['empty'] += e;
+      topicStats['total'] += t;
+      topicStats['nets'].add(net);
+      topicStats['accuracies'].add(accuracy);
+      topicStats['testCount'] += 1;
       
-      if (date.isAfter(subjectData[topic]!['lastAttempt'])) {
-        subjectData[topic]!['lastAttempt'] = date;
+      if (date.isAfter(topicStats['lastAttempt'])) {
+        topicStats['lastAttempt'] = date;
       }
 
       if (dailyActivity.containsKey(dayKey)) {
@@ -110,10 +127,6 @@ class AnalysisScreen extends StatelessWidget {
         dailyNets[dayKey] = (dailyNets[dayKey] ?? 0) + net;
         dailyCounts[dayKey] = (dailyCounts[dayKey] ?? 0) + 1;
       }
-      
-      if (now.difference(date).inDays <= 30) {
-        last30Days.add({'date': date, 'net': net, 'accuracy': accuracy});
-      }
     }
 
     // Son 7 günlük grafik verisi oluştur
@@ -121,7 +134,7 @@ class AnalysisScreen extends StatelessWidget {
     recentNets = [];
     int spotIndex = 0;
     for (int i = 6; i >= 0; i--) {
-      String dayKey = DateFormat('yyyy-MM-dd').format(now.subtract(Duration(days: i)));
+      String dayKey = _ymdFormat.format(now.subtract(Duration(days: i)));
       double totalNet = dailyNets[dayKey] ?? 0;
       int count = dailyCounts[dayKey] ?? 0;
       double avgNetForDay = count > 0 ? totalNet / count : 0;
@@ -130,16 +143,27 @@ class AnalysisScreen extends StatelessWidget {
       spotIndex++;
     }
 
-    double avgNet = recentNets.isEmpty ? 0 : recentNets.where((n) => n > 0).isEmpty ? 0 : recentNets.where((n) => n > 0).reduce((a, b) => a + b) / recentNets.where((n) => n > 0).length;
+    double avgNet = 0;
+    var validNets = recentNets.where((n) => n > 0);
+    if (validNets.isNotEmpty) {
+        avgNet = validNets.reduce((a, b) => a + b) / validNets.length;
+    }
+    
     double overallAccuracy = totalQuestions == 0 ? 0 : totalCorrect / totalQuestions;
     
     String trend = "Stabil";
-    List<double> nonZeroNets = recentNets.where((n) => n > 0).toList();
+    List<double> nonZeroNets = validNets.toList();
+    
     if (nonZeroNets.length >= 3) {
       int halfPoint = nonZeroNets.length ~/ 2;
       if (halfPoint > 0) {
-        double firstHalf = nonZeroNets.take(halfPoint).reduce((a, b) => a + b) / halfPoint;
-        double secondHalf = nonZeroNets.skip(halfPoint).reduce((a, b) => a + b) / (nonZeroNets.length - halfPoint);
+        // sublist kullanarak daha performanslı hale getirdik
+        var firstHalfList = nonZeroNets.sublist(0, halfPoint);
+        var secondHalfList = nonZeroNets.sublist(halfPoint);
+        
+        double firstHalf = firstHalfList.reduce((a, b) => a + b) / firstHalfList.length;
+        double secondHalf = secondHalfList.reduce((a, b) => a + b) / secondHalfList.length;
+        
         double change = firstHalf > 0 ? ((secondHalf - firstHalf) / firstHalf) * 100 : 0;
         
         if (change > 10) trend = "Yükseliş";
@@ -157,20 +181,22 @@ class AnalysisScreen extends StatelessWidget {
       
       String improvement = "→";
       if (nets.length >= 6) {
+        // take/skip yerine sublist daha hızlı olabilir ama logic karmaşasını önlemek için bıraktım
+        // veri sayısı az olduğu için sorun olmaz.
         double early = nets.take(3).reduce((a, b) => a + b) / 3;
         double recent = nets.skip(nets.length - 3).reduce((a, b) => a + b) / 3;
         if (recent > early * 1.15) improvement = "↗️";
         else if (recent < early * 0.85) improvement = "↘️";
       }
       
-      String status = "🔨 Gelişmeli";
-      Color color = Colors.orange;
-      String recommendation = "";
+      String status;
+      Color color;
+      String recommendation;
 
       if (avgAcc >= 0.85) {
         status = "🔥 Uzman";
         color = const Color(0xFF10b981);
-        recommendation = "Mükemmel! Bu konuyu hızlı çözmeye devam et.";
+        recommendation = "Mükemmel! Hızlanmaya odaklan.";
       } else if (avgAcc >= 0.70) {
         status = "✅ İyi";
         color = const Color(0xFF3b82f6);
@@ -178,10 +204,11 @@ class AnalysisScreen extends StatelessWidget {
       } else if (avgAcc < 0.50) {
         status = "⚠️ Kritik";
         color = const Color(0xFFef4444);
-        recommendation = "Acil çalışma gerekiyor! Temel konuları tekrar et.";
+        recommendation = "Acil konu tekrarı gerekiyor.";
       } else {
+        status = "🔨 Gelişmeli";
         color = const Color(0xFFf59e0b);
-        recommendation = "Biraz daha çalışma ile halledebilirsin.";
+        recommendation = "Biraz daha pratikle halledersin.";
       }
 
       int daysSinceLastAttempt = now.difference(stats['lastAttempt']).inDays;
@@ -205,7 +232,7 @@ class AnalysisScreen extends StatelessWidget {
       });
     });
 
-    topicInsights.sort((a, b) => a['average'].compareTo(b['average']));
+    topicInsights.sort((a, b) => b['average'].compareTo(a['average'])); // Yüksekten düşüğe sırala
 
     String bestTimeOfDay = timeOfDayStats.entries.reduce((a, b) => a.value > b.value ? a : b).key;
 
@@ -221,7 +248,7 @@ class AnalysisScreen extends StatelessWidget {
       'trendDates': last7Days,
       'topicInsights': topicInsights,
       'dailyActivity': dailyActivity.values.toList(),
-      'dailyLabels': dailyActivity.keys.map((k) => DateFormat('E').format(DateTime.parse(k))).toList(),
+      'dailyLabels': dailyActivity.keys.map((k) => _dayNameFormat.format(DateTime.parse(k))).toList(),
       'trend': trend,
       'testCount': docs.length,
       'bestTimeOfDay': bestTimeOfDay,
@@ -245,15 +272,10 @@ class AnalysisScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text("📊 Performans Analizi", style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: textColor, fontSize: 20)),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        // PERFORMANS REVİZYONU: Blur efekti kaldırıldı, yerine hafif transparan zemin.
+        backgroundColor: (isDark ? const Color(0xFF0f172a) : const Color(0xFFfafafa)).withOpacity(0.9),
         elevation: 0,
         automaticallyImplyLeading: false,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.transparent),
-          ),
-        ),
       ),
       body: Container(
         decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: bgColors)),
@@ -275,6 +297,7 @@ class AnalysisScreen extends StatelessWidget {
                     return _buildEmptyState(isDark);
                   }
 
+                  // Veri işleme maliyetli olabilir, build içinde çağırmak zorunda olsak da optimize ettik.
                   var analytics = _processPremiumData(snapshot.data!.docs);
                   if (analytics.isEmpty) return _buildEmptyState(isDark);
 
@@ -309,6 +332,8 @@ class AnalysisScreen extends StatelessWidget {
 
                         _buildSectionTitle("Konu Bazlı Detaylı Analiz", "Güçlü ve zayıf yönlerini keşfet", isDark, textColor),
                         const SizedBox(height: 12),
+                        // ListView.builder yerine Column içinde map kullanmak az eleman için daha performanslıdır
+                        // ve nested scroll sorununu çözer.
                         ...(analytics['topicInsights'] as List).map((topic) {
                           return _buildTopicCard(topic, isDark);
                         }).toList(),
@@ -339,7 +364,7 @@ class AnalysisScreen extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
         ],
       ),
       child: Row(
@@ -424,8 +449,9 @@ class AnalysisScreen extends StatelessWidget {
         color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.3), width: 1),
+        // Gölgeyi azalttık
         boxShadow: [
-          BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(color: color.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
         ],
       ),
       child: Column(
@@ -461,14 +487,18 @@ class AnalysisScreen extends StatelessWidget {
   Widget _buildTrendChart(List<FlSpot> spots, List<String> dates, double avgNet, bool isDark) {
     if (spots.isEmpty) return const Center(child: Text("Veri Yok"));
 
-    double maxY = spots.map((s) => s.y).reduce(max);
-    double minY = spots.map((s) => s.y).reduce(min);
-    
-    double range = maxY - minY;
-    if (range < 5) range = 5;
-    maxY = maxY + (range * 0.2);
-    minY = minY - (range * 0.1);
-    if (minY < 0) minY = 0;
+    double rawMaxY = spots.map((s) => s.y).reduce(max);
+    double maxY = (rawMaxY + 0.5).ceilToDouble();
+    if (maxY < 4) maxY = 4;
+    double minY = 0;
+
+    double interval = 1;
+    if (maxY > 10) {
+      interval = (maxY / 5).ceilToDouble();
+    }
+    if (maxY % interval != 0) {
+      maxY = ((maxY ~/ interval) + 1) * interval;
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -508,7 +538,7 @@ class AnalysisScreen extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: (maxY - minY) / 5,
+                  horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) => FlLine(
                     color: Colors.grey.withOpacity(0.15),
                     strokeWidth: 1,
@@ -542,10 +572,11 @@ class AnalysisScreen extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
-                      interval: (maxY - minY) / 5,
+                      interval: interval,
                       getTitlesWidget: (value, meta) {
+                        String text = value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
                         return Text(
-                          value.toInt().toString(),
+                          text,
                           style: GoogleFonts.robotoMono(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
                         );
                       },
@@ -561,23 +592,58 @@ class AnalysisScreen extends StatelessWidget {
                 ),
                 lineTouchData: LineTouchData(
                   enabled: true,
+                  // Touch performans ayarı: Mesafe toleransını düşürdük
+                  touchSpotThreshold: 10,
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (touchedSpot) => isDark ? const Color(0xFF1e293b) : Colors.white,
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        int index = spot.x.toInt();
-                        String date = index < dates.length ? dates[index] : "";
-                        return LineTooltipItem(
-                          "$date\n${spot.y.toStringAsFixed(1)} net",
-                          GoogleFonts.inter(
-                            color: const Color(0xFF3b82f6),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
+                        if (spot.barIndex == 0) {
+                          int index = spot.x.toInt();
+                          String date = index < dates.length ? dates[index] : "";
+                          return LineTooltipItem(
+                            "$date\n${spot.y.toStringAsFixed(1)} net",
+                            GoogleFonts.inter(
+                              color: const Color(0xFF3b82f6),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          );
+                        } else {
+                          return LineTooltipItem(
+                            "Ortalama: ${spot.y.toStringAsFixed(1)} net",
+                            GoogleFonts.inter(
+                              color: const Color(0xFFf59e0b),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
                       }).toList();
                     },
                   ),
+                  getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                    return spotIndexes.map((spotIndex) {
+                      final isAverageLine = barData.color == const Color(0xFFf59e0b);
+                      if (isAverageLine) return null;
+                      return TouchedSpotIndicatorData(
+                        FlLine(color: const Color(0xFF3b82f6).withOpacity(0.5), strokeWidth: 2),
+                        FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) {
+                            return FlDotCirclePainter(
+                              radius: 6,
+                              color: Colors.white,
+                              strokeWidth: 3,
+                              strokeColor: const Color(0xFF3b82f6),
+                            );
+                          },
+                        ),
+                      );
+                    }).toList();
+                  },
                 ),
                 lineBarsData: [
                   LineChartBarData(
@@ -638,7 +704,7 @@ class AnalysisScreen extends StatelessWidget {
         color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
         ],
       ),
       child: Column(
@@ -763,7 +829,8 @@ class AnalysisScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value, style: GoogleFonts.robotoMono(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                Text(value, style: GoogleFonts.robotoMono(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                ),
                 Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey)),
               ],
             ),
@@ -782,7 +849,7 @@ class AnalysisScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: (data['color'] as Color).withOpacity(0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: (data['color'] as Color).withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))
+          BoxShadow(color: (data['color'] as Color).withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 3))
         ],
       ),
       child: Column(
@@ -923,7 +990,10 @@ class AnalysisScreen extends StatelessWidget {
     
     var topics = data['topicInsights'] as List;
     if (topics.isNotEmpty) {
-      var weakest = topics.first;
+      // Weakest konusu en altta olacağı için sort reversed yapmıştık.
+      // Sıralama logic'inde b.compareTo(a) dedik, yani descending (yüksekten düşüğe).
+      // Bu yüzden zayıf konu en sonda (last).
+      var weakest = topics.last;
       if (weakest['average'] < 0.6) {
         insights.add({
           'icon': Icons.school,
@@ -979,7 +1049,8 @@ class AnalysisScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(insight['title'], style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87)),
+                      Text(insight['title'], style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87),
+                      ),
                       const SizedBox(height: 2),
                       Text(insight['message'], style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
                     ],
