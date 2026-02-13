@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'onboarding_page.dart';
 import 'email_verification_page.dart';
 
 class SignupPage extends StatefulWidget {
@@ -32,6 +31,7 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _signUp() async {
+    // Validasyonlar
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Şifreler uyuşmuyor!')));
       return;
@@ -44,6 +44,7 @@ class _SignupPageState extends State<SignupPage> {
     setState(() => _isLoading = true);
 
     try {
+      // 1. Kullanıcıyı Firebase Auth'da oluştur
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -52,6 +53,7 @@ class _SignupPageState extends State<SignupPage> {
       User? user = userCredential.user;
 
       if (user != null) {
+        // 2. Kullanıcı verilerini Firestore'a kaydet
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
@@ -59,15 +61,19 @@ class _SignupPageState extends State<SignupPage> {
           'role': 'free',
           'isPremium': false,
           'isOnboardingComplete': false,
+          'isEmailVerified': false, // Bizim custom doğrulama kontrolümüz
         });
 
+        // 3. Kullanıcı adını güncelle
         await user.updateDisplayName(_nameController.text.trim());
 
-        if (!user.emailVerified) {
-          await user.sendEmailVerification();
-        }
-
+        // --- KRİTİK DEĞİŞİKLİK BURADA ---
+        // Eski "user.sendEmailVerification()" satırını SİLDİK.
+        // Artık eski tip linkli mail GİTMEYECEK.
+        
+        // 4. Direkt Doğrulama Sayfasına Yönlendir
         if (mounted) {
+          // pushAndRemoveUntil kullanarak geri gelmesini engelliyoruz
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const EmailVerificationPage()),
             (route) => false,
@@ -93,7 +99,7 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 DARK MODE ENGELLEYİCİ TEMA
+    // 🔥 DARK MODE ENGELLEYİCİ TEMA (Korundu)
     final lightTheme = ThemeData(
       brightness: Brightness.light,
       primaryColor: const Color(0xFF0D47A1),
@@ -122,7 +128,6 @@ class _SignupPageState extends State<SignupPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          // Builder kullanarak yerel temadaki rengi alıyoruz
           iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
         ),
         body: SafeArea(

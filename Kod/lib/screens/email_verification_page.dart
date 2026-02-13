@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Veritabanı okumak için eklendi
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
+import '../services/custom_auth_service.dart'; 
+import 'onboarding_page.dart'; 
+import 'home_screen.dart'; // Ana sayfa eklendi
 import 'login_page.dart';
-import 'onboarding_page.dart';
 
 class EmailVerificationPage extends StatefulWidget {
   const EmailVerificationPage({super.key});
@@ -13,99 +17,144 @@ class EmailVerificationPage extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationPage> {
-  bool isEmailVerified = false;
-  bool canResendEmail = false;
+  final TextEditingController _codeController = TextEditingController();
+  final CustomAuthService _authService = CustomAuthService();
+  
+  bool isResendButtonActive = false;
+  bool isLoading = false;
   Timer? countdownTimer;
-  Timer? checkVerifiedTimer;
-  int countdown = 90;
+  int countdown = 90; 
 
   @override
   void initState() {
     super.initState();
-
-    isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
-
-    if (!isEmailVerified) {
-      startCountdownTimer();
-      
-      checkVerifiedTimer = Timer.periodic(
-        const Duration(seconds: 3), 
-        (_) => checkEmailVerified(),
-      );
-    }
+    _sendInitialCode();
   }
 
-  Future<void> checkEmailVerified() async {
-    await FirebaseAuth.instance.currentUser?.reload();
-
-    setState(() {
-      isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
-    });
-
-    if (isEmailVerified) {
-      countdownTimer?.cancel();
-      checkVerifiedTimer?.cancel();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('E-posta başarıyla doğrulandı! Yönlendiriliyorsunuz... 🚀'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const OnboardingPage()), 
-          (route) => false,
-        );
-      }
-    }
+  Future<void> _sendInitialCode() async {
+    await _sendCodeToUser();
   }
 
-  void startCountdownTimer() {
+  Future<void> _sendCodeToUser() async {
     setState(() {
-      canResendEmail = false;
+      isResendButtonActive = false;
       countdown = 90;
     });
 
-    countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        if (countdown > 0) {
-          countdown--;
-        } else {
-          canResendEmail = true;
-          countdownTimer?.cancel();
-        }
-      });
-    });
-  }
+    startCountdownTimer();
 
-  Future<void> sendVerificationEmail() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      await user?.sendEmailVerification();
-
-      startCountdownTimer();
-      
+      await _authService.sendVerificationCode();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Doğrulama maili tekrar gönderildi!')),
+          const SnackBar(
+            content: Text('Doğrulama kodu mail adresine gönderildi!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: ${e.toString()}')),
+          SnackBar(
+            content: Text('Kod gönderilemedi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
+  // --- BURASI GÜNCELLENDİ: AKILLI YÖNLENDİRME ---
+  Future<void> _verifyInputCode() async {
+    String inputCode = _codeController.text.trim();
+
+    if (inputCode.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen 6 haneli kodu eksiksiz girin.')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // 1. Kodu Doğrula
+      bool isSuccess = await _authService.verifyCode(inputCode);
+
+      if (isSuccess) {
+        // 2. Kullanıcı Verisini Çek (Onboarding yapmış mı?)
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
+          // Veritabanında 'isOnboardingComplete' true mu diye bak
+          bool isSetupDone = false;
+          if (userDoc.exists) {
+            final data = userDoc.data() as Map<String, dynamic>?;
+            isSetupDone = data?['isOnboardingComplete'] ?? false;
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Tebrikler! Hesabın doğrulandı. 🚀'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+            
+            // 3. Duruma Göre Yönlendir
+            Widget targetPage = isSetupDone ? const HomeScreen() : const OnboardingPage();
+
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => targetPage), 
+              (route) => false,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll("Exception: ", "")),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  void startCountdownTimer() {
+    countdownTimer?.cancel();
+    countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          if (countdown > 0) {
+            countdown--;
+          } else {
+            isResendButtonActive = true;
+            countdownTimer?.cancel();
+          }
+        });
+      }
+    });
+  }
+
   Future<void> cancelAndReturnToLogin() async {
     countdownTimer?.cancel();
-    checkVerifiedTimer?.cancel();
-    
     await FirebaseAuth.instance.signOut();
     
     if (mounted) {
@@ -119,7 +168,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationPage> {
   @override
   void dispose() {
     countdownTimer?.cancel();
-    checkVerifiedTimer?.cancel();
+    _codeController.dispose();
     super.dispose();
   }
 
@@ -128,70 +177,118 @@ class _EmailVerificationScreenState extends State<EmailVerificationPage> {
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email ?? "E-posta adresi alınamadı";
 
-    // DÜZENLEME: Theme widget'ı ile sarmalayarak bu sayfayı zorla Light Mode yapıyoruz.
     return Theme(
-      data: ThemeData.light(), // Bu satır sayesinde altındaki tüm textler siyah olur
+      data: ThemeData.light().copyWith(
+        primaryColor: const Color(0xFF0D47A1),
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: const ColorScheme.light(primary: Color(0xFF0D47A1)),
+      ),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'E-posta Doğrulama',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 40),
-                
+                const SizedBox(height: 20),
                 const Icon(
-                  Icons.mark_email_read_outlined, 
+                  Icons.mark_email_read_outlined,
                   size: 100, 
                   color: Colors.blue
                 ),
-                
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 
                 const Text(
-                  'Doğrulama Maili Gönderildi! 📧',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+                  'Kodu Girin',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 
                 Text(
-                  '$email adresine bir doğrulama bağlantısı gönderdik.',
+                  '$email adresine gönderilen\n6 haneli doğrulama kodunu girin.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 
-                const SizedBox(height: 20),
-                
-                const Text(
-                  'Lütfen mail kutunuzu (gelen kutusu veya spam/gereksiz klasörünü) kontrol edin ve gelen linke tıklayın.\n\nSistem otomatik olarak onayınızı algılayacaktır...',
+                const SizedBox(height: 30),
+
+                TextField(
+                  controller: _codeController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, height: 1.5),
+                  style: const TextStyle(
+                    fontSize: 32, 
+                    fontWeight: FontWeight.bold, 
+                    letterSpacing: 12,
+                    color: Colors.blue
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: InputDecoration(
+                    counterText: "",
+                    hintText: "------",
+                    hintStyle: TextStyle(color: Colors.grey[300], letterSpacing: 12),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+                
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _verifyInputCode,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                    child: isLoading 
+                      ? const SizedBox(
+                          height: 24, 
+                          width: 24, 
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                        )
+                      : const Text(
+                          'ONAYLA',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                  ),
                 ),
                 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
                 
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    onPressed: canResendEmail ? sendVerificationEmail : null,
-                    icon: const Icon(Icons.email),
+                    onPressed: isResendButtonActive ? _sendCodeToUser : null,
+                    icon: const Icon(Icons.refresh),
                     label: Text(
-                      canResendEmail 
-                        ? 'Tekrar Mail Gönder' 
+                      isResendButtonActive 
+                        ? 'Kodu Tekrar Gönder' 
                         : 'Tekrar Gönder (${countdown}s)',
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[200],
                       foregroundColor: Colors.black,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ),

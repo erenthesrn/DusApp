@@ -7,6 +7,7 @@ import 'forgot_password_page.dart';
 import 'home_screen.dart';
 import 'guest_home_page.dart';
 import 'onboarding_page.dart';
+import 'email_verification_page.dart'; // YENİ: Doğrulama sayfası eklendi
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,76 +23,145 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   void _handleLogin() async {
+    // Klavye açıksa kapat
     FocusScope.of(context).unfocus();
+
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Lütfen tüm alanları doldurun."), backgroundColor: Colors.orange));
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Lütfen tüm alanları doldurun."),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      // 1. Firebase Auth ile giriş yap
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
       User? user = userCredential.user;
 
-      if (user != null && !user.emailVerified) {
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text("E-posta Onayı Gerekli 📧"),
-              content: const Text("Giriş yapabilmek için lütfen e-posta adresinize gönderilen onay linkine tıklayın."),
-              actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Tamam"))],
-            ),
-          );
-        }
-      } else if (user != null) {
-        try {
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-          bool isOnboardingComplete = false;
-          if (userDoc.exists && userDoc.data() != null) {
-            Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
-            isOnboardingComplete = data['isOnboardingComplete'] ?? false;
-          }
+      if (user != null) {
+        // 2. Firestore'dan kullanıcı verisini çek
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Giriş Başarılı!"), backgroundColor: Colors.green));
-            Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => isOnboardingComplete ? const HomeScreen() : const OnboardingPage()));
+        if (userDoc.exists) {
+          Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
+
+          // 3. Bizim Custom 'isEmailVerified' alanımızı kontrol et
+          // Eğer alan yoksa varsayılan false kabul et
+          bool isCustomVerified = data['isEmailVerified'] ?? false;
+          bool isOnboardingComplete = data['isOnboardingComplete'] ?? false;
+
+          if (!isCustomVerified) {
+            // --- E-POSTA ONAYLI DEĞİLSE ---
+            // Oturumu kapatıp doğrulama sayfasına gönder
+            // (Oturumu kapatmazsak Auth state karışabilir, ama verification sayfasında
+            // currentUser lazım olduğu için burada kapatmıyoruz, sayfada çıkış butonu var zaten)
+            
+            if (mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const EmailVerificationPage()),
+              );
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Lütfen önce e-posta adresinizi doğrulayın."),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          } else {
+            // --- E-POSTA ONAYLIYSA ---
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Giriş Başarılı!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              // Onboarding yapmışsa Home, yapmamışsa Onboarding
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => isOnboardingComplete 
+                      ? const HomeScreen() 
+                      : const OnboardingPage(),
+                ),
+              );
+            }
           }
-        } catch (e) {
-          if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const OnboardingPage()));
+        } else {
+          // Kullanıcı Auth'ta var ama Firestore'da yoksa (Nadirdir)
+          if (mounted) {
+             Navigator.of(context).pushReplacement(
+               MaterialPageRoute(builder: (context) => const OnboardingPage()),
+             );
+          }
         }
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = "Giriş başarısız.";
-      if (e.code == 'user-not-found') errorMessage = "Kullanıcı bulunamadı.";
-      else if (e.code == 'wrong-password') errorMessage = "Şifre hatalı.";
-      else if (e.code == 'invalid-credential') errorMessage = "Bilgiler hatalı.";
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
+      if (e.code == 'user-not-found') {
+        errorMessage = "Kullanıcı bulunamadı.";
+      } else if (e.code == 'wrong-password') {
+        errorMessage = "Şifre hatalı.";
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = "E-posta veya şifre hatalı.";
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyin.";
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Bir hata oluştu: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 BU EKRAN İÇİN ZORUNLU LIGHT MODE AYARI
+    // 🔥 BU EKRAN İÇİN ZORUNLU LIGHT MODE AYARI (Mevcut kodun korundu)
     final lightTheme = ThemeData(
-      brightness: Brightness.light, // Zorla aydınlık yap
+      brightness: Brightness.light, 
       primaryColor: const Color(0xFF0D47A1),
       scaffoldBackgroundColor: const Color.fromARGB(255, 224, 247, 250),
       colorScheme: const ColorScheme.light(
         primary: Color(0xFF0D47A1),
         secondary: Color(0xFF00BFA5),
-        surface: Colors.white, // Yüzeyler beyaz olsun (Dialog vs.)
-        onSurface: Colors.black87, // Yazılar siyah olsun
+        surface: Colors.white, 
+        onSurface: Colors.black87, 
       ),
-      // Metin kutuları her zaman beyaz zeminli ve aydınlık olsun
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
@@ -104,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     return Theme(
-      data: lightTheme, // 👈 Tüm sayfayı bu temaya zorluyoruz
+      data: lightTheme,
       child: Scaffold(
         backgroundColor: const Color.fromARGB(255, 224, 247, 250),
         body: SafeArea(
@@ -121,7 +191,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   Transform.translate(
                     offset: const Offset(0, -20), 
-                    child: Builder( // Theme.of(context) doğru çalışsın diye Builder
+                    child: Builder( 
                       builder: (context) => Text('DUS Asistanı', textAlign: TextAlign.center, 
                         style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)
                       ),
