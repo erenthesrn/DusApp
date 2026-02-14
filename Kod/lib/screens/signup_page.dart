@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'email_verification_page.dart';
+import '../utils/snackbar_helper.dart';
+
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -33,11 +35,11 @@ class _SignupPageState extends State<SignupPage> {
   Future<void> _signUp() async {
     // Validasyonlar
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Şifreler uyuşmuyor!')));
+      SnackBarHelper.showSnackBar(context, 'Şifreler uyuşmuyor!');
       return;
     }
     if (_nameController.text.isEmpty || _emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lütfen tüm alanları doldurun.')));
+      SnackBarHelper.showSnackBar(context, 'Lütfen tüm alanları doldurun.');
       return;
     }
 
@@ -88,7 +90,11 @@ class _SignupPageState extends State<SignupPage> {
       else if (e.code == 'invalid-email') errorMessage = "Geçersiz e-posta formatı.";
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
+        SnackBarHelper.showSnackBar(
+        context,
+        errorMessage,
+        backgroundColor: Colors.red,
+        );
       }
     } finally {
       if (mounted) {

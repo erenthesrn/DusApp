@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:dus_app_1/Fish.dart';
+import '../utils/snackbar_helper.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -17,6 +18,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   bool _isLoading = false;
   bool _codeSent = false;
 
+  // ✅ Spam koruması için
+  DateTime? _lastSubmitTime;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -25,13 +29,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
+  // ✅ Spam kontrolü fonksiyonu
+  bool _canSubmit() {
+    if (_lastSubmitTime == null) return true;
+    return DateTime.now().difference(_lastSubmitTime!) > const Duration(seconds: 2);
+  }
+
   // 1️⃣ Kod Gönder
   Future<void> _sendCode() async {
+    // ✅ Spam kontrolü
+    if (!_canSubmit()) {
+      SnackBarHelper.showSnackBar(
+        context,
+        "Lütfen birkaç saniye bekleyin.",
+        backgroundColor: Colors.orange,
+      );
+      return;
+    }
+    _lastSubmitTime = DateTime.now();
+
     FocusScope.of(context).unfocus();
     String email = _emailController.text.trim();
 
     if (email.isEmpty) {
-      _showSnackBar("Lütfen e-posta adresinizi girin.", Colors.orange);
+      SnackBarHelper.showSnackBar(
+        context,
+        "Lütfen e-posta adresinizi girin.",
+        backgroundColor: Colors.orange,
+      );
       return;
     }
 
@@ -43,29 +68,58 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       
       if (result.data['success']) {
         setState(() => _codeSent = true);
-        _showSnackBar("6 haneli kod e-postanıza gönderildi! 📧", Colors.green);
+        SnackBarHelper.showSnackBar(
+          context,
+          "6 haneli kod e-postanıza gönderildi! 📧",
+          backgroundColor: Colors.green,
+        );
       }
     } on FirebaseFunctionsException catch (e) {
-      _showSnackBar(e.message ?? "Bir hata oluştu.", Colors.red);
+      SnackBarHelper.showSnackBar(
+        context,
+        e.message ?? "Bir hata oluştu.",
+        backgroundColor: Colors.red,
+      );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   // 2️⃣ Kodu Doğrula ve Şifreyi Değiştir
   Future<void> _resetPassword() async {
+    // ✅ Spam kontrolü
+    if (!_canSubmit()) {
+      SnackBarHelper.showSnackBar(
+        context,
+        "Lütfen birkaç saniye bekleyin.",
+        backgroundColor: Colors.orange,
+      );
+      return;
+    }
+    _lastSubmitTime = DateTime.now();
+
     FocusScope.of(context).unfocus();
     String email = _emailController.text.trim();
     String code = _codeController.text.trim();
     String newPassword = _newPasswordController.text.trim();
 
     if (code.isEmpty || newPassword.isEmpty) {
-      _showSnackBar("Lütfen tüm alanları doldurun.", Colors.orange);
+      SnackBarHelper.showSnackBar(
+        context,
+        "Lütfen tüm alanları doldurun.",
+        backgroundColor: Colors.orange,
+      );
       return;
     }
 
     if (newPassword.length < 6) {
-      _showSnackBar("Şifre en az 6 karakter olmalıdır.", Colors.orange);
+      SnackBarHelper.showSnackBar(
+        context,
+        "Şifre en az 6 karakter olmalıdır.",
+        backgroundColor: Colors.orange,
+      );
       return;
     }
 
@@ -81,16 +135,20 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
       if (result.data['success']) {
         if (mounted) {
+          // ✅ SnackBar'ları temizle dialog açmadan önce
+          ScaffoldMessenger.of(context).clearSnackBars();
+          
           showDialog(
             context: context,
+            barrierDismissible: false, // ✅ Dışarı tıklayarak kapatamasın
             builder: (context) => AlertDialog(
               title: const Text("✅ Başarılı!"),
               content: const Text("Şifreniz başarıyla değiştirildi. Şimdi giriş yapabilirsiniz."),
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
+                    Navigator.pop(context); // Dialog'u kapat
+                    Navigator.pop(context); // ForgotPasswordPage'i kapat
                   },
                   child: const Text("Giriş Yap"),
                 )
@@ -100,17 +158,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         }
       }
     } on FirebaseFunctionsException catch (e) {
-      _showSnackBar(e.message ?? "Bir hata oluştu.", Colors.red);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showSnackBar(String message, Color color) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: color),
+      SnackBarHelper.showSnackBar(
+        context,
+        e.message ?? "Bir hata oluştu.",
+        backgroundColor: Colors.red,
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -184,7 +240,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  enabled: !_codeSent,
+                  enabled: !_codeSent && !_isLoading, // ✅ Loading sırasında da disable et
                   decoration: const InputDecoration(
                     labelText: 'E-posta Adresi',
                     prefixIcon: Icon(Icons.email_outlined),
@@ -202,6 +258,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         backgroundColor: Theme.of(context).primaryColor,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        disabledBackgroundColor: Colors.grey[400], // ✅ Disabled rengi
                       ),
                       child: _isLoading
                           ? const SizedBox(
@@ -219,6 +276,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     controller: _codeController,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
+                    enabled: !_isLoading, // ✅ Loading sırasında disable et
                     decoration: const InputDecoration(
                       labelText: '6 Haneli Kod',
                       prefixIcon: Icon(Icons.lock_outline),
@@ -230,6 +288,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   TextField(
                     controller: _newPasswordController,
                     obscureText: true,
+                    enabled: !_isLoading, // ✅ Loading sırasında disable et
                     decoration: const InputDecoration(
                       labelText: 'Yeni Şifre',
                       prefixIcon: Icon(Icons.vpn_key),
@@ -245,6 +304,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         backgroundColor: Theme.of(context).colorScheme.secondary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        disabledBackgroundColor: Colors.grey[400], // ✅ Disabled rengi
                       ),
                       child: _isLoading
                           ? const SizedBox(
@@ -259,7 +319,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   const SizedBox(height: 16),
                   
                   TextButton(
-                    onPressed: () => setState(() => _codeSent = false),
+                    onPressed: _isLoading ? null : () { // ✅ Loading sırasında disable et
+                      setState(() {
+                        _codeSent = false;
+                        _codeController.clear();
+                        _newPasswordController.clear();
+                        _lastSubmitTime = null; // ✅ Timer'ı sıfırla
+                      });
+                    },
                     child: const Text('Farklı e-posta ile dene'),
                   ),
                 ],

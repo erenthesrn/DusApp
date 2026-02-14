@@ -7,6 +7,8 @@ import '../services/custom_auth_service.dart';
 import 'onboarding_page.dart'; 
 import 'home_screen.dart'; // Ana sayfa eklendi
 import 'login_page.dart';
+import '../utils/snackbar_helper.dart';
+
 
 class EmailVerificationPage extends StatefulWidget {
   const EmailVerificationPage({super.key});
@@ -46,20 +48,18 @@ class _EmailVerificationScreenState extends State<EmailVerificationPage> {
     try {
       await _authService.sendVerificationCode();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Doğrulama kodu mail adresine gönderildi!'),
-            backgroundColor: Colors.green,
-          ),
+        SnackBarHelper.showSnackBar(
+          context,
+          'Doğrulama kodu mail adresine gönderildi!',
+          backgroundColor: Colors.green,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Kod gönderilemedi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        SnackBarHelper.showSnackBar(
+          context,
+          'Kod gönderilemedi: ${e.toString()}',
+          backgroundColor: Colors.red,
         );
       }
     }
@@ -70,8 +70,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationPage> {
     String inputCode = _codeController.text.trim();
 
     if (inputCode.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen 6 haneli kodu eksiksiz girin.')),
+      SnackBarHelper.showSnackBar(
+        context,
+        'Lütfen 6 haneli kodu eksiksiz girin.'
       );
       return;
     }
@@ -101,12 +102,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationPage> {
           }
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Tebrikler! Hesabın doğrulandı. 🚀'),
+            SnackBarHelper.showSnackBar(
+              context,
+              'Tebrikler! Hesabın doğrulandı.',
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 2),
-              ),
             );
             
             // 3. Duruma Göre Yönlendir
@@ -121,11 +121,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll("Exception: ", "")),
+        SnackBarHelper.showSnackBar(
+          context,
+            e.toString().replaceAll("Exception: ", ""),
             backgroundColor: Colors.red,
-          ),
         );
       }
     } finally {

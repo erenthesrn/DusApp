@@ -7,7 +7,9 @@ import 'forgot_password_page.dart';
 import 'home_screen.dart';
 import 'guest_home_page.dart';
 import 'onboarding_page.dart';
-import 'email_verification_page.dart'; // YENİ: Doğrulama sayfası eklendi
+import 'email_verification_page.dart';
+import '../utils/snackbar_helper.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -30,11 +32,10 @@ class _LoginPageState extends State<LoginPage> {
     String password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Lütfen tüm alanları doldurun."),
-          backgroundColor: Colors.orange,
-        ),
+     SnackBarHelper.showSnackBar(
+      context,
+      "Lütfen tüm alanları doldurun.",
+      backgroundColor: Colors.orange,
       );
       return;
     }
@@ -75,21 +76,19 @@ class _LoginPageState extends State<LoginPage> {
                 MaterialPageRoute(builder: (context) => const EmailVerificationPage()),
               );
               
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Lütfen önce e-posta adresinizi doğrulayın."),
+              SnackBarHelper.showSnackBar(
+                context,
+                  "Lütfen önce e-posta adresinizi doğrulayın.",
                   backgroundColor: Colors.orange,
-                ),
               );
             }
           } else {
             // --- E-POSTA ONAYLIYSA ---
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Giriş Başarılı!"),
-                  backgroundColor: Colors.green,
-                ),
+              SnackBarHelper.showSnackBar(
+                context,
+                  "Giriş Başarılı!",
+                  backgroundColor: Colors.green,                
               );
 
               // Onboarding yapmışsa Home, yapmamışsa Onboarding
@@ -124,20 +123,18 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
+        SnackBarHelper.showSnackBar(
+          context,
+            errorMessage,
             backgroundColor: Colors.red,
-          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Bir hata oluştu: $e"),
+        SnackBarHelper.showSnackBar(
+          context,
+            "Bir hata oluştu: $e",
             backgroundColor: Colors.red,
-          ),
         );
       }
     } finally {
