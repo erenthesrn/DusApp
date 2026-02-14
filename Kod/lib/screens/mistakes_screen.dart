@@ -461,6 +461,8 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
         explanation: m['explanation'] ?? "",
         testNo: m['testNo'] ?? 0,
         level: m['topic'] ?? m['subject'] ?? "Genel",
+        imageUrl: m['imageUrl'] ?? m['image_url'],
+
       );
     }).toList();
 
@@ -621,6 +623,8 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     topicText = _toTitleCase(topicText); 
     
     int testNo = mistake['testNo'] ?? 0;
+
+    String? imageUrl = mistake['imageUrl'] ?? mistake['image_url'];    
     
     List<String> options = [];
     if (mistake['options'] != null) {
@@ -692,6 +696,32 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
                 style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, height: 1.5, color: textColor)),
             
             const SizedBox(height: 16),
+
+            if (imageUrl != null && imageUrl.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: 200, // Çok yer kaplamaması için yükseklik sınırı
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(child: CircularProgressIndicator(color: Colors.teal.shade200));
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 150,
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Text("Resim yüklenemedi", style: TextStyle(color: Colors.grey)),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
             
             if (options.isNotEmpty)
               ...List.generate(options.length, (i) {

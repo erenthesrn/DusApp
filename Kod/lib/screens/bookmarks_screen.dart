@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/bookmark_service.dart';
 import '../models/question_model.dart';
-import 'quiz_screen.dart'; // Soruyu açmak için
 
 class BookmarksScreen extends StatelessWidget {
   const BookmarksScreen({super.key});
@@ -18,7 +17,8 @@ class BookmarksScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text("Kaydedilen Sorular", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor)),
+        title: Text("Kaydedilen Sorular",
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
@@ -38,7 +38,8 @@ class BookmarksScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.bookmark_border_rounded, size: 80, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
-                  Text("Henüz soru kaydetmedin.", style: GoogleFonts.inter(color: Colors.grey, fontSize: 16)),
+                  Text("Henüz soru kaydetmedin.",
+                      style: GoogleFonts.inter(color: Colors.grey, fontSize: 16)),
                 ],
               ),
             );
@@ -51,7 +52,7 @@ class BookmarksScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               var data = docs[index].data() as Map<String, dynamic>;
-              
+
               // Modeli oluştur
               Question question = Question(
                 id: data['id'] ?? 0,
@@ -61,7 +62,7 @@ class BookmarksScreen extends StatelessWidget {
                 level: data['topic'] ?? "Genel",
                 testNo: data['testNo'] ?? 1,
                 explanation: data['explanation'] ?? "",
-                imageUrl: data['image_url'],
+                imageUrl: data['image_url'], // Görsel URL'sini buradan alıyoruz
               );
 
               return Dismissible(
@@ -74,7 +75,6 @@ class BookmarksScreen extends StatelessWidget {
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
                 onDismissed: (direction) async {
-                  // Listeden kaydırarak silme özelliği
                   await BookmarkService.toggleBookmark(question, data['topic']);
                 },
                 child: Container(
@@ -82,13 +82,19 @@ class BookmarksScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: cardColor,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))],
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4))
+                    ],
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
                     leading: Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
                       child: const Icon(Icons.bookmark, color: Colors.orange),
                     ),
                     title: Text(
@@ -103,8 +109,14 @@ class BookmarksScreen extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                            child: Text(data['topic'] ?? "Genel", style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
+                            decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6)),
+                            child: Text(data['topic'] ?? "Genel",
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold)),
                           ),
                           const Spacer(),
                           const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
@@ -112,15 +124,11 @@ class BookmarksScreen extends StatelessWidget {
                       ),
                     ),
                     onTap: () {
-                      // Soruyu çözmek için Quiz ekranını "İnceleme Modu"nda açıyoruz
-                      // Ama sadece bu soruyu içeren bir liste gönderiyoruz
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => QuizScreen(
-                            isTrial: true,
-                            isReviewMode: false, // Kullanıcı tekrar çözebilsin diye false
-                            questions: [question], // Sadece bu soru
+                          builder: (context) => BookmarkDetailScreen(
+                            question: question,
                             topic: data['topic'],
                           ),
                         ),
@@ -132,6 +140,280 @@ class BookmarksScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// ==========================================
+// YENİ EKRAN: KAYDEDİLEN SORU DETAYI (GÖRSEL DESTEKLİ)
+// ==========================================
+
+class BookmarkDetailScreen extends StatefulWidget {
+  final Question question;
+  final String? topic;
+
+  const BookmarkDetailScreen({super.key, required this.question, this.topic});
+
+  @override
+  State<BookmarkDetailScreen> createState() => _BookmarkDetailScreenState();
+}
+
+class _BookmarkDetailScreenState extends State<BookmarkDetailScreen> {
+  bool _showAnswer = false; // Cevabı göster durumu
+
+  String _toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return '';
+      if (word.length == 1) return word.toUpperCase();
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final Color cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
+    final Color subTextColor = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+
+    String topicText = widget.topic ?? widget.question.level;
+    topicText = _toTitleCase(topicText);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        title: Text("Soru İncele",
+            style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: textColor),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4))
+            ],
+            border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.transparent),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Konu ve Test Başlığı
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.blueAccent.withOpacity(0.1)
+                              : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.withOpacity(0.3))),
+                      child: Text("$topicText • Test ${widget.question.testNo}",
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Soru Metni
+                Text(widget.question.question,
+                    style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                        color: textColor)),
+
+                // --- GÖRSEL ALANI (YENİ) ---
+                if (widget.question.imageUrl != null && widget.question.imageUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 300), // Çok uzun görseller ekranı kaplamasın
+                      width: double.infinity,
+                      child: Image.network(
+                        widget.question.imageUrl!,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 150,
+                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.broken_image_rounded, 
+                                     color: isDark ? Colors.grey.shade600 : Colors.grey.shade400, 
+                                     size: 40),
+                                const SizedBox(height: 8),
+                                Text("Görsel yüklenemedi", 
+                                     style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade600)),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+                // ---------------------------
+
+                const SizedBox(height: 16),
+
+                // Şıklar
+                if (widget.question.options.isNotEmpty)
+                  ...List.generate(widget.question.options.length, (i) {
+                    bool isCorrect = (i == widget.question.answerIndex);
+                    
+                    Color rowBg = Colors.transparent;
+                    Color rowBorder = isDark ? Colors.white10 : Colors.grey.shade200;
+                    IconData? icon;
+                    Color iconColor = subTextColor;
+                    Color textOptionColor = subTextColor;
+
+                    if (_showAnswer && isCorrect) {
+                      rowBg = isDark
+                          ? Colors.green.withOpacity(0.15)
+                          : const Color(0xFFF0FDF4);
+                      rowBorder = Colors.green.withOpacity(0.4);
+                      icon = Icons.check_circle;
+                      iconColor = Colors.green;
+                      textOptionColor = isDark ? Colors.white : Colors.black87;
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                          color: rowBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: rowBorder)),
+                      child: Row(
+                        children: [
+                          Text(String.fromCharCode(65 + i),
+                              style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold,
+                                  color: (_showAnswer && isCorrect)
+                                      ? iconColor
+                                      : subTextColor)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: Text(widget.question.options[i],
+                                  style: GoogleFonts.inter(
+                                      color: (_showAnswer && isCorrect)
+                                          ? textOptionColor
+                                          : (isDark ? Colors.white70 : Colors.black87),
+                                      fontWeight: (_showAnswer && isCorrect)
+                                          ? FontWeight.w600
+                                          : FontWeight.normal))),
+                          if (icon != null) Icon(icon, size: 18, color: iconColor)
+                        ],
+                      ),
+                    );
+                  })
+                else
+                  const Text("⚠️ Şık verisi bulunamadı.",
+                      style: TextStyle(color: Colors.red, fontSize: 12)),
+
+                const SizedBox(height: 20),
+
+                // Cevabı Göster Butonu
+                if (!_showAnswer)
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _showAnswer = true;
+                        });
+                      },
+                      icon: const Icon(Icons.visibility_outlined),
+                      label: const Text("Doğru Cevabı Göster"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? Colors.teal.shade800 : Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)
+                        )
+                      ),
+                    ),
+                  ),
+
+                // Açıklama Alanı
+                if (_showAnswer && widget.question.explanation.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.blueGrey.withOpacity(0.1)
+                            : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: isDark ? Colors.white10 : Colors.grey.shade200)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: subTextColor),
+                            const SizedBox(width: 8),
+                            Text("Açıklama",
+                                style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: subTextColor)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(widget.question.explanation,
+                            style: GoogleFonts.inter(
+                                color: textColor.withOpacity(0.8),
+                                fontSize: 13,
+                                height: 1.4,
+                                fontStyle: FontStyle.italic)),
+                      ],
+                    ),
+                  )
+                ]
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

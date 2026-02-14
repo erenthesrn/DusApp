@@ -11,7 +11,7 @@ import '../services/theme_provider.dart';
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
 
-  // Performans için static formatlayıcılar (Her döngüde yeniden oluşturulmaz)
+  // Performans için static formatlayıcılar
   static final DateFormat _ymdFormat = DateFormat('yyyy-MM-dd');
   static final DateFormat _dayMonthFormat = DateFormat('d MMM');
   static final DateFormat _dayNameFormat = DateFormat('E');
@@ -29,21 +29,17 @@ class AnalysisScreen extends StatelessWidget {
     List<double> recentNets = [];
     
     Map<String, int> dailyActivity = {};
-    // DateTime.now()'ı döngü dışında bir kere al
     DateTime now = DateTime.now();
     
-    // 7 günlük veriyi initialize et
     for (int i = 6; i >= 0; i--) {
       dailyActivity[_ymdFormat.format(now.subtract(Duration(days: i)))] = 0;
     }
 
-    // SON 7 GÜNLÜK SABİT TARİHLER
     List<String> last7Days = [];
     for (int i = 6; i >= 0; i--) {
       last7Days.add(_dayMonthFormat.format(now.subtract(Duration(days: i))));
     }
 
-    // Günlere göre net toplamları
     Map<String, double> dailyNets = {};
     Map<String, int> dailyCounts = {};
     for (int i = 6; i >= 0; i--) {
@@ -70,7 +66,6 @@ class AnalysisScreen extends StatelessWidget {
       String dayKey = _ymdFormat.format(date);
       
       int hour = date.hour;
-      // Basit if-else zinciri map lookup'tan hızlıdır
       String timeSlot;
       if (hour < 12) {
         timeSlot = 'Sabah';
@@ -122,14 +117,12 @@ class AnalysisScreen extends StatelessWidget {
         dailyActivity[dayKey] = (dailyActivity[dayKey] ?? 0) + t;
       }
 
-      // Günlük net hesabı
       if (dailyNets.containsKey(dayKey)) {
         dailyNets[dayKey] = (dailyNets[dayKey] ?? 0) + net;
         dailyCounts[dayKey] = (dailyCounts[dayKey] ?? 0) + 1;
       }
     }
 
-    // Son 7 günlük grafik verisi oluştur
     trendSpots = [];
     recentNets = [];
     int spotIndex = 0;
@@ -157,7 +150,6 @@ class AnalysisScreen extends StatelessWidget {
     if (nonZeroNets.length >= 3) {
       int halfPoint = nonZeroNets.length ~/ 2;
       if (halfPoint > 0) {
-        // sublist kullanarak daha performanslı hale getirdik
         var firstHalfList = nonZeroNets.sublist(0, halfPoint);
         var secondHalfList = nonZeroNets.sublist(halfPoint);
         
@@ -181,8 +173,6 @@ class AnalysisScreen extends StatelessWidget {
       
       String improvement = "→";
       if (nets.length >= 6) {
-        // take/skip yerine sublist daha hızlı olabilir ama logic karmaşasını önlemek için bıraktım
-        // veri sayısı az olduğu için sorun olmaz.
         double early = nets.take(3).reduce((a, b) => a + b) / 3;
         double recent = nets.skip(nets.length - 3).reduce((a, b) => a + b) / 3;
         if (recent > early * 1.15) improvement = "↗️";
@@ -232,7 +222,7 @@ class AnalysisScreen extends StatelessWidget {
       });
     });
 
-    topicInsights.sort((a, b) => b['average'].compareTo(a['average'])); // Yüksekten düşüğe sırala
+    topicInsights.sort((a, b) => b['average'].compareTo(a['average']));
 
     String bestTimeOfDay = timeOfDayStats.entries.reduce((a, b) => a.value > b.value ? a : b).key;
 
@@ -262,23 +252,33 @@ class AnalysisScreen extends StatelessWidget {
     final isDark = theme.isDarkMode;
     final user = FirebaseAuth.instance.currentUser;
 
+    // 🔥 Home/Profile ile uyumlu Deep Space Gradient
     final bgColors = isDark 
-        ? [const Color(0xFF0f172a), const Color(0xFF1e293b)] 
+        ? [const Color(0xFF0A0E14), const Color(0xFF161B22)] 
         : [const Color(0xFFfafafa), const Color(0xFFf5f5f5)];
-    final textColor = isDark ? Colors.white : const Color(0xFF1e293b);
+    
+    // 🔥 Uyumlu Text Color
+    final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1e293b);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("📊 Performans Analizi", style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: textColor, fontSize: 20)),
+        title: Text("Performans Analizi", style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: textColor, fontSize: 20)),
         centerTitle: true,
-        // PERFORMANS REVİZYONU: Blur efekti kaldırıldı, yerine hafif transparan zemin.
-        backgroundColor: (isDark ? const Color(0xFF0f172a) : const Color(0xFFfafafa)).withOpacity(0.9),
+        backgroundColor: Colors.transparent, // Glass effect için transparent yaptık
         elevation: 0,
         automaticallyImplyLeading: false,
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: (isDark ? const Color(0xFF0A0E14) : Colors.white).withOpacity(0.5),
+            ),
+          ),
+        ),
       ),
       body: Container(
-        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: bgColors)),
+        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: bgColors)),
         child: user == null 
             ? const Center(child: Text("Giriş yapmalısınız."))
             : StreamBuilder<QuerySnapshot>(
@@ -297,13 +297,12 @@ class AnalysisScreen extends StatelessWidget {
                     return _buildEmptyState(isDark);
                   }
 
-                  // Veri işleme maliyetli olabilir, build içinde çağırmak zorunda olsak da optimize ettik.
                   var analytics = _processPremiumData(snapshot.data!.docs);
                   if (analytics.isEmpty) return _buildEmptyState(isDark);
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(top: 100, left: 16, right: 16, bottom: 100),
+                    padding: const EdgeInsets.only(top: 110, left: 16, right: 16, bottom: 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -332,8 +331,6 @@ class AnalysisScreen extends StatelessWidget {
 
                         _buildSectionTitle("Konu Bazlı Detaylı Analiz", "Güçlü ve zayıf yönlerini keşfet", isDark, textColor),
                         const SizedBox(height: 12),
-                        // ListView.builder yerine Column içinde map kullanmak az eleman için daha performanslıdır
-                        // ve nested scroll sorununu çözer.
                         ...(analytics['topicInsights'] as List).map((topic) {
                           return _buildTopicCard(topic, isDark);
                         }).toList(),
@@ -349,23 +346,25 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
+  // 🔥 Glass ve Gradient Efekti Eklenmiş Header
   Widget _buildMotivationalHeader(Map<String, dynamic> data, bool isDark, Color textColor) {
     String trend = data['trend'];
     IconData trendIcon = trend == "Yükseliş" ? Icons.trending_up : trend == "Düşüş" ? Icons.trending_down : Icons.trending_flat;
-    Color trendColor = trend == "Yükseliş" ? Colors.green : trend == "Düşüş" ? Colors.red : Colors.orange;
+    Color trendColor = trend == "Yükseliş" ? const Color(0xFF69F0AE) : trend == "Düşüş" ? const Color(0xFFFF5252) : const Color(0xFFFFD740);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark 
-              ? [const Color(0xFF3b82f6), const Color(0xFF8b5cf6)]
+              ? [const Color(0xFF2563EB).withOpacity(0.8), const Color(0xFF7C3AED).withOpacity(0.8)]
               : [const Color(0xFF60a5fa), const Color(0xFFa78bfa)],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
+          BoxShadow(color: (isDark ? Colors.black : Colors.blue).withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))
         ],
+        border: isDark ? Border.all(color: Colors.white.withOpacity(0.1)) : null,
       ),
       child: Row(
         children: [
@@ -380,15 +379,20 @@ class AnalysisScreen extends StatelessWidget {
                   style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(trendIcon, color: trendColor, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      trend,
-                      style: GoogleFonts.inter(fontSize: 14, color: trendColor, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(trendIcon, color: trendColor, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        trend,
+                        style: GoogleFonts.inter(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -399,9 +403,50 @@ class AnalysisScreen extends StatelessWidget {
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.auto_graph, color: Colors.white, size: 40),
+            child: const Icon(Icons.auto_graph, color: Colors.white, size: 36),
           ),
         ],
+      ),
+    );
+  }
+
+  // 🔥 Glass Effect Uygulanmış Metrik Kartı
+  Widget _buildMetricCard(String label, String value, IconData icon, Color color, bool isDark) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1), width: 1),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: GoogleFonts.robotoMono(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -442,50 +487,19 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, IconData icon, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-        // Gölgeyi azalttık
-        boxShadow: [
-          BoxShadow(color: color.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.robotoMono(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionTitle(String title, String subtitle, bool isDark, Color textColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
         const SizedBox(height: 2),
-        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
+        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey.shade600)),
       ],
     );
   }
 
   Widget _buildTrendChart(List<FlSpot> spots, List<String> dates, double avgNet, bool isDark) {
-    if (spots.isEmpty) return const Center(child: Text("Veri Yok"));
+    if (spots.isEmpty) return Center(child: Text("Veri Yok", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)));
 
     double rawMaxY = spots.map((s) => s.y).reduce(max);
     double maxY = (rawMaxY + 0.5).ceilToDouble();
@@ -493,38 +507,28 @@ class AnalysisScreen extends StatelessWidget {
     double minY = 0;
 
     double interval = 1;
-    if (maxY > 10) {
-      interval = (maxY / 5).ceilToDouble();
-    }
-    if (maxY % interval != 0) {
-      maxY = ((maxY ~/ interval) + 1) * interval;
-    }
+    if (maxY > 10) interval = (maxY / 5).ceilToDouble();
+    if (maxY % interval != 0) maxY = ((maxY ~/ interval) + 1) * interval;
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF3b82f6).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFF3b82f6).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF3b82f6).withOpacity(0.3))
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 12,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFf59e0b),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 8),
+                const Icon(Icons.show_chart, size: 14, color: Color(0xFF3b82f6)),
+                const SizedBox(width: 6),
                 Text(
-                  "Ortalama: ${avgNet.toStringAsFixed(1)} net",
-                  style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87, fontWeight: FontWeight.w600),
+                  "Ortalama: ${avgNet.toStringAsFixed(1)}",
+                  style: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF3b82f6) : const Color(0xFF1E3A8A), fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -540,7 +544,7 @@ class AnalysisScreen extends StatelessWidget {
                   drawVerticalLine: false,
                   horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.grey.withOpacity(0.15),
+                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
                     strokeWidth: 1,
                   ),
                 ),
@@ -560,7 +564,7 @@ class AnalysisScreen extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               dates[index],
-                              style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
+                              style: GoogleFonts.inter(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey),
                             ),
                           );
                         }
@@ -571,33 +575,27 @@ class AnalysisScreen extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
+                      reservedSize: 35,
                       interval: interval,
                       getTitlesWidget: (value, meta) {
                         String text = value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
                         return Text(
                           text,
-                          style: GoogleFonts.robotoMono(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.robotoMono(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey, fontWeight: FontWeight.w600),
                         );
                       },
                     ),
                   ),
                 ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                    left: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                  ),
-                ),
+                borderData: FlBorderData(show: false),
                 lineTouchData: LineTouchData(
                   enabled: true,
-                  // Touch performans ayarı: Mesafe toleransını düşürdük
-                  touchSpotThreshold: 10,
+                  touchSpotThreshold: 20,
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) => isDark ? const Color(0xFF1e293b) : Colors.white,
+                    getTooltipColor: (spot) => isDark ? const Color(0xFF1F2937) : Colors.white,
                     fitInsideHorizontally: true,
                     fitInsideVertically: true,
+                    tooltipBorder: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
                         if (spot.barIndex == 0) {
@@ -605,45 +603,17 @@ class AnalysisScreen extends StatelessWidget {
                           String date = index < dates.length ? dates[index] : "";
                           return LineTooltipItem(
                             "$date\n${spot.y.toStringAsFixed(1)} net",
-                            GoogleFonts.inter(
-                              color: const Color(0xFF3b82f6),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                            GoogleFonts.inter(color: const Color(0xFF3b82f6), fontWeight: FontWeight.bold, fontSize: 12),
                           );
                         } else {
                           return LineTooltipItem(
-                            "Ortalama: ${spot.y.toStringAsFixed(1)} net",
-                            GoogleFonts.inter(
-                              color: const Color(0xFFf59e0b),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                            "Ort: ${spot.y.toStringAsFixed(1)}",
+                            GoogleFonts.inter(color: const Color(0xFFf59e0b), fontWeight: FontWeight.bold, fontSize: 12),
                           );
                         }
                       }).toList();
                     },
                   ),
-                  getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
-                    return spotIndexes.map((spotIndex) {
-                      final isAverageLine = barData.color == const Color(0xFFf59e0b);
-                      if (isAverageLine) return null;
-                      return TouchedSpotIndicatorData(
-                        FlLine(color: const Color(0xFF3b82f6).withOpacity(0.5), strokeWidth: 2),
-                        FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, barData, index) {
-                            return FlDotCirclePainter(
-                              radius: 6,
-                              color: Colors.white,
-                              strokeWidth: 3,
-                              strokeColor: const Color(0xFF3b82f6),
-                            );
-                          },
-                        ),
-                      );
-                    }).toList();
-                  },
                 ),
                 lineBarsData: [
                   LineChartBarData(
@@ -656,10 +626,9 @@ class AnalysisScreen extends StatelessWidget {
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
-                        bool isEndPoint = index == 0 || index == spots.length - 1;
                         return FlDotCirclePainter(
-                          radius: isEndPoint ? 5 : 3,
-                          color: Colors.white,
+                          radius: 4,
+                          color: const Color(0xFF161B22),
                           strokeWidth: 2,
                           strokeColor: const Color(0xFF3b82f6),
                         );
@@ -669,8 +638,8 @@ class AnalysisScreen extends StatelessWidget {
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          const Color(0xFF3b82f6).withOpacity(0.25),
-                          const Color(0xFF3b82f6).withOpacity(0.05),
+                          const Color(0xFF3b82f6).withOpacity(0.3),
+                          const Color(0xFF3b82f6).withOpacity(0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -680,9 +649,9 @@ class AnalysisScreen extends StatelessWidget {
                   LineChartBarData(
                     spots: [FlSpot(0, avgNet), FlSpot(spots.length - 1, avgNet)],
                     isCurved: false,
-                    color: const Color(0xFFf59e0b),
+                    color: const Color(0xFFf59e0b).withOpacity(0.5),
                     barWidth: 2,
-                    dashArray: [8, 4],
+                    dashArray: [5, 5],
                     dotData: FlDotData(show: false),
                   ),
                 ],
@@ -694,84 +663,92 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
+  // 🔥 Glass Effect Uygulanmış Haftalık Aktivite
   Widget _buildWeeklyActivity(List<int> activities, List<String> labels, bool isDark) {
     int maxActivity = activities.reduce(max);
     if (maxActivity == 0) maxActivity = 1;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
-        ],
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 100,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(activities.length, (index) {
-                int count = activities[index];
-                double heightFactor = count / maxActivity;
-                if (count > 0 && heightFactor < 0.15) heightFactor = 0.15;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
+            ],
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 100,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(activities.length, (index) {
+                    int count = activities[index];
+                    double heightFactor = count / maxActivity;
+                    if (count > 0 && heightFactor < 0.15) heightFactor = 0.15;
 
-                bool isToday = index == activities.length - 1;
+                    bool isToday = index == activities.length - 1;
 
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (count > 0)
-                      Text(
-                        '$count',
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 10,
-                          color: isToday ? const Color(0xFF3b82f6) : Colors.grey,
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    Expanded(
-                      child: Container(
-                        width: 28,
-                        alignment: Alignment.bottomCenter,
-                        child: FractionallySizedBox(
-                          heightFactor: count == 0 ? 0.1 : heightFactor,
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (count > 0)
+                          Text(
+                            '$count',
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 10,
+                              color: isToday ? const Color(0xFF3b82f6) : (isDark ? Colors.white38 : Colors.grey),
+                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        Expanded(
                           child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: count == 0
-                                    ? [Colors.grey.shade300, Colors.grey.shade300]
-                                    : isToday
-                                        ? [const Color(0xFF3b82f6), const Color(0xFF8b5cf6)]
-                                        : [const Color(0xFF60a5fa), const Color(0xFF3b82f6)],
+                            width: 24,
+                            alignment: Alignment.bottomCenter,
+                            child: FractionallySizedBox(
+                              heightFactor: count == 0 ? 0.05 : heightFactor,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: count == 0
+                                        ? [isDark ? Colors.white10 : Colors.grey.shade300, isDark ? Colors.white10 : Colors.grey.shade300]
+                                        : isToday
+                                            ? [const Color(0xFF3b82f6), const Color(0xFF8b5cf6)]
+                                            : [const Color(0xFF60a5fa).withOpacity(0.7), const Color(0xFF3b82f6).withOpacity(0.7)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
                               ),
-                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      labels[index],
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: isToday ? const Color(0xFF3b82f6) : Colors.grey,
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                );
-              }),
-            ),
+                        const SizedBox(height: 8),
+                        Text(
+                          labels[index],
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: isToday ? const Color(0xFF3b82f6) : (isDark ? Colors.white38 : Colors.grey),
+                            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -806,171 +783,180 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
+  // 🔥 Glass Effect Stat Item
   Widget _buildStatItem(String label, String value, IconData icon, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.transparent),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value, style: GoogleFonts.robotoMono(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
-                ),
-                Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopicCard(Map<String, dynamic> data, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1e293b).withOpacity(0.7) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: (data['color'] as Color).withOpacity(0.3), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: (data['color'] as Color).withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Row(
             children: [
               Container(
-                width: 5,
-                height: 50,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: data['color'],
-                  borderRadius: BorderRadius.circular(3),
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: Icon(icon, color: color, size: 20),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            data['topic'],
-                            style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black87),
-                          ),
-                        ),
-                        Text(
-                          data['improvement'],
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
+                    Text(value, style: GoogleFonts.robotoMono(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "${data['count']} test • ${data['status']}",
-                      style: GoogleFonts.inter(fontSize: 12, color: data['color'], fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [(data['color'] as Color).withOpacity(0.2), (data['color'] as Color).withOpacity(0.1)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      "%${(data['average'] * 100).toInt()}",
-                      style: GoogleFonts.robotoMono(fontSize: 20, fontWeight: FontWeight.bold, color: data['color']),
-                    ),
-                    Text(
-                      "Başarı",
-                      style: GoogleFonts.inter(fontSize: 9, color: data['color']),
-                    ),
+                    Text(label, style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey)),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: (data['color'] as Color).withOpacity(0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildMiniStat("Ortalama Net", data['avgNet'].toStringAsFixed(1), isDark),
-                    _buildMiniStat("Doğru", "${data['correct']}", isDark),
-                    _buildMiniStat("Yanlış", "${data['wrong']}", isDark),
-                    _buildMiniStat("Boş", "${data['empty']}", isDark),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: (data['color'] as Color).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  // 🔥 Glass Effect Topic Card
+  Widget _buildTopicCard(Map<String, dynamic> data, bool isDark) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: (data['color'] as Color).withOpacity(0.3), width: 1),
+            boxShadow: [
+              BoxShadow(color: (data['color'] as Color).withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: data['color'],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.lightbulb_outline, size: 16, color: data['color']),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          data['recommendation'],
-                          style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.white70 : Colors.black87),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (data['needsAttention'])
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFf59e0b)),
-                        const SizedBox(width: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                data['topic'],
+                                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+                              ),
+                            ),
+                            Text(
+                              data['improvement'],
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          "${data['daysSince']} gündür bu konuyla ilgili test çözmedin!",
-                          style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFf59e0b), fontWeight: FontWeight.w600),
+                          "${data['count']} test • ${data['status']}",
+                          style: GoogleFonts.inter(fontSize: 12, color: data['color'], fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
                   ),
-              ],
-            ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: (data['color'] as Color).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: (data['color'] as Color).withOpacity(0.2))
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          "%${(data['average'] * 100).toInt()}",
+                          style: GoogleFonts.robotoMono(fontSize: 18, fontWeight: FontWeight.bold, color: data['color']),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.black.withOpacity(0.2) : (data['color'] as Color).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildMiniStat("Ortalama", data['avgNet'].toStringAsFixed(1), isDark),
+                        _buildMiniStat("Doğru", "${data['correct']}", isDark),
+                        _buildMiniStat("Yanlış", "${data['wrong']}", isDark),
+                        _buildMiniStat("Boş", "${data['empty']}", isDark),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: (data['color'] as Color).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lightbulb_outline, size: 16, color: data['color']),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              data['recommendation'],
+                              style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (data['needsAttention'])
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFf59e0b)),
+                            const SizedBox(width: 6),
+                            Text(
+                              "${data['daysSince']} gündür bu konuyla ilgili test çözmedin!",
+                              style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFf59e0b), fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -978,9 +964,9 @@ class AnalysisScreen extends StatelessWidget {
   Widget _buildMiniStat(String label, String value, bool isDark) {
     return Column(
       children: [
-        Text(value, style: GoogleFonts.robotoMono(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+        Text(value, style: GoogleFonts.robotoMono(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87)),
         const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.inter(fontSize: 9, color: Colors.grey)),
+        Text(label, style: GoogleFonts.inter(fontSize: 9, color: isDark ? Colors.white38 : Colors.grey)),
       ],
     );
   }
@@ -990,9 +976,6 @@ class AnalysisScreen extends StatelessWidget {
     
     var topics = data['topicInsights'] as List;
     if (topics.isNotEmpty) {
-      // Weakest konusu en altta olacağı için sort reversed yapmıştık.
-      // Sıralama logic'inde b.compareTo(a) dedik, yani descending (yüksekten düşüğe).
-      // Bu yüzden zayıf konu en sonda (last).
       var weakest = topics.last;
       if (weakest['average'] < 0.6) {
         insights.add({
@@ -1026,37 +1009,46 @@ class AnalysisScreen extends StatelessWidget {
         Text("💡 Akıllı Öneriler", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
         const SizedBox(height: 12),
         ...insights.map((insight) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: (insight['color'] as Color).withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: (insight['color'] as Color).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(insight['icon'], color: insight['color'], size: 22),
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: (insight['color'] as Color).withOpacity(0.3)),
+                  boxShadow: [
+                    BoxShadow(color: (insight['color'] as Color).withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(insight['title'], style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: (insight['color'] as Color).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(height: 2),
-                      Text(insight['message'], style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
+                      child: Icon(insight['icon'], color: insight['color'], size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(insight['title'], style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(insight['message'], style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         }).toList(),
@@ -1064,18 +1056,25 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
+  // 🔥 Generic Glass Container (Parametre ile Blur ve Renk ayarı)
   Widget _buildGlassContainer({required Widget child, required bool isDark, double? height}) {
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1e293b).withOpacity(0.6) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(isDark ? 0.1 : 0.3)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))
-        ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 15, offset: const Offset(0, 8))
+            ],
+          ),
+          child: child,
+        ),
       ),
-      child: child,
     );
   }
 
@@ -1088,7 +1087,7 @@ class AnalysisScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Text("Henüz Test Çözmedin", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.grey)),
           const SizedBox(height: 8),
-          Text("Test çözmeye başladığında analizlerin burada görünecek", style: GoogleFonts.inter(fontSize: 14, color: Colors.grey)),
+          Text("Test çözmeye başladığında analizlerin burada görünecek", style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white38 : Colors.grey)),
         ],
       ),
     );

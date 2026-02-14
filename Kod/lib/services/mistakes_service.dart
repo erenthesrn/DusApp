@@ -81,7 +81,10 @@ class MistakesService {
       int testNo = int.tryParse(mistake['testNo']?.toString() ?? "0") ?? 0;
       int qIndex = int.tryParse(mistake['questionIndex']?.toString() ?? mistake['id']?.toString() ?? "0") ?? 0;
 
-      if (testNo == 0 || qIndex == 0) {
+      // 🔥 DÜZELTME: || yerine && kullanıldı
+      // qIndex=0 geçerli bir soru indeksidir (ilk soru).
+      // Sadece ikisi de 0 ise (yani gerçekten geçersiz veri) atla.
+      if (testNo == 0 && qIndex == 0) {
         print("⚠️ Geçersiz veri atlandı: testNo=$testNo, qIndex=$qIndex");
         continue;
       }
