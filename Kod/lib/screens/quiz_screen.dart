@@ -398,6 +398,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       'testNo': widget.testNo ?? _questions[i].testNo,
                       'questionIndex': _questions[i].id, 
                       'explanation': _questions[i].explanation,
+                      'image_url': _questions[i].imageUrl,
                       'date': DateTime.now().toIso8601String(),
                     });
                   }
@@ -423,6 +424,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       'testNo': widget.testNo ?? _questions[i].testNo,
                       'questionIndex': _questions[i].id,
                       'explanation': _questions[i].explanation,
+                      'image_url': _questions[i].imageUrl,                      
                       'date': DateTime.now().toIso8601String(),
                     });
                   }
@@ -707,6 +709,8 @@ class _QuizScreenState extends State<QuizScreen> {
                             child: Image.network(
                               currentQuestion.imageUrl!,
                               fit: BoxFit.contain,
+                              cacheWidth: 800,
+                              cacheHeight: 800,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Center(

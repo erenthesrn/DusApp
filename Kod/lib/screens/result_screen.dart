@@ -157,7 +157,10 @@ class _ResultScreenState extends State<ResultScreen> {
             'correctIndex': q.answerIndex,
             'userIndex': widget.userAnswers[i], // İşaretlediği yanlış şık
             'explanation': q.explanation,
-            'subject': widget.topic, 
+            'topic': widget.topic,
+            'testNo': widget.testNo,
+            'questionIndex':q.id,
+            'image_url': q.imageUrl,
             'date': DateTime.now().toIso8601String(),
           });
         }

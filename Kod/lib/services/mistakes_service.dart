@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -21,11 +23,10 @@ class MistakesService {
       return snapshot.docs.map((doc) {
         var data = doc.data();
         
-        // 🛠️ ID ÇAKIŞMASINI VE EKSİK VERİYİ ÖNLEME
         String docId = doc.id;
-        data['id'] = docId; // String ID'yi sakla (örn: Anatomi_1_5)
+        data['id'] = docId;
         
-        // Konu veya TestNo eksikse Document ID'den kurtar
+        // Document ID'den veri kurtar
         List<String> parts = docId.split('_');
         if (parts.length >= 3) {
           if (data['topic'] == null || data['topic'] == "genel" || data['topic'] == "") {
@@ -49,28 +50,41 @@ class MistakesService {
           data['options'] = [];
         }
         
+        // 🔥 GÖRSEL URL'İNİ SAKLA (null olabilir)
+        data['imageUrl'] = data['image_url'];
+        
         return data;
       }).toList();
     } catch (e) {
-      print("Yanlışları getirme hatası: $e");
+      print("❌ Yanlışları getirme hatası: $e");
       return [];
     }
   }
 
-// lib/services/mistakes_service.dart içinde addMistakes fonksiyonu:
-
+  // 🔥 DÜZELTME: topic ve questionIndex eksiksiz kaydediliyor
   static Future<void> addMistakes(List<Map<String, dynamic>> mistakes) async {
     User? user = _auth.currentUser;
     if (user == null) return;
 
     WriteBatch batch = _firestore.batch();
+    int savedCount = 0;
 
     for (var mistake in mistakes) {
-      String topic = mistake['topic'] ?? mistake['subject'] ?? "genel";
-      int testNo = int.tryParse(mistake['testNo'].toString()) ?? 0;
-      int qIndex = int.tryParse(mistake['questionIndex'].toString()) ?? 0;
+      // 🔥 FIX: Hem 'topic' hem 'subject' alanlarını kontrol et
+      String topic = (mistake['topic'] ?? mistake['subject'] ?? "Genel").toString().trim();
+      
+      // Boş topic'i engelle
+      if (topic.isEmpty || topic == "genel") {
+        topic = "Anatomi"; // Varsayılan konu (anatomi.json'dan geldiği için)
+      }
+      
+      int testNo = int.tryParse(mistake['testNo']?.toString() ?? "0") ?? 0;
+      int qIndex = int.tryParse(mistake['questionIndex']?.toString() ?? mistake['id']?.toString() ?? "0") ?? 0;
 
-      if (testNo == 0 && qIndex == 0) continue;
+      if (testNo == 0 || qIndex == 0) {
+        print("⚠️ Geçersiz veri atlandı: testNo=$testNo, qIndex=$qIndex");
+        continue;
+      }
 
       String uniqueId = "${topic}_${testNo}_$qIndex";
       
@@ -84,51 +98,55 @@ class MistakesService {
         'topic': topic,
         'testNo': testNo,
         'questionIndex': qIndex,
-        'question': mistake['question'],
+        'question': mistake['question'] ?? "",
         'options': mistake['options'] ?? [],
-        'correctIndex': mistake['correctIndex'],
-        // 🔥🔥🔥 EKLENEN SATIR BURASI: Kullanıcının cevabını kaydet 🔥🔥🔥
-        'userIndex': mistake['userIndex'], 
+        'correctIndex': mistake['correctIndex'] ?? 0,
+        'userIndex': mistake['userIndex'] ?? -1,
         'explanation': mistake['explanation'] ?? "",
+        'image_url': mistake['image_url'], // 🔥 GÖRSEL URL'İNİ KAYDET
         'date': DateTime.now().toIso8601String(),
       };
 
-      batch.set(docRef, dataToSave); 
+      batch.set(docRef, dataToSave, SetOptions(merge: true));
+      savedCount++;
     }
 
-    await batch.commit();
+    if (savedCount > 0) {
+      await batch.commit();
+      print("✅ $savedCount yanlış soru Firebase'e kaydedildi.");
+    }
   }
-  // TEK SİLME İŞLEMİ
+
+  // TEK SİLME
   static Future<void> removeMistake(dynamic id, String topic) async {
     User? user = _auth.currentUser;
     if (user == null) return;
 
     try {
       if (id is String) {
-         await _firestore.collection('users').doc(user.uid).collection('mistakes').doc(id).delete();
+        await _firestore.collection('users').doc(user.uid).collection('mistakes').doc(id).delete();
       }
     } catch (e) {
-      print("Silme hatası: $e");
+      print("❌ Silme hatası: $e");
     }
   }
   
-  // 🔥 DÜZELTİLDİ: ÇOKLU SİLME (LİSTE HALİNDE STRING ID ALIR)
+  // ÇOKLU SİLME
   static Future<void> removeMistakeList(List<String> idsToRemove) async {
     User? user = _auth.currentUser;
     if (user == null || idsToRemove.isEmpty) return;
     
     WriteBatch batch = _firestore.batch();
     
-    for(String id in idsToRemove) {
-       DocumentReference docRef = _firestore.collection('users').doc(user.uid).collection('mistakes').doc(id);
-       batch.delete(docRef);
+    for (String id in idsToRemove) {
+      DocumentReference docRef = _firestore.collection('users').doc(user.uid).collection('mistakes').doc(id);
+      batch.delete(docRef);
     }
     
     await batch.commit();
   }
 
-  // 🔥 EKLENDİ: HOME SCREEN HATASINI ÖNLEMEK İÇİN
   static Future<void> syncLocalToFirebase() async {
-    // Burası şimdilik boş kalabilir, hata vermemesi için ekledik.
+    // Boş bırakıldı - hata önleme için
   }
 }
