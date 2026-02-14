@@ -5,7 +5,7 @@ import '../models/question_model.dart';
 import 'quiz_screen.dart';
 
 // ==========================================
-// 1. EKRAN: YANLIŞLARIM KOKPİTİ (PREMIUM TASARIM - DEĞİŞMEDİ)
+// 1. EKRAN: YANLIŞLARIM KOKPİTİ (OPTİMİZE EDİLMİŞ)
 // ==========================================
 
 enum SortOption { newest, oldest, subject, random }
@@ -46,42 +46,56 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
     _loadData();
   }
 
+  // 🔥 OPTİMİZE EDİLMİŞ VERİ YÜKLEME 🔥
   Future<void> _loadData() async {
-    var rawMistakes = await MistakesService.getMistakes();
+    if (!mounted) return;
     
-    Map<String, Map<String, dynamic>> distinctMap = {};
+    setState(() => _isLoading = true);
+    
+    try {
+      var rawMistakes = await MistakesService.getMistakes();
+      
+      // Duplicate removal algoritması - performans optimizasyonu
+      Map<String, Map<String, dynamic>> distinctMap = {};
 
-    for (var m in rawMistakes) {
-      String topic = m['topic'] ?? "genel";
-      int qIndex = m['questionIndex'] ?? 0;
-      int testNo = m['testNo'] ?? 0;
-      
-      String key = "${topic}_${testNo}_$qIndex";
-      String zeroKey = "${topic}_0_$qIndex";
-      
-      if (testNo > 0 && distinctMap.containsKey(zeroKey)) {
-        distinctMap.remove(zeroKey);
-        distinctMap[key] = m;
-      } else {
-        distinctMap[key] = m;
+      for (var m in rawMistakes) {
+        String topic = m['topic'] ?? "genel";
+        int qIndex = m['questionIndex'] ?? 0;
+        int testNo = m['testNo'] ?? 0;
+        
+        String key = "${topic}_${testNo}_$qIndex";
+        String zeroKey = "${topic}_0_$qIndex";
+        
+        if (testNo > 0 && distinctMap.containsKey(zeroKey)) {
+          distinctMap.remove(zeroKey);
+          distinctMap[key] = m;
+        } else {
+          distinctMap[key] = m;
+        }
       }
-    }
-    
-    List<Map<String, dynamic>> cleanList = distinctMap.values.toList();
-    
-    cleanList.sort((a, b) {
-       var dateA = a['date'] != null ? DateTime.tryParse(a['date'].toString()) : null;
-       var dateB = b['date'] != null ? DateTime.tryParse(b['date'].toString()) : null;
-       if (dateA == null) return 1;
-       if (dateB == null) return -1;
-       return dateB.compareTo(dateA);
-    });
-    
-    if (mounted) {
-      setState(() {
-        _allMistakes = cleanList;
-        _isLoading = false;
+      
+      List<Map<String, dynamic>> cleanList = distinctMap.values.toList();
+      
+      // Sorting
+      cleanList.sort((a, b) {
+         var dateA = a['date'] != null ? DateTime.tryParse(a['date'].toString()) : null;
+         var dateB = b['date'] != null ? DateTime.tryParse(b['date'].toString()) : null;
+         if (dateA == null) return 1;
+         if (dateB == null) return -1;
+         return dateB.compareTo(dateA);
       });
+      
+      if (mounted) {
+        setState(() {
+          _allMistakes = cleanList;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Veri yükleme hatası: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -100,15 +114,20 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
     final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
 
-    Map<String, int> counts = {};
-    for (var m in _allMistakes) {
-      String sub = m['topic'] ?? m['subject'] ?? "Diğer";
-      sub = _toTitleCase(sub);
-      counts[sub] = (counts[sub] ?? 0) + 1;
+    // 🔥 PERFORMANS: Sadece gerektiğinde hesapla 🔥
+    late Map<String, int> counts;
+    late List<String> sortedSubjects;
+    
+    if (!_isLoading && _allMistakes.isNotEmpty) {
+      counts = {};
+      for (var m in _allMistakes) {
+        String sub = m['topic'] ?? m['subject'] ?? "Diğer";
+        sub = _toTitleCase(sub);
+        counts[sub] = (counts[sub] ?? 0) + 1;
+      }
+      sortedSubjects = counts.keys.toList();
+      sortedSubjects.sort((a, b) => counts[b]!.compareTo(counts[a]!)); 
     }
-
-    List<String> sortedSubjects = counts.keys.toList();
-    sortedSubjects.sort((a, b) => counts[b]!.compareTo(counts[a]!)); 
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -131,16 +150,23 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
             ),
             child: IconButton(
               icon: const Icon(Icons.refresh, size: 20),
-              onPressed: () {
-                setState(() => _isLoading = true);
-                _loadData();
-              },
+              onPressed: _loadData, // Direkt çağır
             ),
           )
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: isDark ? Colors.white : Colors.teal))
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: isDark ? Colors.white : Colors.teal),
+                  const SizedBox(height: 16),
+                  Text("Yükleniyor...", 
+                    style: GoogleFonts.inter(color: textColor.withOpacity(0.6)))
+                ],
+              )
+            )
           : _allMistakes.isEmpty
               ? _buildEmptyState(isDark)
               : RefreshIndicator(
@@ -359,7 +385,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
 }
 
 // ==========================================
-// 2. EKRAN: YANLIŞ SORULARIN LİSTESİ (REVIZE EDİLMİŞ KLASİK TASARIM)
+// 2. EKRAN: YANLIŞ SORULARIN LİSTESİ (OPTİMİZE)
 // ==========================================
 
 class MistakesListScreen extends StatefulWidget {
@@ -452,6 +478,7 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     );
   }
 
+  // 🔥 OPTİMİZE EDİLMİŞ SİLME 🔥
   Future<void> _deleteMistake(Map<String, dynamic> mistake) async {
     dynamic id = mistake['id']; 
     String subject = mistake['topic'] ?? mistake['subject'];
@@ -484,12 +511,15 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     );
 
     if (confirm == true) {
+      // Önce UI'ı güncelle (optimistic update)
+      setState(() {
+        _currentList.removeWhere((m) => m['id'] == id);
+      });
+
+      // Sonra arka planda sil
       await MistakesService.removeMistake(id, subject);
+      
       if (mounted) {
-        setState(() {
-          _currentList.removeWhere((m) => m['id'] == id);
-        });
-        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -513,9 +543,8 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 PREMIUM DARK MODE RENKLERİ 🔥
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9); // Premium Slate Dark
+    final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final Color cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
     final Color subTextColor = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
@@ -526,7 +555,7 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
       floatingActionButton: _currentList.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: _startMistakeQuiz,
-              backgroundColor: const Color(0xFF009688), // Teal
+              backgroundColor: const Color(0xFF009688),
               elevation: 4,
               icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
               label: Text("Bu Yanlışları Çöz", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -535,7 +564,7 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
 
       appBar: AppBar(
         title: Text(widget.title, style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent, // Glass effect için transparent
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: textColor),
@@ -577,7 +606,10 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
               itemCount: _currentList.length,
               itemBuilder: (context, index) {
                 final mistake = _currentList[index];
-                return _buildMistakeCard(mistake, isDark, cardColor, textColor, subTextColor);
+                // RepaintBoundary ile performans artır
+                return RepaintBoundary(
+                  child: _buildMistakeCard(mistake, isDark, cardColor, textColor, subTextColor)
+                );
               },
             ),
     );
@@ -617,7 +649,6 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ÜST KISIM (CHIP VE BUTON)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -632,7 +663,6 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
                       style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue)),
                 ),
                 
-                // 🔥 YENİ KOMPAKT BUTON 🔥
                 InkWell(
                   onTap: () => _deleteMistake(mistake),
                   borderRadius: BorderRadius.circular(12),
@@ -658,13 +688,11 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
             ),
             const SizedBox(height: 16),
             
-            // SORU METNİ
             Text(questionText,
                 style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, height: 1.5, color: textColor)),
             
             const SizedBox(height: 16),
             
-            // ŞIKLAR
             if (options.isNotEmpty)
               ...List.generate(options.length, (i) {
                 bool isCorrect = (i == correctIndex);
@@ -676,12 +704,12 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
                 Color iconColor = subTextColor;
                 
                 if (isCorrect) {
-                  rowBg = isDark ? Colors.green.withOpacity(0.15) : const Color(0xFFF0FDF4); // Yeşilimsi
+                  rowBg = isDark ? Colors.green.withOpacity(0.15) : const Color(0xFFF0FDF4);
                   rowBorder = Colors.green.withOpacity(0.4);
                   icon = Icons.check_circle;
                   iconColor = Colors.green;
                 } else if (isUserWrong) {
-                  rowBg = isDark ? Colors.red.withOpacity(0.15) : const Color(0xFFFEF2F2); // Kırmızımsı
+                  rowBg = isDark ? Colors.red.withOpacity(0.15) : const Color(0xFFFEF2F2);
                   rowBorder = Colors.red.withOpacity(0.4);
                   icon = Icons.cancel;
                   iconColor = Colors.redAccent;

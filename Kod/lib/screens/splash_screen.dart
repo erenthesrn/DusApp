@@ -40,28 +40,32 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     super.dispose();
   }
 
-  Future<void> _initializeApp() async {
-    // 1. ANİMASYONUN BAŞLAMASINA İZİN VER
-    // Ufak bir gecikme işlemcinin nefes almasını ve ilk karenin çizilmesini sağlar.
-    await Future.delayed(const Duration(milliseconds: 100));
+Future<void> _initializeApp() async {
+  // 1. Animasyonun başlamasına izin ver
+  await Future.delayed(const Duration(milliseconds: 100));
 
-    // 2. PARALEL İŞLEMLER (Hepsi aynı anda başlasın)
-    // - Min bekleme süresi (Animasyon en az 3 sn dönsün)
-    // - Firebase başlatma
-    // - Diğer servisler (Tarih formatı, Focus servisi vb.)
-    
-    final minWaitFuture = Future.delayed(const Duration(seconds: 3));
-    
-    final initFuture = _initBackEndServices();
-
-    // İkisinin de bitmesini bekle
-    await Future.wait([minWaitFuture, initFuture]);
-
-    // 3. YÖNLENDİRME
-    if (mounted) {
-      _navigateToNextScreen();
-    }
+  // 2. Stopwatch ile gerçek yükleme süresini ölç
+  final stopwatch = Stopwatch()..start();
+  
+  // Backend servisleri başlat
+  await _initBackEndServices();
+  
+  stopwatch.stop();
+  final elapsedMillis = stopwatch.elapsedMilliseconds;
+  
+  // Minimum görüntüleme süresi (animasyonun anlamlı görünmesi için)
+  const minDisplayTime = 5000; // 2 saniye (3'ten düşürdük)
+  
+  // Eğer yükleme 2 saniyeden kısa sürdüyse, kalan süreyi bekle
+  if (elapsedMillis < minDisplayTime) {
+    await Future.delayed(Duration(milliseconds: minDisplayTime - elapsedMillis));
   }
+
+  // 3. Yönlendirme
+  if (mounted) {
+    _navigateToNextScreen();
+  }
+}
 
   Future<void> _initBackEndServices() async {
     try {
@@ -142,6 +146,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               'Assets/animations/loading_dent.json',
               controller: _controller,
               height: 200,
+              repeat: true,
+
+              frameRate: FrameRate.max,
               // Animasyon yüklendiğinde oynat
               onLoaded: (composition) {
                 _controller

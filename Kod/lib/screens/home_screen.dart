@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart
+// lib/screens/home_screen.dart - OPTIMIZE EDİLMİŞ VERSIYON
 
 import 'dart:async';
 import 'dart:ui'; 
@@ -19,7 +19,7 @@ import 'blog_screen.dart';
 import 'focus_screen.dart'; 
 import 'analysis_screen.dart'; 
 import 'flashcards_screen.dart'; 
-import 'bookmarks_screen.dart'; // 🔥 YENİ: Favoriler sayfası importu
+import 'bookmarks_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,6 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
   late ConfettiController _confettiController;
   bool _dailyGoalCelebrated = false;
   StreamSubscription<DocumentSnapshot>? _userSubscription;
+
+  // 🔥 OPTİMİZASYON DEĞİŞKENLERİ 🔥
+  bool _isMistakesMenuOpen = false; // Çoklu açılmayı önle
+  List<Map<String, dynamic>>? _cachedMistakes; // Cache
+  DateTime? _lastMistakesFetch; // Son fetch zamanı
 
   @override
   void initState() {
@@ -270,112 +275,74 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 2. MODÜL: YANLIŞLAR MENÜSÜ ---
-  void _showMistakesMenu(BuildContext context) async {
-    List<Map<String, dynamic>> mistakes = await MistakesService.getMistakes();
-    int count = mistakes.length;
+  // 🔥 OPTİMİZE EDİLMİŞ CACHE SİSTEMİ 🔥
+  Future<List<Map<String, dynamic>>> _getMistakesCached() async {
+    final now = DateTime.now();
+    
+    // Cache 30 saniyeden yeniyse direkt kullan (gereksiz Firebase çağrısını engelle)
+    if (_cachedMistakes != null && 
+        _lastMistakesFetch != null && 
+        now.difference(_lastMistakesFetch!).inSeconds < 30) {
+      return _cachedMistakes!;
+    }
+    
+    // Yoksa fresh data çek ve cache'e al
+    final mistakes = await MistakesService.getMistakes();
+    _cachedMistakes = mistakes;
+    _lastMistakesFetch = now;
+    return mistakes;
+  }
 
-    if (!mounted) return;
+  // Cache'i manuel temizle (örn: yeni yanlış eklendiğinde)
+  void _invalidateMistakesCache() {
+    _cachedMistakes = null;
+    _lastMistakesFetch = null;
+  }
 
-    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Color bgColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
-    Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
-    Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+  // --- 2. MODÜL: YANLIŞLAR MENÜSÜ (ULTRA OPTİMİZE) ---
+  void _showMistakesMenu(BuildContext context) {
+    // 🚀 Çoklu açılmayı engelle
+    if (_isMistakesMenuOpen) return;
+    _isMistakesMenuOpen = true;
 
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color bgColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
+    final Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+    final Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+
+    if (!mounted) {
+      _isMistakesMenuOpen = false;
+      return;
+    }
+
+    // Önce UI'ı göster, veriyi arka planda yükle (smooth UX)
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4, 
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(color: isDarkMode ? Colors.white24 : Colors.grey.shade300, borderRadius: BorderRadius.circular(2))
-                ),
-              ),
-              Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor)),
-              const SizedBox(height: 4),
-              Text("Toplam $count yanlışın var. Nasıl ilerleyelim?", style: GoogleFonts.inter(fontSize: 14, color: subtitleColor)),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModernCard(
-                      context, 
-                      title: "Karışık\nTekrar", 
-                      icon: Icons.shuffle_rounded, 
-                      color: Colors.purple, 
-                      subtitle: "Rastgele Sınav",
-                      onTapOverride: () {
-                        Navigator.pop(context);
-                        if (mistakes.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Henüz yanlışın yok! Harikasın 🎉")));
-                          return;
-                        }
-                        List<Map<String, dynamic>> shuffled = List.from(mistakes)..shuffle();
-                        List<Question> questions = _convertMistakesToQuestions(shuffled);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı")))
-                        .then((_) => _checkAndCelebrate()); 
-                      }
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildModernCard(
-                      context, 
-                      title: "Konu\nBazlı", 
-                      icon: Icons.filter_list_rounded, 
-                      color: Colors.teal, 
-                      subtitle: "Ders Seç",
-                      onTapOverride: () {
-                        Navigator.pop(context);
-                        if (mistakes.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Henüz yanlışın yok!")));
-                          return;
-                        }
-                        _showSubjectSelectionList(context, mistakes);
-                      }
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildModernCard(
-                context,
-                title: "Listeyi İncele",
-                subtitle: "Hatalarını tek tek gör ve analiz et",
-                icon: Icons.dashboard_customize_outlined,
-                color: const Color.fromARGB(255, 205, 16, 35), 
-                isWide: true,
-                onTapOverride: () {
-                   Navigator.pop(context);
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => const MistakesDashboard()));
-                }
-              ),
-            ],
-          ),
-        ),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => _MistakesMenuContent(
+        bgColor: bgColor,
+        isDarkMode: isDarkMode,
+        titleColor: titleColor,
+        subtitleColor: subtitleColor,
+        getMistakes: _getMistakesCached,
+        convertToQuestions: _convertMistakesToQuestions,
+        onCheckCelebrate: _checkAndCelebrate,
+        onShowSubjectList: _showSubjectSelectionList,
       ),
-    );
+    ).whenComplete(() {
+      _isMistakesMenuOpen = false;
+    });
   }
 
   void _showSubjectSelectionList(BuildContext context, List<Map<String, dynamic>> mistakes) {
+    // Veriyi optimize et - gereksiz hesaplamalardan kaçın
     Map<String, List<Map<String, dynamic>>> grouped = {};
     for (var m in mistakes) {
       String sub = m['subject'] ?? m['topic'] ?? "Diğer";
-      if (!grouped.containsKey(sub)) grouped[sub] = [];
-      grouped[sub]!.add(m);
+      grouped.putIfAbsent(sub, () => []).add(m);
     }
 
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -653,6 +620,251 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// 🔥 OPTİMİZE EDİLMİŞ YANLIŞLAR MENÜSÜ WİDGET'I 🔥
+class _MistakesMenuContent extends StatefulWidget {
+  final Color bgColor;
+  final bool isDarkMode;
+  final Color titleColor;
+  final Color subtitleColor;
+  final Future<List<Map<String, dynamic>>> Function() getMistakes;
+  final List<Question> Function(List<Map<String, dynamic>>) convertToQuestions;
+  final VoidCallback onCheckCelebrate;
+  final void Function(BuildContext, List<Map<String, dynamic>>) onShowSubjectList;
+
+  const _MistakesMenuContent({
+    required this.bgColor,
+    required this.isDarkMode,
+    required this.titleColor,
+    required this.subtitleColor,
+    required this.getMistakes,
+    required this.convertToQuestions,
+    required this.onCheckCelebrate,
+    required this.onShowSubjectList,
+  });
+
+  @override
+  State<_MistakesMenuContent> createState() => _MistakesMenuContentState();
+}
+
+class _MistakesMenuContentState extends State<_MistakesMenuContent> {
+  List<Map<String, dynamic>>? _mistakes;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMistakes();
+  }
+
+  Future<void> _loadMistakes() async {
+    try {
+      final mistakes = await widget.getMistakes();
+      if (mounted) {
+        setState(() {
+          _mistakes = mistakes;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _mistakes = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4, 
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: widget.isDarkMode ? Colors.white24 : Colors.grey.shade300, 
+                  borderRadius: BorderRadius.circular(2)
+                )
+              ),
+            ),
+            
+            Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: widget.titleColor)),
+            const SizedBox(height: 4),
+            
+            // Loading state için placeholder
+            _isLoading 
+              ? const SizedBox(
+                  height: 20,
+                  child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+                )
+              : Text(
+                  "Toplam ${_mistakes?.length ?? 0} yanlışın var. Nasıl ilerleyelim?", 
+                  style: GoogleFonts.inter(fontSize: 14, color: widget.subtitleColor)
+                ),
+            
+            const SizedBox(height: 32),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: _buildModernCard(
+                    context, 
+                    title: "Karışık\nTekrar", 
+                    icon: Icons.shuffle_rounded, 
+                    color: Colors.purple, 
+                    subtitle: "Rastgele Sınav",
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (_mistakes == null || _mistakes!.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Henüz yanlışın yok! Harikasın 🎉"))
+                        );
+                        return;
+                      }
+                      List<Map<String, dynamic>> shuffled = List.from(_mistakes!)..shuffle();
+                      List<Question> questions = widget.convertToQuestions(shuffled);
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı"))
+                      ).then((_) => widget.onCheckCelebrate()); 
+                    }
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildModernCard(
+                    context, 
+                    title: "Konu\nBazlı", 
+                    icon: Icons.filter_list_rounded, 
+                    color: Colors.teal, 
+                    subtitle: "Ders Seç",
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (_mistakes == null || _mistakes!.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Henüz yanlışın yok!"))
+                        );
+                        return;
+                      }
+                      widget.onShowSubjectList(context, _mistakes!);
+                    }
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            _buildModernCard(
+              context,
+              title: "Listeyi İncele",
+              subtitle: "Hatalarını tek tek gör ve analiz et",
+              icon: Icons.dashboard_customize_outlined,
+              color: const Color.fromARGB(255, 205, 16, 35), 
+              isWide: true,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const MistakesDashboard()));
+              }
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernCard(BuildContext context, {
+    required String title, 
+    required IconData icon, 
+    required Color color, 
+    String? subtitle,
+    bool isWide = false,
+    required VoidCallback onTap
+  }) {
+    Color textColor = widget.isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+    Color cardColor = widget.isDarkMode ? const Color(0xFF161B22) : Colors.white; 
+    Color subtitleColor = widget.isDarkMode ? Colors.white60 : Colors.blueGrey;
+    Color borderColor = widget.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1); 
+
+    return Container(
+      height: isWide ? 100 : 160,
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: widget.isDarkMode ? Colors.black.withOpacity(0.3) : color.withOpacity(0.08), 
+            blurRadius: 8, 
+            offset: const Offset(0, 5)
+          ),
+        ]
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: _isLoading ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: isWide 
+            ? Row( 
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(icon, color: color, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+                      if (subtitle != null)
+                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor)),
+                    ],
+                  )
+                ],
+              )
+            : Column( 
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(icon, color: color, size: 32),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor, height: 1.2)),
+                      if (subtitle != null)
+                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ],
+              ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // =============================================================================
 // ||                          DASHBOARD EKRANI                               ||
 // =============================================================================
@@ -839,7 +1051,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // --- ESKİ 3'LÜ BUTTON YAPISI ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -909,8 +1120,6 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-
-  // --- YARDIMCI WIDGET'LAR ---
 
   Widget _buildGlassCard({required Widget child, required bool isDark}) {
     if (!isDark) {
