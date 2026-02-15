@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart - OPTIMIZE EDİLMİŞ VERSIYON
+// lib/screens/home_screen.dart - OFFLINE MOD ENTEGRE EDİLMİŞ VERSİYON
 
 import 'dart:async';
 import 'dart:ui'; 
@@ -20,6 +20,10 @@ import 'focus_screen.dart';
 import 'analysis_screen.dart'; 
 import 'flashcards_screen.dart'; 
 import 'bookmarks_screen.dart';
+
+// 🔥 OFFLINE MOD IMPORTLARI 🔥
+import '../widgets/offline_sync_banner.dart';
+import 'offline_manager_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -929,6 +933,7 @@ class DashboardScreen extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
+          // 1. ÜST KISIM (HEADER)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
             child: BackdropFilter(
@@ -1005,6 +1010,13 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
+          // 🔥 YENİ EKLENEN: OFFLINE BANNER (Header'dan hemen sonra)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: OfflineSyncBanner(), 
+          ),
+
+          // 2. BUGÜNKÜ HEDEFLER KARTI
           Transform.translate(
             offset: const Offset(0, -40),
             child: Padding(
@@ -1025,9 +1037,7 @@ class DashboardScreen extends StatelessWidget {
                             '$dailySolved',     
                             '$dailyQuestionGoal Soru', 
                             Colors.teal,
-                            dailyQuestionGoal > 0 
-                                ? (dailySolved / dailyQuestionGoal).clamp(0.0, 1.0) 
-                                : 0.0,
+                            dailyQuestionGoal > 0 ? (dailySolved / dailyQuestionGoal).clamp(0.0, 1.0) : 0.0,
                             isDarkMode
                           )
                         ),
@@ -1053,6 +1063,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
+          // 3. BUTONLAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -1103,6 +1114,7 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
+                
                 _buildActionBtnHorizontal(
                   'Odak Modu (Timer)', 
                   'Pomodoro ile verimli çalış', 
@@ -1111,6 +1123,19 @@ class DashboardScreen extends StatelessWidget {
                   isDarkMode,
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const FocusScreen()));
+                  }
+                ),
+
+                // 🔥 YENİ EKLENEN: OFFLINE MOD BUTONU
+                const SizedBox(height: 16),
+                _buildActionBtnHorizontal(
+                  'Offline Mod', 
+                  'Konuları indir, internetsiz çöz', 
+                  Icons.cloud_download_outlined, 
+                  isDarkMode ? const Color(0xFF0EA5E9) : Colors.lightBlue, 
+                  isDarkMode,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const OfflineManagerScreen()));
                   }
                 ),
               ],

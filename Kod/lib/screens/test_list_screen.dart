@@ -1,13 +1,14 @@
-// lib/screens/test_list_screen.dart
+// lib/screens/test_list_screen.dart - OFFLINE DESTEKLI
 
 import 'dart:convert';
-import 'dart:ui'; // Blur efekti için
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart'; // SchedulerBinding için
+import 'package:flutter/scheduler.dart';
 import '../models/question_model.dart';
 import 'quiz_screen.dart';
 import 'result_screen.dart'; 
 import '../services/quiz_service.dart';
+import '../services/offline_service.dart'; // 🔥 YENİ
 
 class TestListScreen extends StatefulWidget {
   final String topic; 
@@ -26,24 +27,23 @@ class TestListScreen extends StatefulWidget {
 class _TestListScreenState extends State<TestListScreen> with SingleTickerProviderStateMixin {
   Set<int> _completedTestNumbers = {}; 
   late AnimationController _controller;
-  late String _cleanTitle; // Title işlemini build'den çıkardık
+  late String _cleanTitle;
+  bool _isDownloaded = false; // 🔥 YENİ: Bu konu indirildi mi?
 
   @override
   void initState() {
     super.initState();
     
-    // 1. OPTİMİZASYON: String işlemini sadece bir kez yapıyoruz.
     _cleanTitle = widget.topic.replaceAll(RegExp(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ ]'), '').trim();
 
-    // 2. OPTİMİZASYON: Veri çekme işlemini ekran çizildikten sonraya erteliyoruz.
-    // Bu sayede sayfa geçiş animasyonu takılmıyor.
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _loadTestStatus();
+      _checkDownloadStatus(); // 🔥 YENİ
     });
     
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800), // Süreyi biraz kıstık, daha seri hissettirir
+      duration: const Duration(milliseconds: 800),
     );
     _controller.forward();
   }
@@ -55,7 +55,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
   }
 
   Future<void> _loadTestStatus() async {
-    // Service zaten optimize edilmiş durumda, veriyi alıp güncelliyoruz.
     List<int> completedList = await QuizService.getCompletedTests(widget.topic);
     
     if (mounted) {
@@ -65,12 +64,21 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     }
   }
 
+  // 🔥 YENİ: İndirme durumunu kontrol et
+  Future<void> _checkDownloadStatus() async {
+    bool downloaded = await OfflineService.isTopicDownloaded(_cleanTitle);
+    if (mounted) {
+      setState(() {
+        _isDownloaded = downloaded;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Tema ve Renk Tanımları
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color scaffoldBackgroundColor = isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F9FF);
-    Color appBarTitleColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
+    Color appBarTitleColor = isDarkMode ? const Color(0xFFE2E8F0) : Colors.black87;
 
     return Scaffold(
       extendBodyBehindAppBar: true, 
@@ -94,10 +102,37 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
             child: Container(color: scaffoldBackgroundColor.withOpacity(0.7)),
           ),
         ),
+        // 🔥 YENİ: Offline durumu göster
+        actions: [
+          if (_isDownloaded)
+            Container(
+              margin: EdgeInsets.only(right: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.download_done, color: Colors.green, size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    "Offline",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
       body: Stack(
         children: [
-          // --- ARKA PLAN EFEKTLERİ ---
           if (isDarkMode) ...[
              Positioned(
               top: -50, right: -50,
@@ -135,28 +170,21 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
             ),
           ],
 
-          // --- 3. OPTİMİZASYON: CustomScrollView ve Slivers ---
-          // ListView + GridView(shrinkWrap: true) yerine Slivers kullanıyoruz.
-          // Bu, render performansını 10 kat artırır.
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // AppBar'ın arkası boş kalmasın diye padding
               const SliverToBoxAdapter(child: SizedBox(height: 110)),
               
-              // --- KOLAY SEVİYE ---
               _buildSliverSectionHeader("Kolay Seviye", Colors.green, isDarkMode, 0),
               _buildSliverTestGrid(count: 8, startNumber: 1, color: Colors.green, isDarkMode: isDarkMode, delayIndex: 1),
               
               _buildSliverDivider(isDarkMode, 2),
               
-              // --- ORTA SEVİYE ---
               _buildSliverSectionHeader("Orta Seviye", Colors.orange, isDarkMode, 3),
               _buildSliverTestGrid(count: 8, startNumber: 9, color: Colors.orange, isDarkMode: isDarkMode, delayIndex: 4),
               
               _buildSliverDivider(isDarkMode, 5),
               
-              // --- ZOR SEVİYE ---
               _buildSliverSectionHeader("Zor Seviye", Colors.red, isDarkMode, 6),
               _buildSliverTestGrid(count: 8, startNumber: 17, color: Colors.red, isDarkMode: isDarkMode, delayIndex: 7),
               
@@ -168,7 +196,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
-  // Divider'ı Sliver'a çevirdik
   Widget _buildSliverDivider(bool isDarkMode, int index) {
     return SliverToBoxAdapter(
       child: _animatedWidget(
@@ -184,7 +211,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
-  // Header'ı Sliver'a çevirdik
   Widget _buildSliverSectionHeader(String title, Color color, bool isDarkMode, int index) {
     return SliverToBoxAdapter(
       child: _animatedWidget(
@@ -218,7 +244,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
-  // Grid'i SliverGrid'e çevirdik (En önemli performans artışı burada)
   Widget _buildSliverTestGrid({
     required int count, 
     required int startNumber, 
@@ -240,7 +265,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
             int testNumber = startNumber + index;
             bool isCompleted = _completedTestNumbers.contains(testNumber);
 
-            // Renk ve Shadow hesaplamaları
             Color boxColor;
             Color borderColor;
             List<BoxShadow> shadows;
@@ -267,9 +291,8 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
               ];
             }
             
-            // Animasyon Wrapper
             return _animatedWidget(
-              index: delayIndex, // Grid'deki her eleman değil, grup olarak animasyon girer
+              index: delayIndex,
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -282,6 +305,8 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
                       _startQuiz(testNumber); 
                     }
                   },
+                  // 🔥 YENİ: Uzun basınca offline seçeneği
+                  onLongPress: _isDownloaded ? () => _showOfflineDialog(testNumber) : null,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     decoration: BoxDecoration(
@@ -330,7 +355,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
   
-  // Animasyon kodunu koruduk
   Widget _animatedWidget({required int index, required Widget child}) {
     final Animation<double> animation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -358,9 +382,63 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
-  // --- FONKSİYONLAR (DEĞİŞİKLİK YOK) ---
-  // Buradan aşağısı orijinal kodunuzla aynıdır, sadece context kullanımında 
-  // mounted kontrolü ekledim (safety için).
+  // 🔥 YENİ: Offline dialog
+  void _showOfflineDialog(int testNumber) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.wifi_off, color: Colors.orange),
+            SizedBox(width: 10),
+            Text(
+              "Offline Mod",
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+            ),
+          ],
+        ),
+        content: Text(
+          "Bu testi internetsiz çözmek ister misin?",
+          style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            child: Text("İptal"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: Icon(Icons.cloud_off),
+            label: Text("Offline Başlat"),
+            onPressed: () {
+              Navigator.pop(context);
+              _startQuizOffline(testNumber);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🔥 YENİ: Offline quiz başlat
+  Future<void> _startQuizOffline(int testNumber) async {
+    await Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (context) => QuizScreen(
+        isTrial: false, 
+        topic: widget.topic,      
+        testNo: testNumber,
+        useOffline: true, // 🔥 Offline flag
+      ))
+    );
+    _loadTestStatus();
+  }
 
   Future<void> _startQuiz(int testNumber) async {
     await Navigator.push(

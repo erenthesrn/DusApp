@@ -7,7 +7,8 @@ import '../models/question_model.dart';
 import '../services/quiz_service.dart';
 import '../services/theme_provider.dart'; 
 import '../services/mistakes_service.dart';
-import '../services/bookmark_service.dart'; // 🔥 YENİ: Bookmark servisi eklendi
+import '../services/bookmark_service.dart';
+import '../services/offline_service.dart'; // 🔥 YENİ: Offline servisi
 import 'result_screen.dart'; 
 
 class QuizScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class QuizScreen extends StatefulWidget {
   final List<int?>? userAnswers; 
   final bool isReviewMode; 
   final int initialIndex; 
+  final bool useOffline; // 🔥 YENİ: Offline mode flag
 
   const QuizScreen({
     super.key,
@@ -31,6 +33,7 @@ class QuizScreen extends StatefulWidget {
     this.userAnswers,  
     this.isReviewMode = false, 
     this.initialIndex = 0,     
+    this.useOffline = false, // 🔥 YENİ: Varsayılan online
   });
 
   @override
@@ -48,24 +51,26 @@ class _QuizScreenState extends State<QuizScreen> {
   int _seconds = 0;
   bool _isTimerRunning = false;
 
-  // 🔥 YENİ: Bookmark durumu
   bool _isBookmarked = false;
+  bool _isOfflineMode = false; // 🔥 YENİ: Offline mode aktif mi?
 
   @override
   void initState() {
     super.initState();
+    _isOfflineMode = widget.useOffline; // 🔥 YENİ
+    
     if (widget.questions != null && widget.questions!.isNotEmpty) {
       _questions = widget.questions!;
       if (widget.userAnswers != null) {
         _userAnswers = widget.userAnswers!;
         _currentQuestionIndex = widget.initialIndex;
         _isLoading = false;
-        _checkBookmarkStatus(); // 🔥 YENİ: İlk açılışta kontrol et
+        _checkBookmarkStatus();
       } else {
         _userAnswers = List.filled(_questions.length, null);
         _isLoading = false;
         _initializeTimer(); 
-        _checkBookmarkStatus(); // 🔥 YENİ
+        _checkBookmarkStatus();
       }
     } else {
       _loadQuestions(); 
@@ -78,16 +83,11 @@ class _QuizScreenState extends State<QuizScreen> {
     super.dispose();
   }
 
-  // 🔥 YENİ: Soru Favorilerde mi Kontrol Et
   Future<void> _checkBookmarkStatus() async {
     if (_questions.isEmpty) return;
     
     Question currentQ = _questions[_currentQuestionIndex];
-    
-    // Konu adını belirle (Widget'tan gelmiyorsa sorunun level/topic alanından al)
     String topic = widget.topic ?? currentQ.level;
-    
-    // ID oluşturma (Servis ile aynı mantıkta olmalı)
     String safeTopic = topic.replaceAll(' ', '_').toLowerCase();
     String uniqueId = "${safeTopic}_${currentQ.testNo}_${currentQ.id}";
     
@@ -100,7 +100,6 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  // 🔥 YENİ: Favoriye Ekle/Çıkar
   Future<void> _toggleBookmark() async {
     if (_questions.isEmpty) return;
 
@@ -126,8 +125,38 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
+  // 🔥 GÜNCELLENDİ: Offline desteği eklendi
   Future<void> _loadQuestions() async {
     try {
+      // 🔥 OFFLINE MODE KONTROLÜ
+      if (_isOfflineMode && widget.topic != null && widget.testNo != null) {
+        debugPrint("📡 Offline mod aktif - Yerel veriden yükleniyor...");
+        
+        String cleanTopic = widget.topic!.replaceAll(RegExp(r'[^\w\s]'), '').trim();
+        List<Question> offlineQuestions = await OfflineService.loadOfflineQuestions(
+          cleanTopic, 
+          widget.testNo!
+        );
+        
+        if (offlineQuestions.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _questions = offlineQuestions;
+              _userAnswers = List.filled(_questions.length, null); 
+              _isLoading = false; 
+            });
+
+            _initializeTimer();
+            _checkBookmarkStatus();
+          }
+          return;
+        } else {
+          debugPrint("⚠️ Offline veri bulunamadı, Firebase'e geçiliyor...");
+          // Offline veri yoksa normal akışa devam et
+        }
+      }
+      
+      // NORMAL FIREBASE AKIŞI (Online Mode veya Offline Veri Yoksa)
       String dbTopic = "";
       if (widget.topic != null) {
         String t = widget.topic!;
@@ -190,11 +219,20 @@ class _QuizScreenState extends State<QuizScreen> {
 
         if (_questions.isNotEmpty) {
            _initializeTimer();
-           _checkBookmarkStatus(); // 🔥 YENİ: Sorular yüklenince kontrol et
+           _checkBookmarkStatus();
         } 
       }
     } catch (e) {
       debugPrint("Firebase Soru Yükleme Hatası: $e");
+      
+      // 🔥 YENİ: Hata varsa offline'a geçmeyi dene
+      if (widget.topic != null && widget.testNo != null && !_isOfflineMode) {
+        debugPrint("🔄 Firebase hatası, offline deneniyor...");
+        setState(() => _isOfflineMode = true);
+        _loadQuestions(); // Tekrar çağır, bu sefer offline olarak
+        return;
+      }
+      
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -329,7 +367,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void _nextQuestion() {
     if (_currentQuestionIndex < _questions.length - 1) {
       setState(() => _currentQuestionIndex++);
-      _checkBookmarkStatus(); // 🔥 YENİ: Soru değişince bookmark kontrol et
+      _checkBookmarkStatus();
     } else {
       if (widget.isReviewMode) {
         Navigator.pop(context); 
@@ -342,10 +380,11 @@ class _QuizScreenState extends State<QuizScreen> {
   void _prevQuestion() {
     if (_currentQuestionIndex > 0) {
       setState(() => _currentQuestionIndex--);
-      _checkBookmarkStatus(); // 🔥 YENİ: Soru değişince bookmark kontrol et
+      _checkBookmarkStatus();
     }
   }
   
+  // 🔥 GÜNCELLENDİ: Offline kayıt desteği
   void _showFinishDialog({bool timeUp = false}) {
     showDialog(
       context: context,
@@ -353,7 +392,35 @@ class _QuizScreenState extends State<QuizScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(timeUp ? "Süre Doldu!" : "Sınavı Bitir?"),
-        content: const Text("Sonuçları görmek ve kaydetmek için bitir."),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Sonuçları görmek ve kaydetmek için bitir."),
+            if (_isOfflineMode) ...[
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi_off, color: Colors.orange, size: 16),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Offline mod aktif. Veriler internet gelince senkronize edilecek.",
+                        style: TextStyle(fontSize: 11, color: Colors.orange.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           if (!timeUp)
             TextButton(
@@ -371,7 +438,7 @@ class _QuizScreenState extends State<QuizScreen> {
               Navigator.pop(ctx); 
               _timer?.cancel(); 
 
-              // --- SONUÇ HESAPLAMA ---
+              // SONUÇ HESAPLAMA
               int correct = 0;
               int wrong = 0;  
               int empty = 0;
@@ -436,29 +503,67 @@ class _QuizScreenState extends State<QuizScreen> {
                 score = ((correct / _questions.length) * 100).toInt();
               }
 
-              // --- KAYIT İŞLEMLERİ ---
-              if (wrongQuestionsToSave.isNotEmpty) {
-                await MistakesService.addMistakes(wrongQuestionsToSave);
-              }
-              
-              if (correctQuestionsToRemove.isNotEmpty) {
-                await MistakesService.removeMistakeList(correctQuestionsToRemove);
-              }
+              // 🔥 KAYIT İŞLEMLERİ - OFFLINE DESTEĞI
+              if (_isOfflineMode) {
+                // Offline modda yerel kaydet
+                debugPrint("💾 Offline mod - Veriler yerel kaydediliyor...");
+                
+                for (var mistake in wrongQuestionsToSave) {
+                  await OfflineService.saveOfflineMistake(mistake);
+                }
+                
+                if (!widget.isReviewMode && widget.topic != null && widget.testNo != null) {
+                  await OfflineService.saveOfflineResult(
+                    topic: widget.topic!,
+                    testNo: widget.testNo!,
+                    score: score,
+                    correctCount: correct,
+                    wrongCount: wrong,
+                    emptyCount: empty,
+                    userAnswers: _userAnswers,
+                  );
+                }
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.wifi_off, color: Colors.white),
+                          SizedBox(width: 12),
+                          Expanded(child: Text("Veriler offline kaydedildi")),
+                        ],
+                      ),
+                      backgroundColor: Colors.orange,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else {
+                // Online modda Firebase'e kaydet
+                if (wrongQuestionsToSave.isNotEmpty) {
+                  await MistakesService.addMistakes(wrongQuestionsToSave);
+                }
+                
+                if (correctQuestionsToRemove.isNotEmpty) {
+                  await MistakesService.removeMistakeList(correctQuestionsToRemove);
+                }
 
-              if (!widget.isReviewMode) {
-                await _updateFirebaseStats(correct, wrong + empty); 
-              }
+                if (!widget.isReviewMode) {
+                  await _updateFirebaseStats(correct, wrong + empty); 
+                }
 
-              if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
-                await QuizService.saveQuizResult(
-                  topic: widget.topic!,
-                  testNo: widget.testNo!,
-                  score: score,
-                  correctCount: correct,
-                  wrongCount: wrong,
-                  emptyCount: empty,
-                  userAnswers: _userAnswers,
-                );
+                if (!widget.isTrial && widget.topic != null && widget.testNo != null) {
+                  await QuizService.saveQuizResult(
+                    topic: widget.topic!,
+                    testNo: widget.testNo!,
+                    score: score,
+                    correctCount: correct,
+                    wrongCount: wrong,
+                    emptyCount: empty,
+                    userAnswers: _userAnswers,
+                  );
+                }
               }
 
               if (mounted) {
@@ -538,7 +643,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     Color boxTextColor = (isCurrent || isAnswered || widget.isReviewMode) ? Colors.white : (isDarkMode ? Colors.white60 : Colors.black54);
 
                     return GestureDetector(
-                      onTap: () { Navigator.pop(context); setState(() => _currentQuestionIndex = index); _checkBookmarkStatus(); }, // 🔥 YENİ: Haritadan geçince de kontrol et
+                      onTap: () { Navigator.pop(context); setState(() => _currentQuestionIndex = index); _checkBookmarkStatus(); },
                       child: Container(
                         decoration: BoxDecoration(
                           color: boxColor, 
@@ -592,7 +697,19 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: scaffoldBg,
-        body: Center(child: CircularProgressIndicator(color: isDarkMode ? Colors.white : null)),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: isDarkMode ? Colors.white : null),
+              SizedBox(height: 16),
+              // 🔥 YENİ: Offline göstergesi
+              if (_isOfflineMode) 
+                Text("📡 Offline modda yükleniyor...", 
+                  style: TextStyle(color: Colors.orange)),
+            ],
+          ),
+        ),
       );
     }
 
@@ -630,6 +747,11 @@ class _QuizScreenState extends State<QuizScreen> {
             : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // 🔥 YENİ: Offline göstergesi
+                if (_isOfflineMode) ...[
+                  Icon(Icons.wifi_off, size: 16, color: Colors.orange),
+                  SizedBox(width: 4),
+                ],
                 Icon(widget.isTrial ? Icons.hourglass_bottom : Icons.timer_outlined, size: 20, color: isDarkMode ? Colors.blue.shade200 : const Color(0xFF1565C0)),
                 const SizedBox(width: 8),
                 Text(
@@ -643,7 +765,6 @@ class _QuizScreenState extends State<QuizScreen> {
               ],
             ),
           
-          // 🔥 YENİ EKLENEN BUTONLAR (SAĞ ÜST)
           actions: [
             IconButton(
               onPressed: _toggleBookmark,
@@ -662,7 +783,7 @@ class _QuizScreenState extends State<QuizScreen> {
             child: LinearProgressIndicator(
               value: (_currentQuestionIndex + 1) / _questions.length, 
               backgroundColor: isDarkMode ? Colors.white10 : Colors.grey.shade300, 
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange), 
+              valueColor: AlwaysStoppedAnimation<Color>(_isOfflineMode ? Colors.orange : Colors.orange), 
               minHeight: 6
             )
           ),
