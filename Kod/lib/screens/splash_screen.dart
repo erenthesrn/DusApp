@@ -143,7 +143,7 @@ Future<void> _initializeApp() async {
           children: [
             // Lottie Animasyonu
             Lottie.asset(
-              'Assets/animations/loading_dent.json',
+              'assets/animations/loading_dent.json',
               controller: _controller,
               height: 200,
               repeat: true,

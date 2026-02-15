@@ -16,7 +16,9 @@ class AnalysisScreen extends StatelessWidget {
   static final DateFormat _dayMonthFormat = DateFormat('d MMM');
   static final DateFormat _dayNameFormat = DateFormat('E');
 
+  // ... _processPremiumData fonksiyonu AYNEN KALIYOR (değişiklik yok) ...
   Map<String, dynamic> _processPremiumData(List<QueryDocumentSnapshot> docs) {
+    // ... (Buradaki kodlar orijinal dosyadaki ile aynı kalacak) ...
     if (docs.isEmpty) return {};
 
     int totalCorrect = 0;
@@ -248,106 +250,116 @@ class AnalysisScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeProvider.instance;
-    final isDark = theme.isDarkMode;
-    final user = FirebaseAuth.instance.currentUser;
+    // 🔥 DÜZELTME: ListenableBuilder ekledik.
+    // Artık ThemeProvider notifyListeners() çağırdığında burası yeniden tetiklenecek.
+    return ListenableBuilder(
+      listenable: ThemeProvider.instance,
+      builder: (context, _) {
+        final theme = ThemeProvider.instance;
+        final isDark = theme.isDarkMode;
+        final user = FirebaseAuth.instance.currentUser;
 
-    // 🔥 Home/Profile ile uyumlu Deep Space Gradient
-    final bgColors = isDark 
-        ? [const Color(0xFF0A0E14), const Color(0xFF161B22)] 
-        : [const Color(0xFFfafafa), const Color(0xFFf5f5f5)];
-    
-    // 🔥 Uyumlu Text Color
-    final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1e293b);
+        // 🔥 Home/Profile ile uyumlu Deep Space Gradient
+        final bgColors = isDark 
+            ? [const Color(0xFF0A0E14), const Color(0xFF161B22)] 
+            : [const Color(0xFFfafafa), const Color(0xFFf5f5f5)];
+        
+        // 🔥 Uyumlu Text Color
+        final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1e293b);
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text("Performans Analizi", style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: textColor, fontSize: 20)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent, // Glass effect için transparent yaptık
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        flexibleSpace: ClipRRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: (isDark ? const Color(0xFF0A0E14) : Colors.white).withOpacity(0.5),
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: Text("Performans Analizi", style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: textColor, fontSize: 20)),
+            centerTitle: true,
+            backgroundColor: Colors.transparent, 
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            flexibleSpace: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  color: (isDark ? const Color(0xFF0A0E14) : Colors.white).withOpacity(0.5),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: bgColors)),
-        child: user == null 
-            ? const Center(child: Text("Giriş yapmalısınız."))
-            : StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('results')
-                    .orderBy('timestamp', descending: true)
-                    .limit(100)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return _buildEmptyState(isDark);
-                  }
+          body: Container(
+            decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: bgColors)),
+            child: user == null 
+                ? const Center(child: Text("Giriş yapmalısınız."))
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('results')
+                        .orderBy('timestamp', descending: true)
+                        .limit(100)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return _buildEmptyState(isDark);
+                      }
 
-                  var analytics = _processPremiumData(snapshot.data!.docs);
-                  if (analytics.isEmpty) return _buildEmptyState(isDark);
+                      var analytics = _processPremiumData(snapshot.data!.docs);
+                      if (analytics.isEmpty) return _buildEmptyState(isDark);
 
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(top: 110, left: 16, right: 16, bottom: 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildMotivationalHeader(analytics, isDark, textColor),
-                        const SizedBox(height: 20),
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.only(top: 110, left: 16, right: 16, bottom: 100),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildMotivationalHeader(analytics, isDark, textColor),
+                            const SizedBox(height: 20),
 
-                        _buildMainMetrics(analytics, isDark),
-                        const SizedBox(height: 24),
+                            _buildMainMetrics(analytics, isDark),
+                            const SizedBox(height: 24),
 
-                        _buildSectionTitle("Son 7 Günlük Net Trendi", "Günlük ortalama net değişimlerin", isDark, textColor),
-                        const SizedBox(height: 12),
-                        _buildGlassContainer(
-                          height: 260,
-                          isDark: isDark,
-                          child: _buildTrendChart(analytics['trendSpots'], analytics['trendDates'], analytics['avgNet'], isDark),
+                            _buildSectionTitle("Son 7 Günlük Net Trendi", "Günlük ortalama net değişimlerin", isDark, textColor),
+                            const SizedBox(height: 12),
+                            _buildGlassContainer(
+                              height: 260,
+                              isDark: isDark,
+                              child: _buildTrendChart(analytics['trendSpots'], analytics['trendDates'], analytics['avgNet'], isDark),
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSectionTitle("7 Günlük Çalışma Ritmi", "Düzenli çalışma başarının anahtarı", isDark, textColor),
+                            const SizedBox(height: 12),
+                            _buildWeeklyActivity(analytics['dailyActivity'], analytics['dailyLabels'], isDark),
+                            const SizedBox(height: 24),
+
+                            _buildStatsGrid(analytics, isDark),
+                            const SizedBox(height: 24),
+
+                            _buildSectionTitle("Konu Bazlı Detaylı Analiz", "Güçlü ve zayıf yönlerini keşfet", isDark, textColor),
+                            const SizedBox(height: 12),
+                            ...(analytics['topicInsights'] as List).map((topic) {
+                              return _buildTopicCard(topic, isDark);
+                            }).toList(),
+
+                            const SizedBox(height: 24),
+                            _buildActionableInsights(analytics, isDark, textColor),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-
-                        _buildSectionTitle("7 Günlük Çalışma Ritmi", "Düzenli çalışma başarının anahtarı", isDark, textColor),
-                        const SizedBox(height: 12),
-                        _buildWeeklyActivity(analytics['dailyActivity'], analytics['dailyLabels'], isDark),
-                        const SizedBox(height: 24),
-
-                        _buildStatsGrid(analytics, isDark),
-                        const SizedBox(height: 24),
-
-                        _buildSectionTitle("Konu Bazlı Detaylı Analiz", "Güçlü ve zayıf yönlerini keşfet", isDark, textColor),
-                        const SizedBox(height: 12),
-                        ...(analytics['topicInsights'] as List).map((topic) {
-                          return _buildTopicCard(topic, isDark);
-                        }).toList(),
-
-                        const SizedBox(height: 24),
-                        _buildActionableInsights(analytics, isDark, textColor),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ),
+                      );
+                    },
+                  ),
+          ),
+        );
+      }
     );
   }
 
   // 🔥 Glass ve Gradient Efekti Eklenmiş Header
   Widget _buildMotivationalHeader(Map<String, dynamic> data, bool isDark, Color textColor) {
+    // ... (Bu metod ve altındaki tüm metodlar orijinal dosyadaki ile AYNI kalacak) ...
+    // Hepsini buraya tekrar kopyalamıyorum, sadece build metodunu değiştirmek yeterli.
+    // Ancak tam dosya istiyorsan aşağıdakiler aynen kullanılacak:
     String trend = data['trend'];
     IconData trendIcon = trend == "Yükseliş" ? Icons.trending_up : trend == "Düşüş" ? Icons.trending_down : Icons.trending_flat;
     Color trendColor = trend == "Yükseliş" ? const Color(0xFF69F0AE) : trend == "Düşüş" ? const Color(0xFFFF5252) : const Color(0xFFFFD740);
@@ -409,6 +421,9 @@ class AnalysisScreen extends StatelessWidget {
       ),
     );
   }
+
+  // ... (Geri kalan yardımcı widget metodları aynen devam eder: _buildMetricCard, _buildMainMetrics, _buildSectionTitle vs.) ...
+  // Dosyanın geri kalanını olduğu gibi koruyabilirsin.
 
   // 🔥 Glass Effect Uygulanmış Metrik Kartı
   Widget _buildMetricCard(String label, String value, IconData icon, Color color, bool isDark) {

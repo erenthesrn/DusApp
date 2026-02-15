@@ -709,8 +709,6 @@ class _QuizScreenState extends State<QuizScreen> {
                             child: Image.network(
                               currentQuestion.imageUrl!,
                               fit: BoxFit.contain,
-                              cacheWidth: 800,
-                              cacheHeight: 800,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Center(

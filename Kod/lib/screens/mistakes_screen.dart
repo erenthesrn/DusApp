@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // EKLENDİ
 import 'package:google_fonts/google_fonts.dart'; 
 import '../services/mistakes_service.dart';
+import '../services/bookmark_service.dart'; // EKLENDİ
 import '../models/question_model.dart';
 import 'quiz_screen.dart';
 
@@ -55,7 +57,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
     try {
       var rawMistakes = await MistakesService.getMistakes();
       
-      // Duplicate removal algoritması - performans optimizasyonu
+      // Duplicate removal algoritması
       Map<String, Map<String, dynamic>> distinctMap = {};
 
       for (var m in rawMistakes) {
@@ -114,7 +116,6 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
     final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
 
-    // 🔥 PERFORMANS: Sadece gerektiğinde hesapla 🔥
     late Map<String, int> counts;
     late List<String> sortedSubjects;
     
@@ -150,7 +151,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
             ),
             child: IconButton(
               icon: const Icon(Icons.refresh, size: 20),
-              onPressed: _loadData, // Direkt çağır
+              onPressed: _loadData,
             ),
           )
         ],
@@ -385,7 +386,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
 }
 
 // ==========================================
-// 2. EKRAN: YANLIŞ SORULARIN LİSTESİ (OPTİMİZE)
+// 2. EKRAN: YANLIŞ SORULARIN LİSTESİ (DÜZELTİLMİŞ)
 // ==========================================
 
 class MistakesListScreen extends StatefulWidget {
@@ -453,6 +454,8 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     if(_currentList.isEmpty) return;
 
     List<Question> questionList = _currentList.map<Question>((m) {
+      String? imageUrl = m['imageUrl'] ?? m['image_url'];
+      
       return Question(
         id: m['questionIndex'] ?? 0,
         question: m['question'] ?? "Soru Yüklenemedi",
@@ -461,8 +464,7 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
         explanation: m['explanation'] ?? "",
         testNo: m['testNo'] ?? 0,
         level: m['topic'] ?? m['subject'] ?? "Genel",
-        imageUrl: m['imageUrl'] ?? m['image_url'],
-
+        imageUrl: imageUrl, 
       );
     }).toList();
 
@@ -480,7 +482,6 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     );
   }
 
-  // 🔥 OPTİMİZE EDİLMİŞ SİLME 🔥
   Future<void> _deleteMistake(Map<String, dynamic> mistake) async {
     dynamic id = mistake['id']; 
     String subject = mistake['topic'] ?? mistake['subject'];
@@ -513,12 +514,10 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     );
 
     if (confirm == true) {
-      // Önce UI'ı güncelle (optimistic update)
       setState(() {
         _currentList.removeWhere((m) => m['id'] == id);
       });
 
-      // Sonra arka planda sil
       await MistakesService.removeMistake(id, subject);
       
       if (mounted) {
@@ -608,7 +607,6 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
               itemCount: _currentList.length,
               itemBuilder: (context, index) {
                 final mistake = _currentList[index];
-                // RepaintBoundary ile performans artır
                 return RepaintBoundary(
                   child: _buildMistakeCard(mistake, isDark, cardColor, textColor, subTextColor)
                 );
@@ -623,8 +621,19 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     topicText = _toTitleCase(topicText); 
     
     int testNo = mistake['testNo'] ?? 0;
+    String? imageUrl = mistake['imageUrl'] ?? mistake['image_url'];
 
-    String? imageUrl = mistake['imageUrl'] ?? mistake['image_url'];    
+    // 🔥 SORU OBJESİNİ OLUŞTURUYORUZ (Kaydetme işlemi için lazım)
+    Question questionObj = Question(
+      id: mistake['questionIndex'] ?? 0,
+      question: questionText,
+      options: List<String>.from(mistake['options'] ?? []),
+      answerIndex: mistake['correctIndex'] ?? 0,
+      level: topicText,
+      testNo: testNo,
+      explanation: mistake['explanation'] ?? "",
+      imageUrl: imageUrl
+    );
     
     List<String> options = [];
     if (mistake['options'] != null) {
@@ -667,26 +676,70 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
                       style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue)),
                 ),
                 
-                InkWell(
-                  onTap: () => _deleteMistake(mistake),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.green.withOpacity(0.15) : Colors.green.shade50,
+                Row(
+                  children: [
+                    // 🔥🔥 YENİ EKLEME: KAYDET BUTONU 🔥🔥
+                    StreamBuilder<QuerySnapshot>(
+                      stream: BookmarkService.getBookmarksStream(),
+                      builder: (context, snapshot) {
+                        bool isBookmarked = false;
+                        if (snapshot.hasData) {
+                          // Bu sorunun ID'si bookmark listesinde var mı?
+                          isBookmarked = snapshot.data!.docs.any((doc) {
+                             var data = doc.data() as Map<String, dynamic>;
+                             return data['id'] == questionObj.id;
+                          });
+                        }
+
+                        return IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                            color: isBookmarked ? Colors.orange : subTextColor,
+                            size: 22,
+                          ),
+                          onPressed: () async {
+                             await BookmarkService.toggleBookmark(questionObj, topicText);
+                             if (mounted) {
+                               ScaffoldMessenger.of(context).clearSnackBars();
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text(!isBookmarked ? "Soru kaydedildi" : "Kaydedilenlerden çıkarıldı"),
+                                   duration: const Duration(seconds: 1),
+                                   behavior: SnackBarBehavior.floating,
+                                 )
+                               );
+                             }
+                          },
+                        );
+                      }
+                    ),
+
+                    const SizedBox(width: 4),
+
+                    // ÖĞRENDİM BUTONU
+                    InkWell(
+                      onTap: () => _deleteMistake(mistake),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.4), width: 1)
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.green.withOpacity(0.15) : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.withOpacity(0.4), width: 1)
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 16, color: Colors.green.shade600),
+                            const SizedBox(width: 6),
+                            Text("Öğrendim", 
+                              style: GoogleFonts.inter(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_outline, size: 16, color: Colors.green.shade600),
-                        const SizedBox(width: 6),
-                        Text("Öğrendim", 
-                          style: GoogleFonts.inter(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
+                  ],
                 )
               ],
             ),
@@ -700,28 +753,44 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
             if (imageUrl != null && imageUrl.isNotEmpty) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 250),
                   width: double.infinity,
-                  height: 200, // Çok yer kaplamaması için yükseklik sınırı
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(child: CircularProgressIndicator(color: Colors.teal.shade200));
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 150,
-                      color: Colors.grey.shade200,
-                      alignment: Alignment.center,
-                      child: const Text("Resim yüklenemedi", style: TextStyle(color: Colors.grey)),
-                    );
-                  },
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black26 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: Colors.teal,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const SizedBox(height: 50, child: Icon(Icons.broken_image));
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
             ],
-            
             
             if (options.isNotEmpty)
               ...List.generate(options.length, (i) {

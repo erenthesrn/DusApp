@@ -53,6 +53,9 @@ class BookmarksScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               var data = docs[index].data() as Map<String, dynamic>;
 
+              // 🔥 FIX: Her iki field'ı da kontrol et
+              String? imageUrl = data['image_url'] ?? data['imageUrl'];
+
               // Modeli oluştur
               Question question = Question(
                 id: data['id'] ?? 0,
@@ -62,7 +65,7 @@ class BookmarksScreen extends StatelessWidget {
                 level: data['topic'] ?? "Genel",
                 testNo: data['testNo'] ?? 1,
                 explanation: data['explanation'] ?? "",
-                imageUrl: data['image_url'], // Görsel URL'sini buradan alıyoruz
+                imageUrl: imageUrl, // 🔥 FIX: Düzeltilmiş alan
               );
 
               return Dismissible(
@@ -146,7 +149,7 @@ class BookmarksScreen extends StatelessWidget {
 }
 
 // ==========================================
-// YENİ EKRAN: KAYDEDİLEN SORU DETAYI (GÖRSEL DESTEKLİ)
+// YENİ EKRAN: KAYDEDİLEN SORU DETAYI (GÖRSEL DESTEKLİ - FİX)
 // ==========================================
 
 class BookmarkDetailScreen extends StatefulWidget {
@@ -160,7 +163,8 @@ class BookmarkDetailScreen extends StatefulWidget {
 }
 
 class _BookmarkDetailScreenState extends State<BookmarkDetailScreen> {
-  bool _showAnswer = false; // Cevabı göster durumu
+  bool _showAnswer = false;
+  bool _isBookmarked = true;
 
   String _toTitleCase(String text) {
     if (text.isEmpty) return text;
@@ -191,6 +195,44 @@ class _BookmarkDetailScreenState extends State<BookmarkDetailScreen> {
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: textColor),
+
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              color: _isBookmarked ? Colors.orange : textColor,
+              size: 28,
+            ),
+            onPressed: () async {
+              // 1. Durumu güncelle (ikon hemen değişsin)
+              setState(() {
+                _isBookmarked = !_isBookmarked;
+              });
+
+              // 2. Servisi çağır
+              await BookmarkService.toggleBookmark(widget.question, widget.topic ?? "Genel");
+
+              // 3. Kullanıcıya bilgi ver
+              if (mounted) {
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      _isBookmarked 
+                        ? "Soru tekrar kaydedildi" 
+                        : "Kaydedilenlerden çıkarıldı",
+                      style: GoogleFonts.inter(),
+                    ),
+                    backgroundColor: _isBookmarked ? Colors.green : Colors.redAccent,
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8), // Sağdan biraz boşluk
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -242,14 +284,18 @@ class _BookmarkDetailScreenState extends State<BookmarkDetailScreen> {
                         height: 1.5,
                         color: textColor)),
 
-                // --- GÖRSEL ALANI (YENİ) ---
+                // --- GÖRSEL ALANI (DÜZELTİLMİŞ) ---
                 if (widget.question.imageUrl != null && widget.question.imageUrl!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      constraints: const BoxConstraints(maxHeight: 300), // Çok uzun görseller ekranı kaplamasın
+                      constraints: const BoxConstraints(maxHeight: 300),
                       width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black26 : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Image.network(
                         widget.question.imageUrl!,
                         fit: BoxFit.contain,
@@ -257,17 +303,35 @@ class _BookmarkDetailScreenState extends State<BookmarkDetailScreen> {
                           if (loadingProgress == null) return child;
                           return Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
+                              padding: const EdgeInsets.all(40.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                    color: Colors.teal,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "Görsel yükleniyor...",
+                                    style: TextStyle(
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
+                          // 🔥 DEBUG: Hatayı göster
+                          debugPrint("❌ Görsel yükleme hatası: $error");
+                          debugPrint("📷 URL: ${widget.question.imageUrl}");
+                          
                           return Container(
                             height: 150,
                             color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
@@ -281,6 +345,15 @@ class _BookmarkDetailScreenState extends State<BookmarkDetailScreen> {
                                 const SizedBox(height: 8),
                                 Text("Görsel yüklenemedi", 
                                      style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade600)),
+                                const SizedBox(height: 4),
+                                // 🔥 DEBUG bilgisi
+                                Text(
+                                  "URL: ${widget.question.imageUrl!.substring(0, widget.question.imageUrl!.length > 30 ? 30 : widget.question.imageUrl!.length)}...",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
                               ],
                             ),
                           );
