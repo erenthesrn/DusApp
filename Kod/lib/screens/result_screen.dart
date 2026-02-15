@@ -1,13 +1,13 @@
-// lib/screens/result_screen.dart
+// lib/screens/result_screen.dart - OFFLINE DESTEKLI
 
-import 'dart:ui'; // 🔥 CAM EFEKTİ İÇİN
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Premium Fontlar
+import 'package:google_fonts/google_fonts.dart';
 import '../models/question_model.dart';
 import 'quiz_screen.dart';
 import '../services/achievement_service.dart';
-import '../services/theme_provider.dart'; // 🔥 TEMA KONTROLÜ
-import '../services/mistakes_service.dart'; // ✅ EKLENDİ: Yanlışları kaydetmek için şart
+import '../services/theme_provider.dart';
+import '../services/mistakes_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -20,6 +20,7 @@ class ResultScreen extends StatefulWidget {
   final int wrongCount;
   final int emptyCount;
   final int score;
+  final bool isOfflineMode; // 🔥 YENİ: Offline mod flag'i
 
   const ResultScreen({
     super.key,
@@ -31,6 +32,7 @@ class ResultScreen extends StatefulWidget {
     required this.wrongCount,
     required this.emptyCount,
     required this.score,
+    this.isOfflineMode = false, // 🔥 YENİ: Varsayılan online
   });
 
   @override
@@ -43,47 +45,53 @@ class _ResultScreenState extends State<ResultScreen> {
   void initState() {
     super.initState();
     
-    // Rozet ve İstatistik işlemleri (Ekran çizildikten hemen sonra çalışır)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AchievementService.instance.incrementCategory(
-        context, 
-        widget.topic,
-        widget.correctCount, 
-      );
+      // 🔥 SADECE ONLINE MODDA ROZET VE İSTATİSTİK GÜNCELENİR
+      if (!widget.isOfflineMode) {
+        AchievementService.instance.incrementCategory(
+          context, 
+          widget.topic,
+          widget.correctCount, 
+        );
 
-      AchievementService.instance.checkTimeAndScore(
-        context, 
-        widget.score, 
-        100, 
-        widget.correctCount 
-      );
-      
-      // Firebase Güncellemelerini Başlat
-      _updateStreakAndStats();
+        AchievementService.instance.checkTimeAndScore(
+          context, 
+          widget.score, 
+          100, 
+          widget.correctCount 
+        );
+        
+        _updateStreakAndStats();
+      } else {
+        debugPrint("📡 Offline mod - İstatistikler senkronizasyonda güncellenecek");
+      }
     });
   }
 
-  // 🔥 İSTATİSTİK GÜNCELLEME VE YANLIŞLARI KAYDETME FONKSİYONU
+  // 🔥 GÜNCELLENDİ: Firebase hatalarını yakala
   Future<void> _updateStreakAndStats() async {
     User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      debugPrint("⚠️ Kullanıcı oturum açmamış, istatistik güncellenemedi");
+      return;
+    }
 
-    final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    
     try {
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      
       DocumentSnapshot doc = await userDocRef.get();
-      if (!doc.exists) return;
+      if (!doc.exists) {
+        debugPrint("⚠️ Kullanıcı dokümanı bulunamadı");
+        return;
+      }
       
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       
-      // Tarih Formatı: YYYY-MM-DD (Grafikler için bu format şart)
       String today = DateTime.now().toIso8601String().split('T')[0];
-      
       String lastStudyDate = data['lastStudyDate'] ?? ""; 
       int currentStreak = data['streak'] ?? 0;
       int newStreak = currentStreak;
 
-      // --- Streak (Seri) Mantığı ---
       if (lastStudyDate != today) {
         if (lastStudyDate.isNotEmpty) {
            DateTime dateToday = DateTime.parse(today);
@@ -100,52 +108,23 @@ class _ResultScreenState extends State<ResultScreen> {
         }
       }
 
-      // --- ÖNEMLİ KISIM BAŞLIYOR: Veritabanı Güncelleme ---
-      
-      // Konu ismini güvenli hale getir
       String safeTopic = widget.topic.trim(); 
 
-      // 1. GENEL SAYAÇLARI GÜNCELLE (Burası kalsın, çünkü QuizService burayı yapmıyor olabilir)
       await userDocRef.update({
         'lastStudyDate': today,           
         'streak': newStreak,              
         'totalSolved': FieldValue.increment(widget.questions.length), 
         'totalCorrect': FieldValue.increment(widget.correctCount),    
         'dailySolved': FieldValue.increment(widget.questions.length), 
-
-        // HAFTALIK GRAFİK İÇİN
         'stats.dailyHistory.$today': FieldValue.increment(widget.questions.length),
-
-        // DERS BAZLI GRAFİK İÇİN
         'stats.subjects.$safeTopic.total': FieldValue.increment(widget.questions.length),
         'stats.subjects.$safeTopic.correct': FieldValue.increment(widget.correctCount),
       });
 
-      // 🚨 DÜZELTME: SONUÇ KARTI KAYDINI KALDIRDIK 🚨
-      // Bu kısım AnalysisScreen'de çift görünüme sebep oluyordu çünkü
-      // büyük ihtimalle QuizService veya önceki ekran bunu zaten kaydediyor.
-      /*
-      String uniqueResultId = "${widget.topic}_${widget.testNo}_${DateTime.now().millisecondsSinceEpoch}";
-      await userDocRef.collection('results').doc(uniqueResultId).set({
-        'topic': widget.topic,
-        'testNo': widget.testNo,
-        'score': widget.score,
-        'correct': widget.correctCount,
-        'wrong': widget.wrongCount,
-        'empty': widget.emptyCount,
-        'total': widget.questions.length,
-        'user_answers': widget.userAnswers, 
-        'date': DateTime.now().toIso8601String(), 
-        'timestamp': FieldValue.serverTimestamp(), 
-      });
-      */
-
-      // 5. YANLIŞLARI BULUT "MISTAKES" KOLEKSİYONUNA EKLE
-      // (Burası kalmalı, çünkü yanlışları kaydetmek önemli ve QuizService yapmıyor olabilir)
+      // Yanlışları kaydet
       List<Map<String, dynamic>> mistakesToSave = [];
       
       for (int i = 0; i < widget.questions.length; i++) {
-        // Yanlış cevaplanmış soruları tespit et
         bool isWrong = widget.userAnswers[i] != null && widget.userAnswers[i] != widget.questions[i].answerIndex;
         
         if (isWrong) {
@@ -155,7 +134,7 @@ class _ResultScreenState extends State<ResultScreen> {
             'question': q.question,
             'options': q.options,
             'correctIndex': q.answerIndex,
-            'userIndex': widget.userAnswers[i], // İşaretlediği yanlış şık
+            'userIndex': widget.userAnswers[i],
             'explanation': q.explanation,
             'topic': widget.topic,
             'testNo': widget.testNo,
@@ -167,28 +146,44 @@ class _ResultScreenState extends State<ResultScreen> {
       }
 
       if (mistakesToSave.isNotEmpty) {
-        // Yeni yazdığımız servisi kullanarak toplu ekleme yap
         await MistakesService.addMistakes(mistakesToSave);
         debugPrint("✅ ${mistakesToSave.length} yanlış soru Firebase'e kaydedildi.");
       }
       
-      debugPrint("🔥 Firebase Güncellendi: Streak ve Yanlışlar işlendi. Sonuç kartı kaydı atlandı (Duplicate önleme).");
+      debugPrint("🔥 Firebase Güncellendi: Streak ve Yanlışlar işlendi.");
 
     } catch (e) {
+      // 🔥 YENİ: Firebase hatası varsa kullanıcıya bildir
       debugPrint("❌ İstatistik güncelleme hatası: $e");
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text("İnternet bağlantısı yok. Veriler daha sonra senkronize edilecek."),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 TEMA AYARLARI
     final isDarkMode = ThemeProvider.instance.isDarkMode;
     
-    // Renk Paleti
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
     Color subTextColor = isDarkMode ? Colors.white60 : Colors.black54;
 
-    // Arka Plan Gradient
     Widget background = isDarkMode 
       ? Container(
           decoration: const BoxDecoration(
@@ -196,8 +191,8 @@ class _ResultScreenState extends State<ResultScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF0A0E14), // Derin Uzay Siyahı
-                Color(0xFF161B22), // Antrasit
+                Color(0xFF0A0E14),
+                Color(0xFF161B22),
               ]
             )
           ),
@@ -208,28 +203,52 @@ class _ResultScreenState extends State<ResultScreen> {
       backgroundColor: Colors.transparent, 
       extendBodyBehindAppBar: true, 
       appBar: AppBar(
-        title: Text("Sınav Sonucu 📝", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor)),
+        title: Text(
+          widget.isOfflineMode ? "Sınav Sonucu 📡" : "Sınav Sonucu 📝", 
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor)
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: textColor,
         automaticallyImplyLeading: false, 
         centerTitle: true,
+        // 🔥 YENİ: Offline göstergesi
+        actions: widget.isOfflineMode ? [
+          Container(
+            margin: EdgeInsets.only(right: 16),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.orange),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.wifi_off, color: Colors.orange, size: 16),
+                SizedBox(width: 4),
+                Text(
+                  "Offline",
+                  style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ] : null,
       ),
       body: Stack(
         children: [
-          background, // 1. Katman: Zemin 
+          background,
 
-          // 2. Katman: İçerik
           SafeArea( 
             child: Column(
               children: [
-                // --- ÖZET KARTI ---
+                // ÖZET KARTI
                 _buildGlassCard(
                   isDark: isDarkMode,
                   margin: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // Skor
                       Text(
                         "${widget.score}", 
                         style: GoogleFonts.robotoMono( 
@@ -251,7 +270,6 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                       const SizedBox(height: 24),
                       
-                      // İstatistikler Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
@@ -275,7 +293,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 ),
 
-                // --- SORU NUMARALARI GRID ---
+                // SORU NUMARALARI GRID
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -293,18 +311,14 @@ class _ResultScreenState extends State<ResultScreen> {
                       Color txtColor = Colors.white;
                       Border? border;
 
-                      // Grid Renk Mantığı
                       if (userAnswer == null) {
-                        // Boş
                         bgColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade300; 
                         txtColor = isDarkMode ? Colors.white38 : Colors.black54;
                       } else if (userAnswer == correctAnswer) {
-                        // Doğru
                         bgColor = isDarkMode ? Colors.green.withOpacity(0.2) : Colors.green; 
                         border = isDarkMode ? Border.all(color: Colors.greenAccent.withOpacity(0.5)) : null;
                         txtColor = isDarkMode ? Colors.greenAccent : Colors.white;
                       } else {
-                        // Yanlış
                         bgColor = isDarkMode ? Colors.red.withOpacity(0.2) : Colors.red; 
                         border = isDarkMode ? Border.all(color: Colors.redAccent.withOpacity(0.5)) : null;
                         txtColor = isDarkMode ? Colors.redAccent : Colors.white;
@@ -312,7 +326,6 @@ class _ResultScreenState extends State<ResultScreen> {
 
                       return InkWell(
                         onTap: () {
-                          // İnceleme moduna git (QuizScreen güncellendiği için çalışır)
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -321,9 +334,10 @@ class _ResultScreenState extends State<ResultScreen> {
                                 topic: widget.topic,
                                 testNo: widget.testNo,
                                 questions: widget.questions,
-                                userAnswers: widget.userAnswers, // 🔥 Cevaplar gidiyor
-                                initialIndex: index, // 🔥 Tıklanan soru açılacak
-                                isReviewMode: true, // 🔥 İnceleme modu aktif
+                                userAnswers: widget.userAnswers,
+                                initialIndex: index,
+                                isReviewMode: true,
+                                useOffline: widget.isOfflineMode, // 🔥 YENİ: Offline flag aktar
                               ),
                             ),
                           );
@@ -346,7 +360,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 ),
 
-                // --- ANA SAYFAYA DÖN BUTONU ---
+                // ANA SAYFAYA DÖN BUTONU
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: SizedBox(
@@ -379,8 +393,6 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  // --- YARDIMCI WIDGETLAR ---
-
   Widget _buildStatItem(String label, int count, Color color, bool isDark) {
     Color displayColor = isDark && color != Colors.grey ? color.withOpacity(0.8) : color;
     if (isDark && color == Colors.green) displayColor = Colors.greenAccent;
@@ -410,7 +422,6 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Widget _buildGlassCard({required Widget child, required bool isDark, EdgeInsetsGeometry? margin}) {
     if (!isDark) {
-      // Aydınlık Mod: Düz Beyaz Kart
       return Container(
         margin: margin,
         padding: const EdgeInsets.all(24),
@@ -425,7 +436,6 @@ class _ResultScreenState extends State<ResultScreen> {
       );
     }
 
-    // Karanlık Mod: Buzlu Cam
     return Container(
       margin: margin,
       child: ClipRRect(
@@ -435,7 +445,7 @@ class _ResultScreenState extends State<ResultScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF161B22).withOpacity(0.6), // Saydam Antrasit
+              color: const Color(0xFF161B22).withOpacity(0.6),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
               boxShadow: [

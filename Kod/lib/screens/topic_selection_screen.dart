@@ -47,23 +47,23 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
     
     // Temel Bilimler
     if (t.contains('anatomi')) return Icons.accessibility_new_rounded; // Vücut
-    if (t.contains('histoloji')) return Icons.biotech_rounded; // Mikroskop
-    if (t.contains('fizyoloji')) return Icons.monitor_heart_rounded; // Kalp Atışı
+    if (t.contains('biyoloji')) return Icons.fingerprint_rounded; // Genetik/DNA
     if (t.contains('biyokimya')) return Icons.science_rounded; // Deney Tüpü
+    if (t.contains('farmakoloji')) return Icons.medication_rounded; // İlaç
+    if (t.contains('fizyoloji')) return Icons.monitor_heart_rounded; // Kalp Atışı
+    if (t.contains('histoloji')) return Icons.biotech_rounded; // Mikroskop
     if (t.contains('mikrobiyoloji')) return Icons.coronavirus_rounded; // Virüs/Bakteri
     if (t.contains('patoloji')) return Icons.health_and_safety_rounded; // Kalkan/Hastalık
-    if (t.contains('farmakoloji')) return Icons.medication_rounded; // İlaç
-    if (t.contains('biyoloji')) return Icons.fingerprint_rounded; // Genetik/DNA
     
     // Klinik Bilimler
-    if (t.contains('protetik')) return Icons.sentiment_satisfied_alt_rounded; // Gülüş Tasarımı
-    if (t.contains('restoratif')) return Icons.build_circle_rounded; // Onarım
-    if (t.contains('endodonti')) return Icons.flash_on_rounded; // Sinir/Kök
-    if (t.contains('periodontoloji')) return Icons.layers_rounded; // Diş Eti Tabakaları
-    if (t.contains('ortodonti')) return Icons.grid_on_rounded; // Tel/Düzen
-    if (t.contains('pedodonti')) return Icons.child_care_rounded; // Çocuk
     if (t.contains('cerrahi')) return Icons.medical_services_rounded; // Cerrahi Müdahale
     if (t.contains('radyoloji')) return Icons.camera_alt_rounded; // Röntgen
+    if (t.contains('endodonti')) return Icons.flash_on_rounded; // Sinir/Kök
+    if (t.contains('ortodonti')) return Icons.grid_on_rounded; // Tel/Düzen
+    if (t.contains('restoratif')) return Icons.build_circle_rounded; // Onarım
+    if (t.contains('pedodonti')) return Icons.child_care_rounded; // Çocuk
+    if (t.contains('periodontoloji')) return Icons.layers_rounded; // Diş Eti Tabakaları
+    if (t.contains('protetik')) return Icons.sentiment_satisfied_alt_rounded; // Gülüş Tasarımı
 
     return Icons.menu_book_rounded; // Varsayılan Kitap
   }

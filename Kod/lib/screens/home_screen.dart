@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart - OFFLINE MOD ENTEGRE EDİLMİŞ VERSİYON
+// lib/screens/home_screen.dart - OFFLINE MOD ENTEGRE EDİLMİŞ VERSİYON (DÜZELTME)
 
 import 'dart:async';
 import 'dart:ui'; 
@@ -22,7 +22,6 @@ import 'flashcards_screen.dart';
 import 'bookmarks_screen.dart';
 
 // 🔥 OFFLINE MOD IMPORTLARI 🔥
-import '../widgets/offline_sync_banner.dart';
 import 'offline_manager_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -51,9 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<DocumentSnapshot>? _userSubscription;
 
   // 🔥 OPTİMİZASYON DEĞİŞKENLERİ 🔥
-  bool _isMistakesMenuOpen = false; // Çoklu açılmayı önle
-  List<Map<String, dynamic>>? _cachedMistakes; // Cache
-  DateTime? _lastMistakesFetch; // Son fetch zamanı
+  bool _isMistakesMenuOpen = false;
+  List<Map<String, dynamic>>? _cachedMistakes;
+  DateTime? _lastMistakesFetch;
 
   @override
   void initState() {
@@ -75,7 +74,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // --- FIREBASE VERİ CANLI TAKİP ---
   void _listenToUserData() {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -183,7 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // --- 1. MODÜL: PRATİK (KONU SEÇİMİ) ---
   void _showTopicSelection(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color backgroundColor = isDarkMode ? const Color(0xFF161B22) : Colors.white; 
@@ -281,33 +278,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔥 OPTİMİZE EDİLMİŞ CACHE SİSTEMİ 🔥
   Future<List<Map<String, dynamic>>> _getMistakesCached() async {
     final now = DateTime.now();
     
-    // Cache 30 saniyeden yeniyse direkt kullan (gereksiz Firebase çağrısını engelle)
     if (_cachedMistakes != null && 
         _lastMistakesFetch != null && 
         now.difference(_lastMistakesFetch!).inSeconds < 30) {
       return _cachedMistakes!;
     }
     
-    // Yoksa fresh data çek ve cache'e al
     final mistakes = await MistakesService.getMistakes();
     _cachedMistakes = mistakes;
     _lastMistakesFetch = now;
     return mistakes;
   }
 
-  // Cache'i manuel temizle (örn: yeni yanlış eklendiğinde)
   void _invalidateMistakesCache() {
     _cachedMistakes = null;
     _lastMistakesFetch = null;
   }
 
-  // --- 2. MODÜL: YANLIŞLAR MENÜSÜ (ULTRA OPTİMİZE) ---
   void _showMistakesMenu(BuildContext context) {
-    // 🚀 Çoklu açılmayı engelle
     if (_isMistakesMenuOpen) return;
     _isMistakesMenuOpen = true;
 
@@ -321,7 +312,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Önce UI'ı göster, veriyi arka planda yükle (smooth UX)
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -344,7 +334,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSubjectSelectionList(BuildContext context, List<Map<String, dynamic>> mistakes) {
-    // Veriyi optimize et - gereksiz hesaplamalardan kaçın
     Map<String, List<Map<String, dynamic>>> grouped = {};
     for (var m in mistakes) {
       String sub = m['subject'] ?? m['topic'] ?? "Diğer";
@@ -407,7 +396,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- KART YAPISI ---
   Widget _buildModernCard(BuildContext context, {
     required String title, 
     required IconData icon, 
@@ -626,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// 🔥 OPTİMİZE EDİLMİŞ YANLIŞLAR MENÜSÜ WİDGET'I 🔥
+// YANLI ŞLAR MENÜSÜ WİDGET'I
 class _MistakesMenuContent extends StatefulWidget {
   final Color bgColor;
   final bool isDarkMode;
@@ -708,7 +696,6 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
             Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: widget.titleColor)),
             const SizedBox(height: 4),
             
-            // Loading state için placeholder
             _isLoading 
               ? const SizedBox(
                   height: 20,
@@ -871,10 +858,7 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
   }
 }
 
-// =============================================================================
-// ||                          DASHBOARD EKRANI                               ||
-// =============================================================================
-
+// DASHBOARD EKRANI
 class DashboardScreen extends StatelessWidget {
   final String targetBranch;
   final int dailyGoal;         
@@ -973,7 +957,6 @@ class DashboardScreen extends StatelessWidget {
                               ),
                             ),
                             
-                            // 🔥 FAVORİLER BUTONU (SAĞ ÜST KÖŞE)
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(context, MaterialPageRoute(builder: (context) => const BookmarksScreen()));
@@ -986,7 +969,6 @@ class DashboardScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // BİLDİRİM BUTONU
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
@@ -1010,11 +992,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // 🔥 YENİ EKLENEN: OFFLINE BANNER (Header'dan hemen sonra)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: OfflineSyncBanner(), 
-          ),
+          // 🔥 BANNER KALDIRILDI - Sadece buton var
 
           // 2. BUGÜNKÜ HEDEFLER KARTI
           Transform.translate(
@@ -1126,10 +1104,10 @@ class DashboardScreen extends StatelessWidget {
                   }
                 ),
 
-                // 🔥 YENİ EKLENEN: OFFLINE MOD BUTONU
+                // 🔥 OFFLINE MOD BUTONU (KALACAK)
                 const SizedBox(height: 16),
                 _buildActionBtnHorizontal(
-                  'Offline Mod', 
+                  'Offline Mod ✈️', 
                   'Konuları indir, internetsiz çöz', 
                   Icons.cloud_download_outlined, 
                   isDarkMode ? const Color(0xFF0EA5E9) : Colors.lightBlue, 

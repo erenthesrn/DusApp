@@ -579,6 +579,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       wrongCount: wrong,
                       emptyCount: empty,
                       score: score,
+                      isOfflineMode: _isOfflineMode, // 🔥 YENİ: Offline flag aktar
                     ),
                   ),
                 );
