@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart'; // HapticFeedback için
-import '../services/question_uploader.dart';
+import '../admin/question_uploader.dart';
 
 // -----------------------------------------------------------------------------
 // 1. VERİ MODELİ
@@ -349,7 +349,6 @@ class _BlogScreenState extends State<BlogScreen> with TickerProviderStateMixin {
         child: const Icon(Icons.cloud_upload_rounded),
         onPressed: () async {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Yükleniyor...")));
-            await QuestionUploader.uploadQuestions();
         },
       ),
     );

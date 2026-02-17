@@ -34,6 +34,7 @@ dependencies:
 
   # --- İSTATİSTİK SAYFASI İÇİN EKLENEN ---
   fl_chart: ^1.1.1  # Grafikleri çizdirmek için gerekli paket
+  file_picker: ^10.3.10
 
 dev_dependencies:
   flutter_test:

@@ -9,6 +9,8 @@ import '../services/theme_provider.dart';
 import 'login_page.dart'; 
 import 'edit_profile_page.dart';
 import 'achievements_screen.dart'; 
+import '../admin/admin_dashboard_screen.dart'; 
+// Not: Klasör yolunu kendi projene göre düzeltmen gerekebilir.
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -621,6 +623,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: const EdgeInsets.all(0), 
                       child: Column(
                         children: [
+                          // 🔥 YENİ EKLENDİ: Sadece Admin ise görünür
+                          if (_role == 'admin') ...[
+                            _buildMenuItem(
+                              theme, 
+                              Icons.admin_panel_settings_rounded, 
+                              "Admin Paneli", 
+                              "Soru yükleme ve sistem yönetimi", 
+                              isDarkMode, 
+                              () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminDashboardScreen()));
+                              }
+                            ),
+                            _buildDivider(isDarkMode),
+                          ], //BİTİŞ
+                          
                           // --- KARANLIK MOD ŞALTERİ ---
                           ListTile(
                             leading: Container(

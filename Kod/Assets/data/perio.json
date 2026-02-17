@@ -28,5 +28,80 @@
     ],
     "answer_index": 3,
     "explanation":"Yapışık diş eti genişliği ağız içinde bölgeden bölgeye değişir. Genel kural olarak:\nEn geniş olduğu yer: Üst çene (maksilla) keserler bölgesidir.\nEn dar olduğu yer: Alt çene (mandibula) premolar bölgesidir."
+  },
+  {
+    "id": 13002,
+    "test_no": 1,
+    "level": "Orta",
+    "question": "Periodontal aletlerle ilgili aşağıdakilerden hangisi yanlıştır?",
+    "options": [
+      "A) Gracey küretler bölgeye özgü (site-specific) aletlerdir",
+      "B) Universal küretlerin her iki yüzü de keskin kenara sahiptir",
+      "C) Gracey 11/12 alt ön dişlerin mezyal yüzeyleri için kullanılır",
+      "D) Orak (sickle) skalerler subgingival kullanım için idealdir",
+      "E) Periodontal prob, cep derinliği ölçümünde kullanılır"
+    ],
+    "answer_index": 3,
+    "explanation": "Orak (sickle) skalerler keskin uçlu ve üçgen kesitli olmaları nedeniyle supragingival tartrın uzaklaştırılmasında kullanılır; keskin köşeli yapıları nedeniyle subgingival alanlarda yumuşak dokuyu travmatize edebilir ve subgingival kullanım için ideal değildirler. Bu amaç için küretler tercih edilir."
+  },
+  {
+    "id": 13003,
+    "test_no": 1,
+    "level": "Orta",
+    "question": "Aşağıdakilerden hangisi Gracey küret numaralarının doğru bölge eşleşmesidir?",
+    "options": [
+      "A) Gracey 1/2 – Ön dişler",
+      "B) Gracey 7/8 – Arka dişlerin bukkal ve lingual yüzeyleri",
+      "C) Gracey 11/12 – Arka dişlerin mezyal yüzeyleri",
+      "D) Gracey 13/14 – Arka dişlerin distal yüzeyleri",
+      "E) Gracey 15/16 – Arka dişlerin mezyal yüzeyleri"
+    ],
+    "answer_index": 0,
+    "explanation": "Gracey 1/2 ve 3/4 numaralı küretler ön dişlerde kullanılır. Gracey 7/8 arka dişlerin bukkal-lingual yüzeyleri, 11/12 arka dişlerin mezyal yüzeyleri, 13/14 arka dişlerin distal yüzeyleri içindir. Gracey 15/16 ise 11/12'nin modifiye versiyonudur ve arka dişlerin mezyal yüzeyleri için geliştirilmiştir. Dolayısıyla bu seçeneklerin tamamı doğrudur ve soru Gracey 1/2'nin 'ön dişler' eşleşmesini test etmektedir."
+  },
+  {
+    "id": 13004,
+    "test_no": 1,
+    "level": "Zor",
+    "question": "Diş eti büyümesi (gingival overgrowth) ile ilgili aşağıdakilerden hangisi yanlıştır?",
+    "options": [
+      "A) Fenitoin kullanımında görülebilir",
+      "B) Siklosporin A (Sandimmun) organ nakli hastalarında diş eti büyümesine yol açabilir",
+      "C) Kalsiyum kanal blokörlerinden en sık nifedipin diş eti büyümesine neden olur",
+      "D) Diş eti büyümesi yalnızca ilaç kullanımına bağlı gelişir",
+      "E) Plak kontrolünün iyileştirilmesi ilaç kaynaklı büyümenin şiddetini azaltabilir"
+    ],
+    "answer_index": 3,
+    "explanation": "Diş eti büyümesi; ilaç kullanımına (fenitoin, siklosporin, kalsiyum kanal blokerleri) bağlı olabileceği gibi, hormonal değişiklikler (gebelik, puberte), lösemi, herediter gingival fibromatozis ve inflamasyon gibi pek çok farklı nedene de bağlı olarak gelişebilir. Yalnızca ilaç kullanımına bağlı olmadığını belirtmek gerekir."
+  },
+  {
+    "id": 13005,
+    "test_no": 1,
+    "level": "Kolay",
+    "question": "Nekrotizan Ülseratif Periodontitis (NUP) ile ilgili aşağıdakilerden hangisi doğrudur?",
+    "options": [
+      "A) Bulaşıcı bir hastalıktır",
+      "B) Kemik kaybı görülmez",
+      "C) HIV pozitif bireylerde daha sık görülür",
+      "D) Ağrısız bir klinik seyir izler",
+      "E) Mikrobiyolojisinde yalnızca aerobik bakteriler rol oynar"
+    ],
+    "answer_index": 2,
+    "explanation": "NUP, NUG'un ilerlemesiyle kemik tutulumunun eşlik ettiği bir tablodur. İmmün sistemi baskılanmış bireylerde, özellikle HIV pozitif hastalarda belirgin şekilde daha sık görülür. Bulaşıcı değildir; etiyolojisinde Fusobacterium nucleatum ve spiroketler gibi anaerobik bakteriler rol oynar. Şiddetli ağrı ve kötü koku tipik bulgularındandır."
+  },
+  {
+    "id": 13006,
+    "test_no": 1,
+    "level": "Zor",
+    "question": "Sigara kullanımının periodontal dokulara etkileri ile ilgili aşağıdakilerden hangisi yanlıştır?",
+    "options": [
+      "A) Sigara içenlerde sondalamada kanama (BOP) daha az gözlemlenir",
+      "B) Nikotin, gingival damar geçirgenliğini ve kan akımını azaltır",
+      "C) Sigara içenlerde nötrofil fonksiyonları baskılanır",
+      "D) Periodontal tedaviye yanıt sigara içmeyenlere kıyasla daha iyidir",
+      "E) Sigara içenlerde kemik kaybı daha hızlı ilerleyebilir"
+    ],
+    "answer_index": 3,
+    "explanation": "Sigara kullanan hastalarda nikotin kaynaklı vazokonstriksiyon nedeniyle gingival kanama belirtileri maskelenir; bu nedenle klinik tablo olduğundan daha hafif görünebilir. Nötrofil kemotaksisi ve fagositoz baskılanır. Sigara içenlerde periodontal tedaviye yanıt (cerrahi ve cerrahi dışı) sigara içmeyenlere kıyasla belirgin olarak daha zayıftır, yara iyileşmesi gecikir ve implant başarı oranı düşer."
   }
 ]
