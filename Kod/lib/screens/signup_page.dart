@@ -61,7 +61,6 @@ class _SignupPageState extends State<SignupPage> {
           'email': _emailController.text.trim(),
           'createdAt': FieldValue.serverTimestamp(),
           'role': 'free',
-          'isPremium': false,
           'isOnboardingComplete': false,
           'isEmailVerified': false, // Bizim custom doğrulama kontrolümüz
         });
