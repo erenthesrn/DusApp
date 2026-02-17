@@ -3,17 +3,26 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/achievement_model.dart';
 
 class AchievementService extends ChangeNotifier {
   static final AchievementService _instance = AchievementService._internal();
   static AchievementService get instance => _instance;
 
+  // Constructor
   AchievementService._internal() {
     _loadProgress();
+    // Kullanıcı giriş/çıkış yaparsa verileri tekrar yükle
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user != null) {
+        _loadProgress();
+      }
+    });
   }
 
-  // 🔥 30 ROZETLİK HATASIZ VE DEV KADRO 🔥
+  // 🔥 30 ROZETLİK LİSTE 🔥
   final List<Achievement> _achievements = [
     // --- 1. BAŞLANGIÇ & KLASİKLER ---
     Achievement(
@@ -53,7 +62,6 @@ class AchievementService extends ChangeNotifier {
       iconData: Icons.architecture_rounded,
       targetValue: 50,
     ),
-    // 🛠️ DÜZELTME: cut -> content_cut_rounded
     Achievement(
       id: 'surgery_master',
       title: 'Bistüri Dansçısı',
@@ -105,7 +113,6 @@ class AchievementService extends ChangeNotifier {
       iconData: Icons.medical_services_rounded,
       targetValue: 100,
     ),
-    // 🚑 DÜZELTME: ambulance -> monitor_heart_rounded (Hatasız)
     Achievement(
       id: 'emergency_112',
       title: '112 Acil Servis',
@@ -219,21 +226,31 @@ class AchievementService extends ChangeNotifier {
     if (index == -1) return;
 
     final achievement = _achievements[index];
+    
+    // Eğer zaten açılmışsa tekrar işlem yapma (Yerel kontrol)
     if (achievement.isUnlocked) return;
 
-    achievement.currentValue += amount;
+    // Yeni değeri hesapla
+    int newValue = achievement.currentValue + amount;
+    if (newValue > achievement.targetValue) {
+      newValue = achievement.targetValue;
+    }
     
-    if (achievement.currentValue >= achievement.targetValue) {
-      achievement.currentValue = achievement.targetValue;
+    achievement.currentValue = newValue;
+    
+    bool justUnlocked = false;
+    if (achievement.currentValue >= achievement.targetValue && !achievement.isUnlocked) {
       achievement.isUnlocked = true;
+      justUnlocked = true;
       _showUnlockNotification(context, achievement);
     }
 
     notifyListeners();
-    _saveProgress();
+    // Hem yerel hem Firebase'e kaydet
+    _saveProgress(achievement);
   }
 
-  // 🔥 GELİŞMİŞ KATEGORİ ALGILAMA
+  // KATEGORİ ALGILAMA
   Future<void> incrementCategory(BuildContext context, String categoryName, int correctCount) async {
     // 1. Genel sayaçları her zaman artır
     updateProgress(context, 'first_blood', 1);
@@ -260,7 +277,7 @@ class AchievementService extends ChangeNotifier {
     else if (lowerName.contains('resto') || lowerName.contains('tedavi')) updateProgress(context, 'resto_artist', correctCount);
   }
 
-  // 🔥 GELİŞMİŞ ZAMAN VE SKOR KONTROLÜ
+  // ZAMAN VE SKOR KONTROLÜ
   void checkTimeAndScore(BuildContext context, int totalScore, int maxScore, int correctCount) {
     final now = DateTime.now();
     final hour = now.hour;
@@ -292,14 +309,11 @@ class AchievementService extends ChangeNotifier {
     }
   }
 
-  // --- KAYIT VE YÜKLEME ---
-  Future<void> _saveProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = _achievements.map((a) => a.toMap()).toList();
-    await prefs.setString('achievements_v4', jsonEncode(data));
-  }
-
+  // --- KAYIT VE YÜKLEME (FIREBASE DESTEKLİ) ---
+  
+  // 1. Verileri Yükle (Local + Firebase)
   Future<void> _loadProgress() async {
+    // Önce Yerel Veriyi Yükle (Hızlı Açılış İçin)
     final prefs = await SharedPreferences.getInstance();
     final String? dataString = prefs.getString('achievements_v4');
 
@@ -313,6 +327,74 @@ class AchievementService extends ChangeNotifier {
       }
       notifyListeners();
     }
+
+    // Sonra Firebase'den Güncel Veriyi Çek (User Logged In ise)
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('achievements')
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          for (var doc in snapshot.docs) {
+            final id = doc.id;
+            final data = doc.data();
+            final index = _achievements.indexWhere((a) => a.id == id);
+            
+            if (index != -1) {
+              // Firebase verisi yerel veriden daha ilerideyse veya kilit açılmışsa güncelle
+              int serverValue = data['currentValue'] ?? 0;
+              bool serverUnlocked = data['isUnlocked'] ?? false;
+              
+              if (serverUnlocked || serverValue > _achievements[index].currentValue) {
+                 _achievements[index].currentValue = serverValue;
+                 _achievements[index].isUnlocked = serverUnlocked;
+              }
+            }
+          }
+          notifyListeners();
+          // Güncel veriyi yerele de kaydet ki sonraki açılışta hızlı olsun
+          _saveLocalOnly(); 
+        }
+      } catch (e) {
+        debugPrint("Achievement Firebase Load Error: $e");
+      }
+    }
+  }
+
+  // 2. Verileri Kaydet (Local + Firebase)
+  Future<void> _saveProgress(Achievement achievement) async {
+    // 2a. Yerele Kaydet
+    await _saveLocalOnly();
+
+    // 2b. Firebase'e Kaydet
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('achievements')
+            .doc(achievement.id)
+            .set({
+              'currentValue': achievement.currentValue,
+              'isUnlocked': achievement.isUnlocked,
+              'lastUpdated': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint("Achievement Firebase Save Error: $e");
+      }
+    }
+  }
+
+  // Sadece Yerele Kaydetme (Toplu)
+  Future<void> _saveLocalOnly() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = _achievements.map((a) => a.toMap()).toList();
+    await prefs.setString('achievements_v4', jsonEncode(data));
   }
 
   // --- BİLDİRİM (SNACKBAR) ---

@@ -568,6 +568,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
               wrongCount: int.parse(result['wrong'].toString()),
               emptyCount: testQuestions.length - (int.parse(result['correct'].toString()) + int.parse(result['wrong'].toString())),
               score: int.parse(result['score'].toString()),
+              isFromSaved: true,
             ),
           ),
         );

@@ -20,7 +20,8 @@ class ResultScreen extends StatefulWidget {
   final int wrongCount;
   final int emptyCount;
   final int score;
-  final bool isOfflineMode; // 🔥 YENİ: Offline mod flag'i
+  final bool isOfflineMode; 
+  final bool isFromSaved; 
 
   const ResultScreen({
     super.key,
@@ -32,6 +33,7 @@ class ResultScreen extends StatefulWidget {
     required this.wrongCount,
     required this.emptyCount,
     required this.score,
+    this.isFromSaved = false,
     this.isOfflineMode = false, // 🔥 YENİ: Varsayılan online
   });
 
@@ -46,8 +48,8 @@ class _ResultScreenState extends State<ResultScreen> {
     super.initState();
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 🔥 SADECE ONLINE MODDA ROZET VE İSTATİSTİK GÜNCELENİR
-      if (!widget.isOfflineMode) {
+
+      if (!widget.isOfflineMode && !widget.isFromSaved) {
         AchievementService.instance.incrementCategory(
           context, 
           widget.topic,
@@ -63,7 +65,7 @@ class _ResultScreenState extends State<ResultScreen> {
         
         _updateStreakAndStats();
       } else {
-        debugPrint("📡 Offline mod - İstatistikler senkronizasyonda güncellenecek");
+        debugPrint("İstatistik güncellemesi atlandı. (Offline: ${widget.isOfflineMode}, Kayıtlı: ${widget.isFromSaved})");
       }
     });
   }
