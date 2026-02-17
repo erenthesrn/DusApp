@@ -10,27 +10,29 @@ class OfflineService {
   static const String _offlinePrefix = 'offline_';
   static const String _downloadedTopicsKey = 'downloaded_topics';
   static const String _pendingSyncKey = 'pending_sync';
-  
-  // 🔥 KONUDAKİ TÜM SORULARI İNDİR (WiFi varken)
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DOWNLOAD
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Downloads all questions for a topic from Firebase and stores them locally.
+  /// Returns true on success, false on any failure.
   static Future<bool> downloadTopic(String topic) async {
     try {
-      // Topic ismini Firebase formatına çevir
       String dbTopic = _topicToDbName(topic);
-      
-      // Firebase'den tüm soruları çek
+
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('questions')
           .where('topic', isEqualTo: dbTopic)
           .orderBy('testNo')
           .orderBy('questionIndex')
           .get();
-      
+
       if (snapshot.docs.isEmpty) {
         print("⚠️ $topic için soru bulunamadı");
         return false;
       }
-      
-      // Soruları Question modeline çevir
+
       List<Map<String, dynamic>> questions = snapshot.docs.map((doc) {
         var data = doc.data() as Map<String, dynamic>;
         return {
@@ -44,106 +46,191 @@ class OfflineService {
           'imageUrl': data['image_url'],
         };
       }).toList();
-      
-      // Yerel hafızaya kaydet
+
       final prefs = await SharedPreferences.getInstance();
       String key = '$_offlinePrefix$topic';
-      String jsonData = jsonEncode(questions);
-      
-      await prefs.setString(key, jsonData);
-      
-      // İndirilen konular listesine ekle
-      List<String> downloaded = prefs.getStringList(_downloadedTopicsKey) ?? [];
+
+      await prefs.setString(key, jsonEncode(questions));
+
+      List<String> downloaded =
+          prefs.getStringList(_downloadedTopicsKey) ?? [];
       if (!downloaded.contains(topic)) {
         downloaded.add(topic);
         await prefs.setStringList(_downloadedTopicsKey, downloaded);
       }
-      
+
       print("✅ $topic indirildi: ${questions.length} soru");
       return true;
-      
     } catch (e) {
-      print("❌ İndirme hatası: $e");
+      print("❌ İndirme hatası ($topic): $e");
       return false;
     }
   }
-  
-  // 🔥 İNDİRİLEN KONUYU SİL
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DELETE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Removes a downloaded topic from local storage.
   static Future<void> deleteTopic(String topic) async {
-    final prefs = await SharedPreferences.getInstance();
-    String key = '$_offlinePrefix$topic';
-    await prefs.remove(key);
-    
-    List<String> downloaded = prefs.getStringList(_downloadedTopicsKey) ?? [];
-    downloaded.remove(topic);
-    await prefs.setStringList(_downloadedTopicsKey, downloaded);
-    
-    print("🗑️ $topic silindi");
-  }
-  
-  // 🔥 KONU İNDİRİLDİ Mİ?
-  static Future<bool> isTopicDownloaded(String topic) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> downloaded = prefs.getStringList(_downloadedTopicsKey) ?? [];
-    return downloaded.contains(topic);
-  }
-  
-  // 🔥 İNDİRİLEN TÜM KONULAR
-  static Future<List<String>> getDownloadedTopics() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_downloadedTopicsKey) ?? [];
-  }
-  
-  // 🔥 OFFLİNE SORULARI YÜKLE (Uçaktayken)
-  static Future<List<Question>> loadOfflineQuestions(String topic, int testNo) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      String key = '$_offlinePrefix$topic';
-      String? jsonData = prefs.getString(key);
-      
-      if (jsonData == null) {
-        print("⚠️ Offline veri yok");
-        return [];
-      }
-      
-      List<dynamic> questionList = jsonDecode(jsonData);
-      
-      // İlgili test numarasını filtrele
-      List<Question> allQuestions = questionList.map((data) {
-        return Question(
-          id: data['id'] ?? 0,
-          question: data['question'] ?? "",
-          options: List<String>.from(data['options'] ?? []),
-          answerIndex: data['answerIndex'] ?? 0,
-          explanation: data['explanation'] ?? "",
-          testNo: data['testNo'] ?? 0,
-          level: data['level'] ?? "Genel",
-          imageUrl: data['imageUrl'],
-        );
-      }).toList();
-      
-      // Sadece bu test numarasını döndür
-      return allQuestions.where((q) => q.testNo == testNo).toList();
-      
+      await prefs.remove('$_offlinePrefix$topic');
+
+      List<String> downloaded =
+          prefs.getStringList(_downloadedTopicsKey) ?? [];
+      downloaded.remove(topic);
+      await prefs.setStringList(_downloadedTopicsKey, downloaded);
+
+      print("🗑️ $topic silindi");
     } catch (e) {
-      print("❌ Offline yükleme hatası: $e");
+      print("❌ Silme hatası ($topic): $e");
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STATUS QUERIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static Future<bool> isTopicDownloaded(String topic) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> downloaded =
+          prefs.getStringList(_downloadedTopicsKey) ?? [];
+      return downloaded.contains(topic);
+    } catch (e) {
+      print("❌ isTopicDownloaded hatası ($topic): $e");
+      return false;
+    }
+  }
+
+  static Future<List<String>> getDownloadedTopics() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getStringList(_downloadedTopicsKey) ?? [];
+    } catch (e) {
+      print("❌ getDownloadedTopics hatası: $e");
       return [];
     }
   }
-  
-  // 🔥 OFFLİNE YANLIŞ KAYDET (Uçaktayken)
-  static Future<void> saveOfflineMistake(Map<String, dynamic> mistake) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> pending = prefs.getStringList(_pendingSyncKey) ?? [];
-    
-    String mistakeJson = jsonEncode(mistake);
-    pending.add(mistakeJson);
-    
-    await prefs.setStringList(_pendingSyncKey, pending);
-    print("💾 Offline yanlış kaydedildi (Senkronize edilecek)");
+
+  static Future<String> getTopicSize(String topic) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? jsonData = prefs.getString('$_offlinePrefix$topic');
+      if (jsonData == null) return "0 KB";
+
+      int bytes = jsonData.length;
+      if (bytes < 1024) return "$bytes B";
+      if (bytes < 1024 * 1024) {
+        return "${(bytes / 1024).toStringAsFixed(1)} KB";
+      }
+      return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+    } catch (e) {
+      return "? KB";
+    }
   }
-  
-  // 🔥 OFFLİNE SONUCU KAYDET (Uçaktayken)
+
+  static Future<int> getPendingCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return (prefs.getStringList(_pendingSyncKey) ?? []).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // LOAD OFFLINE QUESTIONS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Loads cached questions for a specific topic + testNo.
+  /// Returns an empty list (never throws) on any failure.
+  static Future<List<Question>> loadOfflineQuestions(
+      String topic, int testNo) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? jsonData = prefs.getString('$_offlinePrefix$topic');
+
+      if (jsonData == null || jsonData.isEmpty) {
+        print("⚠️ Offline veri yok: $topic");
+        return [];
+      }
+
+      List<dynamic> decoded;
+      try {
+        decoded = jsonDecode(jsonData) as List<dynamic>;
+      } catch (parseError) {
+        print("❌ JSON parse hatası ($topic): $parseError");
+        return [];
+      }
+
+      List<Question> allQuestions = decoded
+          .map((data) {
+            try {
+              return Question(
+                id: (data['id'] as num?)?.toInt() ?? 0,
+                question: data['question']?.toString() ?? "",
+                options: data['options'] != null
+                    ? List<String>.from(data['options'] as List)
+                    : [],
+                answerIndex: (data['answerIndex'] as num?)?.toInt() ?? 0,
+                explanation: data['explanation']?.toString() ?? "",
+                testNo: (data['testNo'] as num?)?.toInt() ?? 0,
+                level: data['level']?.toString() ?? "Genel",
+                imageUrl: data['imageUrl']?.toString(),
+              );
+            } catch (e) {
+              print("⚠️ Soru parse hatası (atlanıyor): $e");
+              return null;
+            }
+          })
+          .whereType<Question>()
+          .toList();
+
+      final filtered =
+          allQuestions.where((q) => q.testNo == testNo).toList();
+      print(
+          "📂 Offline yüklendi: $topic test=$testNo → ${filtered.length} soru");
+      return filtered;
+    } catch (e) {
+      print("❌ loadOfflineQuestions genel hatası: $e");
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SAVE OFFLINE MISTAKE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Appends a single mistake to the pending-sync queue.
+  /// Never throws; failures are logged only.
+  static Future<void> saveOfflineMistake(
+      Map<String, dynamic> mistake) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> pending =
+          prefs.getStringList(_pendingSyncKey) ?? [];
+
+      // Tag so the sync logic knows this is a mistake record
+      final tagged = Map<String, dynamic>.from(mistake)
+        ..putIfAbsent('type', () => 'mistake');
+
+      pending.add(jsonEncode(tagged));
+      await prefs.setStringList(_pendingSyncKey, pending);
+      print(
+          "💾 Offline yanlış kaydedildi (${pending.length} bekliyor)");
+    } catch (e) {
+      print("❌ saveOfflineMistake hatası (non-fatal): $e");
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SAVE OFFLINE RESULT
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Appends a quiz result to the pending-sync queue.
+  /// Never throws; failures are logged only.
   static Future<void> saveOfflineResult({
     required String topic,
     required int testNo,
@@ -153,50 +240,80 @@ class OfflineService {
     required int emptyCount,
     required List<int?> userAnswers,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> pending = prefs.getStringList(_pendingSyncKey) ?? [];
-    
-    Map<String, dynamic> result = {
-      'type': 'result',
-      'topic': topic,
-      'testNo': testNo,
-      'score': score,
-      'correct': correctCount,
-      'wrong': wrongCount,
-      'empty': emptyCount,
-      'user_answers': userAnswers,
-      'date': DateTime.now().toIso8601String(),
-    };
-    
-    pending.add(jsonEncode(result));
-    await prefs.setStringList(_pendingSyncKey, pending);
-    print("💾 Offline sonuç kaydedildi (Senkronize edilecek)");
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> pending =
+          prefs.getStringList(_pendingSyncKey) ?? [];
+
+      final result = {
+        'type': 'result',
+        'topic': topic,
+        'testNo': testNo,
+        'score': score,
+        'correct': correctCount,
+        'wrong': wrongCount,
+        'empty': emptyCount,
+        'user_answers': userAnswers,
+        'date': DateTime.now().toIso8601String(),
+      };
+
+      pending.add(jsonEncode(result));
+      await prefs.setStringList(_pendingSyncKey, pending);
+      print(
+          "💾 Offline sonuç kaydedildi (${pending.length} bekliyor)");
+    } catch (e) {
+      print("❌ saveOfflineResult hatası (non-fatal): $e");
+    }
   }
-  
-  // 🔥 BEKLEYEN VERİLERİ FİREBASE'E SENKRON ET (İnternet gelince)
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SYNC PENDING DATA
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Uploads all locally-queued data to Firebase.
+  /// Individual item failures are captured; successful items are removed
+  /// from the queue while failed ones are retried next time.
   static Future<void> syncPendingData() async {
     User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    
-    final prefs = await SharedPreferences.getInstance();
+    if (user == null) {
+      print("⚠️ Senkronizasyon atlandı: kullanıcı oturum açmamış");
+      return;
+    }
+
+    SharedPreferences prefs;
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (e) {
+      print("❌ SharedPreferences erişim hatası: $e");
+      return;
+    }
+
     List<String> pending = prefs.getStringList(_pendingSyncKey) ?? [];
-    
+
     if (pending.isEmpty) {
       print("✅ Senkronize edilecek veri yok");
       return;
     }
-    
+
     print("🔄 ${pending.length} veri senkronize ediliyor...");
-    
+
     int syncedCount = 0;
     List<String> failed = [];
-    
-    for (String item in pending) {
+
+    for (final item in pending) {
+      Map<String, dynamic> data;
       try {
-        Map<String, dynamic> data = jsonDecode(item);
-        
+        data = jsonDecode(item) as Map<String, dynamic>;
+      } catch (e) {
+        print("⚠️ Bozuk kayıt atlanıyor: $e");
+        // Don't keep corrupt entries in the queue
+        continue;
+      }
+
+      bool success = false;
+
+      try {
         if (data['type'] == 'result') {
-          // Sonuç kaydet
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -212,61 +329,47 @@ class OfflineService {
             'date': data['date'],
             'timestamp': FieldValue.serverTimestamp(),
           });
-          
+          success = true;
         } else {
-          // Yanlış kaydet
-          String topic = data['topic'] ?? "Genel";
-          int testNo = data['testNo'] ?? 0;
-          int qIndex = data['questionIndex'] ?? 0;
+          // Treat everything else as a mistake record
+          String topic = data['topic']?.toString() ?? "Genel";
+          int testNo = (data['testNo'] as num?)?.toInt() ?? 0;
+          int qIndex = (data['questionIndex'] as num?)?.toInt() ?? 0;
           String uniqueId = "${topic}_${testNo}_$qIndex";
-          
+
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
               .collection('mistakes')
               .doc(uniqueId)
               .set(data, SetOptions(merge: true));
+          success = true;
         }
-        
-        syncedCount++;
-        
       } catch (e) {
-        print("❌ Senkron hatası: $e");
+        print("❌ Senkron hatası (tekrar denenecek): $e");
         failed.add(item);
       }
+
+      if (success) syncedCount++;
     }
-    
-    // Başarılı olanları temizle, başarısızları tut
-    await prefs.setStringList(_pendingSyncKey, failed);
-    
-    print("✅ $syncedCount veri senkronize edildi");
+
+    // Persist: keep only failed items for retry
+    try {
+      await prefs.setStringList(_pendingSyncKey, failed);
+    } catch (e) {
+      print("❌ Kuyruk güncelleme hatası: $e");
+    }
+
+    print("✅ $syncedCount / ${pending.length} veri senkronize edildi");
     if (failed.isNotEmpty) {
-      print("⚠️ ${failed.length} veri başarısız oldu, tekrar denenecek");
+      print(
+          "⚠️ ${failed.length} veri başarısız oldu, tekrar denenecek");
     }
   }
-  
-  // 🔥 BEKLEYEN VERİ VAR MI?
-  static Future<int> getPendingCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> pending = prefs.getStringList(_pendingSyncKey) ?? [];
-    return pending.length;
-  }
-  
-  // 🔥 İNDİRİLEN KONU BOYUTU
-  static Future<String> getTopicSize(String topic) async {
-    final prefs = await SharedPreferences.getInstance();
-    String key = '$_offlinePrefix$topic';
-    String? jsonData = prefs.getString(key);
-    
-    if (jsonData == null) return "0 KB";
-    
-    int bytes = jsonData.length;
-    if (bytes < 1024) return "$bytes B";
-    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
-    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
-  }
-  
-  // 🔥 YARDIMCI: Topic ismini DB formatına çevir
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // HELPER — topic name → Firebase collection name
+  // ─────────────────────────────────────────────────────────────────────────
   static String _topicToDbName(String topic) {
     if (topic.contains("Anatomi")) return "anatomi";
     if (topic.contains("Biyokimya")) return "biyokimya";
