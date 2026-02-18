@@ -456,6 +456,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         )
       : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
+    // DİNAMİK PADDING HESABI
+    // AppBar Yüksekliği + Status Bar (Çentik) + Ekstra 20px Boşluk
+    final double topPadding = kToolbarHeight + MediaQuery.of(context).padding.top + 20;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -464,6 +468,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        // 🔥 GÜNCELLEME 1: AppBar'a Blur Efekti
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -480,7 +493,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
+                // 🔥 GÜNCELLEME 2: Dinamik Padding (İçerik AppBar altında kalmaz)
+                padding: EdgeInsets.fromLTRB(20, topPadding, 20, 20),
                 child: Column(
                   children: [
                     // 1. Kimlik Kartı
@@ -595,7 +609,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 20),
                     Text("Versiyon 1.0.0", style: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey, fontSize: 12)),
-                    const SizedBox(height: 30),
+                    
+                    // Alt Navigasyon Bar için ekstra boşluk
+                    const SizedBox(height: 120), 
                   ],
                 ),
               ),

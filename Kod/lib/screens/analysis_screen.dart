@@ -16,9 +16,8 @@ class AnalysisScreen extends StatelessWidget {
   static final DateFormat _dayMonthFormat = DateFormat('d MMM');
   static final DateFormat _dayNameFormat = DateFormat('E');
 
-  // ... _processPremiumData fonksiyonu AYNEN KALIYOR (değişiklik yok) ...
+  // ... _processPremiumData fonksiyonu (Veri işleme mantığı) ...
   Map<String, dynamic> _processPremiumData(List<QueryDocumentSnapshot> docs) {
-    // ... (Buradaki kodlar orijinal dosyadaki ile aynı kalacak) ...
     if (docs.isEmpty) return {};
 
     int totalCorrect = 0;
@@ -250,8 +249,10 @@ class AnalysisScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 DÜZELTME: ListenableBuilder ekledik.
-    // Artık ThemeProvider notifyListeners() çağırdığında burası yeniden tetiklenecek.
+    // 🔥 DÜZELTME 1: Dinamik Üst Boşluk Hesabı (Notch + AppBar + 20px)
+    // Bu sayede "Performans Analizi" yazısı içeriğin üstüne binmez.
+    final double topContentPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 20;
+
     return ListenableBuilder(
       listenable: ThemeProvider.instance,
       builder: (context, _) {
@@ -259,12 +260,10 @@ class AnalysisScreen extends StatelessWidget {
         final isDark = theme.isDarkMode;
         final user = FirebaseAuth.instance.currentUser;
 
-        // 🔥 Home/Profile ile uyumlu Deep Space Gradient
         final bgColors = isDark 
             ? [const Color(0xFF0A0E14), const Color(0xFF161B22)] 
             : [const Color(0xFFfafafa), const Color(0xFFf5f5f5)];
         
-        // 🔥 Uyumlu Text Color
         final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1e293b);
 
         return Scaffold(
@@ -309,7 +308,10 @@ class AnalysisScreen extends StatelessWidget {
 
                       return SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(top: 110, left: 16, right: 16, bottom: 100),
+                        // 🔥 DÜZELTME 2: 
+                        // top: topContentPadding (Dinamik üst boşluk)
+                        // bottom: 150 (Dashboard üstüne binmemesi için güvenli alan)
+                        padding: EdgeInsets.only(top: topContentPadding, left: 16, right: 16, bottom: 150),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -355,11 +357,9 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // 🔥 Glass ve Gradient Efekti Eklenmiş Header
+  // --- Yardımcı Widget'lar (Değişiklik yok) ---
+
   Widget _buildMotivationalHeader(Map<String, dynamic> data, bool isDark, Color textColor) {
-    // ... (Bu metod ve altındaki tüm metodlar orijinal dosyadaki ile AYNI kalacak) ...
-    // Hepsini buraya tekrar kopyalamıyorum, sadece build metodunu değiştirmek yeterli.
-    // Ancak tam dosya istiyorsan aşağıdakiler aynen kullanılacak:
     String trend = data['trend'];
     IconData trendIcon = trend == "Yükseliş" ? Icons.trending_up : trend == "Düşüş" ? Icons.trending_down : Icons.trending_flat;
     Color trendColor = trend == "Yükseliş" ? const Color(0xFF69F0AE) : trend == "Düşüş" ? const Color(0xFFFF5252) : const Color(0xFFFFD740);
@@ -422,10 +422,6 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // ... (Geri kalan yardımcı widget metodları aynen devam eder: _buildMetricCard, _buildMainMetrics, _buildSectionTitle vs.) ...
-  // Dosyanın geri kalanını olduğu gibi koruyabilirsin.
-
-  // 🔥 Glass Effect Uygulanmış Metrik Kartı
   Widget _buildMetricCard(String label, String value, IconData icon, Color color, bool isDark) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -678,7 +674,6 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // 🔥 Glass Effect Uygulanmış Haftalık Aktivite
   Widget _buildWeeklyActivity(List<int> activities, List<String> labels, bool isDark) {
     int maxActivity = activities.reduce(max);
     if (maxActivity == 0) maxActivity = 1;
@@ -798,7 +793,6 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // 🔥 Glass Effect Stat Item
   Widget _buildStatItem(String label, String value, IconData icon, Color color, bool isDark) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -839,7 +833,6 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // 🔥 Glass Effect Topic Card
   Widget _buildTopicCard(Map<String, dynamic> data, bool isDark) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -1071,7 +1064,6 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // 🔥 Generic Glass Container (Parametre ile Blur ve Renk ayarı)
   Widget _buildGlassContainer({required Widget child, required bool isDark, double? height}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),

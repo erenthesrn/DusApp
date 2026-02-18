@@ -992,8 +992,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // 🔥 BANNER KALDIRILDI - Sadece buton var
-
           // 2. BUGÜNKÜ HEDEFLER KARTI
           Transform.translate(
             offset: const Offset(0, -40),
@@ -1120,7 +1118,8 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           
-          const SizedBox(height: 100),
+          // 🔥 DÜZELTME BURADA: Dashboard'un yüksekliğini hesaba katıp 150px boşluk ekliyoruz.
+          const SizedBox(height: 150),
         ],
       ),
     );

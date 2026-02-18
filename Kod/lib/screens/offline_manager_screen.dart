@@ -16,24 +16,88 @@ class _OfflineManagerScreenState extends State<OfflineManagerScreen> {
   int _pendingCount = 0;
   bool _isLoading = true;
   
-  // Tüm mevcut konular
+  // Tüm mevcut konular ve özel İKONLARI
   final List<Map<String, dynamic>> _allTopics = [
-    {"name": "📚 Anatomi", "color": Color(0xFFFB8C00)},
-    {"name": "🧬 Histoloji", "color": Color(0xFFEC407A)},
-    {"name": "⚡ Fizyoloji", "color": Color(0xFFEF5350)},
-    {"name": "🧪 Biyokimya", "color": Color(0xFFAB47BC)},
-    {"name": "🦠 Mikrobiyoloji", "color": Color(0xFF66BB6A)},
-    {"name": "🔬 Patoloji", "color": Color(0xFF8D6E63)},
-    {"name": "💊 Farmakoloji", "color": Color(0xFF26A69A)},
-    {"name": "🧬 Biyoloji", "color": Color(0xFFD4E157)},
-    {"name": "🦷 Protetik", "color": Color(0xFF29B6F6)},
-    {"name": "✨ Restoratif", "color": Color(0xFF42A5F5)},
-    {"name": "🌿 Endodonti", "color": Color(0xFFFFA726)},
-    {"name": "🌸 Perio", "color": Color(0xFFFF7043)},
-    {"name": "🦴 Ortodonti", "color": Color(0xFF5C6BC0)},
-    {"name": "👶 Pedodonti", "color": Color(0xFFFFCA28)},
-    {"name": "⚕️ Cerrahi", "color": Color(0xFFB71C1C)},
-    {"name": "📡 Radyoloji", "color": Color(0xFF78909C)},
+    {
+      "name": "📚 Anatomi", 
+      "color": Color(0xFFFB8C00), 
+      "icon": Icons.accessibility_new_rounded
+    },
+    {
+      "name": "🧬 Histoloji", 
+      "color": Color(0xFFEC407A), 
+      "icon": Icons.biotech_rounded
+    },
+    {
+      "name": "⚡ Fizyoloji", 
+      "color": Color(0xFFEF5350), 
+      "icon": Icons.monitor_heart_rounded
+    },
+    {
+      "name": "🧪 Biyokimya", 
+      "color": Color(0xFFAB47BC), 
+      "icon": Icons.science_rounded
+    },
+    {
+      "name": "🦠 Mikrobiyoloji", 
+      "color": Color(0xFF66BB6A), 
+      "icon": Icons.coronavirus_rounded
+    },
+    {
+      "name": "🔬 Patoloji", 
+      "color": Color(0xFF8D6E63), 
+      "icon": Icons.health_and_safety_rounded
+    },
+    {
+      "name": "💊 Farmakoloji", 
+      "color": Color(0xFF26A69A), 
+      "icon": Icons.medication_rounded
+    },
+    {
+      "name": "🧬 Biyoloji", 
+      "color": Color(0xFFD4E157), 
+      "icon": Icons.fingerprint_rounded
+    },
+    {
+      "name": "🦷 Protetik", 
+      "color": Color(0xFF29B6F6), 
+      "icon": Icons.sentiment_satisfied_alt_rounded
+    },
+    {
+      "name": "✨ Restoratif", 
+      "color": Color(0xFF42A5F5), 
+      "icon": Icons.build_circle_rounded
+    },
+    {
+      "name": "🌿 Endodonti", 
+      "color": Color(0xFFFFA726), 
+      "icon": Icons.flash_on_rounded
+    },
+    {
+      "name": "🌸 Perio", 
+      "color": Color(0xFFFF7043), 
+      "icon": Icons.layers_rounded
+    },
+    {
+      "name": "🦴 Ortodonti", 
+      "color": Color(0xFF5C6BC0), 
+      "icon": Icons.grid_on_rounded
+    },
+    {
+      "name": "👶 Pedodonti", 
+      "color": Color(0xFFFFCA28), 
+      "icon": Icons.child_care_rounded
+    },
+    {
+      "name": "⚕️ Cerrahi", 
+      "color": Color(0xFFB71C1C), 
+      "icon": Icons.medical_services_rounded
+    },
+    {
+      "name": "📡 Radyoloji", 
+      "color": Color(0xFF78909C), 
+      "icon": Icons.camera_alt_rounded
+    },
   ];
 
   @override
@@ -297,6 +361,7 @@ class _OfflineManagerScreenState extends State<OfflineManagerScreen> {
                   String cleanName = topicName.replaceAll(RegExp(r'[^\w\s]'), '').trim();
                   bool isDownloaded = _downloadedTopics.contains(cleanName);
                   Color themeColor = topic['color'];
+                  IconData topicIcon = topic['icon']; // Yeni eklenen ikon
                   
                   return Container(
                     margin: EdgeInsets.only(bottom: 12),
@@ -318,6 +383,7 @@ class _OfflineManagerScreenState extends State<OfflineManagerScreen> {
                     ),
                     child: ListTile(
                       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      // Leading kısmı artık dersin logosunu gösteriyor
                       leading: Container(
                         padding: EdgeInsets.all(10),
                         decoration: BoxDecoration(
@@ -325,8 +391,9 @@ class _OfflineManagerScreenState extends State<OfflineManagerScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          isDownloaded ? Icons.download_done : Icons.cloud_download,
+                          topicIcon, // Özel ders ikonu
                           color: themeColor,
+                          size: 28,
                         ),
                       ),
                       title: Text(
@@ -340,13 +407,19 @@ class _OfflineManagerScreenState extends State<OfflineManagerScreen> {
                         ? FutureBuilder<String>(
                             future: OfflineService.getTopicSize(cleanName),
                             builder: (context, snapshot) {
-                              return Text(
-                                "✅ İndirildi • ${snapshot.data ?? '...'}",
-                                style: GoogleFonts.inter(
-                                  color: Colors.green,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              return Row(
+                                children: [
+                                  Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "İndirildi • ${snapshot.data ?? '...'}",
+                                    style: GoogleFonts.inter(
+                                      color: Colors.green,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               );
                             },
                           )
