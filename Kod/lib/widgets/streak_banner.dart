@@ -3,7 +3,18 @@
 // Duolingo tarzı, pill-shaped, yumuşak animasyonlu seri bildirimi.
 // Hiçbir overlay veya dialog kullanmaz — saf OverlayEntry yaklaşımı.
 // GPU dostu: yalnızca transform + opacity (composite layer tetiklemez).
+//
+// 🎵 Müzik özelliği:
+//   - Banner çıktığında sağda küçük müzik ikonu + animasyonlu EQ barları görünür.
+//   - İkona tıklandığında assets/audio/streak_music.mp3 yaklaşık 6-7 sn çalar,
+//     ardından fade-out ile durur.
+//   - Gerekli pubspec.yaml bağımlılığı: audioplayers: ^6.0.0
+//     ve assets/audio/streak_music.mp3 dosyası.
 
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'streak_info_sheet.dart';
@@ -16,11 +27,10 @@ class StreakBanner {
   static Future<void> show({
     required BuildContext context,
     required int streakDays,
-    required bool isNewDay,       // 🆕 YENİ PARAMETRE
+    required bool isNewDay,
     required bool isDarkMode,
     VoidCallback? onDismissed,
   }) async {
-    // ── Yeni gün değilse veya seri 0 ise hiç gösterme ──
     if (!isNewDay || streakDays <= 0) {
       onDismissed?.call();
       return;
@@ -35,9 +45,7 @@ class StreakBanner {
       reverseDuration: const Duration(milliseconds: 320),
     );
 
-    // Banner tıklandığında sheet açar — entry'den önce tanımla
     void onTap() async {
-      // Sheet açıkken banner ekranda kalsın, sheet kapanınca devam etsin
       await StreakInfoSheet.show(
         context: context,
         streakDays: streakDays,
@@ -57,7 +65,7 @@ class StreakBanner {
     overlay.insert(entry);
     await controller.forward();
 
-    await Future.delayed(const Duration(milliseconds: 3200));
+    await Future.delayed(const Duration(milliseconds: 12000));
 
     await controller.reverse();
     entry.remove();
@@ -116,7 +124,7 @@ class _StreakBannerWidget extends StatelessWidget {
           child: FadeTransition(
             opacity: fade,
             child: GestureDetector(
-              onTap: onTap, // 🆕 TAP DESTEĞI
+              onTap: onTap,
               child: Material(
                 color: Colors.transparent,
                 child: Container(
@@ -180,14 +188,22 @@ class _StreakBannerWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Tıklanabilir ipucu oku
                       Icon(
                         Icons.keyboard_arrow_up_rounded,
-                        color: isDarkMode
-                            ? Colors.white38
-                            : Colors.black26,
+                        color: isDarkMode ? Colors.white38 : Colors.black26,
                         size: 18,
                       ),
+                      // ── Dikey ayraç ──────────────────────────────────────
+                      Container(
+                        width: 1,
+                        height: 28,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.12)
+                            : Colors.black.withOpacity(0.08),
+                      ),
+                      // ── Müzik butonu ─────────────────────────────────────
+                      _MusicButton(isDarkMode: isDarkMode),
                     ],
                   ),
                 ),
@@ -195,6 +211,142 @@ class _StreakBannerWidget extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 🎵 Müzik butonu — ikon + EQ barları + ses çalma
+// ---------------------------------------------------------------------------
+class _MusicButton extends StatefulWidget {
+  final bool isDarkMode;
+  const _MusicButton({required this.isDarkMode});
+
+  @override
+  State<_MusicButton> createState() => _MusicButtonState();
+}
+
+class _MusicButtonState extends State<_MusicButton>
+    with TickerProviderStateMixin {
+  // EQ barları için ayrı controller'lar (her biri farklı hızda)
+  late final List<AnimationController> _barControllers;
+  late final List<Animation<double>> _barAnimations;
+
+  // Ses oynatıcı
+  final AudioPlayer _player = AudioPlayer();
+  bool _isPlaying = false;
+  Timer? _stopTimer;
+
+  // Bar sayısı ve sabit hız çarpanları
+  static const int _barCount = 4;
+  final List<double> _speedFactors = [1.0, 0.75, 1.3, 0.9];
+  final List<double> _minHeights = [0.25, 0.35, 0.20, 0.40];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _barControllers = List.generate(_barCount, (i) {
+      final ctrl = AnimationController(
+        vsync: this,
+        duration: Duration(milliseconds: (500 * _speedFactors[i]).round()),
+      )..repeat(reverse: true);
+      return ctrl;
+    });
+
+    _barAnimations = List.generate(_barCount, (i) {
+      return Tween<double>(begin: _minHeights[i], end: 1.0).animate(
+        CurvedAnimation(
+          parent: _barControllers[i],
+          curve: Curves.easeInOut,
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final c in _barControllers) {
+      c.dispose();
+    }
+    _stopTimer?.cancel();
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    if (_isPlaying) return; // Zaten çalıyorsa tekrar başlatma
+
+    setState(() => _isPlaying = true);
+
+    // assets/audio/streak_music.mp3 dosyasını çal
+    await _player.play(AssetSource('audio/streak_music.mp3'));
+
+    // ~6.5 saniye sonra durdur
+    _stopTimer = Timer(const Duration(milliseconds: 12000), () async {
+      await _player.stop();
+      if (mounted) setState(() => _isPlaying = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accentColor =
+        _isPlaying ? const Color(0xFF4ECDC4) : const Color(0xFFFF6B35);
+    final mutedColor =
+        widget.isDarkMode ? Colors.white38 : Colors.black26;
+
+    return GestureDetector(
+      // Banner'ın kendi onTap'ını engelleme
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        _handleTap();
+        // Üst GestureDetector'a (sheet açan) bubble etmesini önle
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Müzik ikonu ────────────────────────────────────────────────
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: Icon(
+              _isPlaying ? Icons.music_note_rounded : Icons.music_note_outlined,
+              key: ValueKey(_isPlaying),
+              color: _isPlaying ? accentColor : mutedColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // ── EQ Barları ─────────────────────────────────────────────────
+          SizedBox(
+            width: 22,
+            height: 14,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(_barCount, (i) {
+                return AnimatedBuilder(
+                  animation: _barAnimations[i],
+                  builder: (_, __) {
+                    final heightFraction = _isPlaying
+                        ? _barAnimations[i].value
+                        : _minHeights[i]; // Çalmıyorken mini yükseklik
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 120),
+                      width: 3,
+                      height: 14 * heightFraction,
+                      decoration: BoxDecoration(
+                        color: _isPlaying ? accentColor : mutedColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }
