@@ -6,7 +6,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import '../screens/streak_info_sheet.dart';
+import 'streak_info_sheet.dart';
 
 class StreakBanner {
   /// [streakDays]  → Kaç günlük seri
