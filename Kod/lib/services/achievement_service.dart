@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/achievement_model.dart';
+import 'notification_queue.dart';
 
 class AchievementService extends ChangeNotifier {
   static final AchievementService _instance = AchievementService._internal();
@@ -398,78 +399,90 @@ class AchievementService extends ChangeNotifier {
   }
 
   // --- BİLDİRİM (SNACKBAR) ---
+  // --- BİLDİRİM (SNACKBAR) ---
   void _showUnlockNotification(BuildContext context, Achievement achievement) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-        content: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0D47A1), Color(0xFF1976D2)], // Premium Mavi Geçiş
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    // 🔥 YENİ: Bildirimi anında göstermek yerine kuyruğa (Queue) ekliyoruz.
+    // Eğer o an ekranda Seri (Streak) bildirimi varsa, o bitene kadar bekleyecek.
+    NotificationQueue.instance.enqueueAchievement(() async {
+      
+      // Senin mevcut mükemmel SnackBar tasarımın (Hiç dokunmadık)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4), // 4 saniye ekranda kalır
+          content: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0D47A1), Color(0xFF1976D2)], // Premium Mavi Geçiş
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                )
+              ],
+              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withOpacity(0.4),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              )
-            ],
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-          ),
-          child: Row(
-            children: [
-              // İkon Kutusu
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Colors.white24,
-                  shape: BoxShape.circle,
+            child: Row(
+              children: [
+                // İkon Kutusu
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(achievement.iconData, color: Colors.amberAccent, size: 28),
                 ),
-                child: Icon(achievement.iconData, color: Colors.amberAccent, size: 28),
-              ),
-              const SizedBox(width: 16),
-              // Yazı Alanı
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'BAŞARIM AÇILDI! 🎉',
-                      style: TextStyle(
-                        color: Colors.amberAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 1,
+                const SizedBox(width: 16),
+                // Yazı Alanı
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'BAŞARIM AÇILDI! 🎉',
+                        style: TextStyle(
+                          color: Colors.amberAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      achievement.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      const SizedBox(height: 4),
+                      Text(
+                        achievement.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    Text(
-                      achievement.description,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
+                      Text(
+                        achievement.description,
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+
+      // 🔥 YENİ: Eğer kullanıcı peş peşe 2 rozet kazanırsa (örn: hem 100 soru rozeti hem anatomi rozeti)
+      // bunların üst üste binmemesi için ilk SnackBar'ın süresi (4 saniye) kadar kuyruğu bekletiyoruz.
+      await Future.delayed(const Duration(seconds: 4));
+
+    });
   }
 }
