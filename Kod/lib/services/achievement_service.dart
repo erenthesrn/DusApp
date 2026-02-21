@@ -12,15 +12,32 @@ class AchievementService extends ChangeNotifier {
   static final AchievementService _instance = AchievementService._internal();
   static AchievementService get instance => _instance;
 
-  // Constructor
+  // Şu an hangi kullanıcının verisi yüklü
+  String? _loadedUserId;
+
   AchievementService._internal() {
-    _loadProgress();
-    // Kullanıcı giriş/çıkış yaparsa verileri tekrar yükle
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (user != null) {
-        _loadProgress();
+        // 🔥 Farklı kullanıcı mı? Önce sıfırla, sonra yükle.
+        if (_loadedUserId != user.uid) {
+          _resetAchievements();
+          _loadedUserId = user.uid;
+          _loadProgress();
+        }
+      } else {
+        // Logout: Sıfırla ve local cache temizle
+        _loadedUserId = null;
+        _resetAchievements();
+        _clearLocalCache();
       }
     });
+
+    // İlk açılış (kullanıcı zaten giriş yapmışsa)
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      _loadedUserId = currentUser.uid;
+      _loadProgress();
+    }
   }
 
   // 🔥 30 ROZETLİK LİSTE 🔥
@@ -33,7 +50,7 @@ class AchievementService extends ChangeNotifier {
       iconData: Icons.local_hospital_rounded,
       targetValue: 1,
     ),
-    
+
     // --- 2. BRANŞ RÜTBELERİ ---
     Achievement(
       id: 'anatomy_wolf',
@@ -67,7 +84,7 @@ class AchievementService extends ChangeNotifier {
       id: 'surgery_master',
       title: 'Bistüri Dansçısı',
       description: 'Cerrahi sorularını tereyağından kıl çeker gibi çözdün. (50 Doğru)',
-      iconData: Icons.content_cut_rounded, 
+      iconData: Icons.content_cut_rounded,
       targetValue: 50,
     ),
     Achievement(
@@ -118,7 +135,7 @@ class AchievementService extends ChangeNotifier {
       id: 'emergency_112',
       title: '112 Acil Servis',
       description: 'Tam 112 soru çözdün. Müdahale başarılı!',
-      iconData: Icons.monitor_heart_rounded, 
+      iconData: Icons.monitor_heart_rounded,
       targetValue: 112,
     ),
     Achievement(
@@ -220,217 +237,264 @@ class AchievementService extends ChangeNotifier {
 
   List<Achievement> get achievements => _achievements;
 
-  // --- MANTIK KISMI ---
+  // ─────────────────────────────────────────
+  //  MANTIK KISMI
+  // ─────────────────────────────────────────
 
   Future<void> updateProgress(BuildContext context, String id, int amount) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || currentUser.uid != _loadedUserId) return;
+
     final index = _achievements.indexWhere((a) => a.id == id);
     if (index == -1) return;
 
     final achievement = _achievements[index];
-    
-    // Eğer zaten açılmışsa tekrar işlem yapma (Yerel kontrol)
     if (achievement.isUnlocked) return;
 
-    // 🔥 HATA ÇÖZÜMÜ: Bildirim Bug'ını Engelleme
-    // Eğer kullanıcının mevcut ilerlemesi ZATEN hedefe ulaşmışsa, bu başarımı
-    // geçmişte kazanmıştır. Bildirim göstermeden sessizce true yapıp çıkıyoruz.
     if (achievement.currentValue >= achievement.targetValue) {
       achievement.isUnlocked = true;
-      _saveProgress(achievement); // Düzeltmeyi kaydet
+      _saveProgress(achievement);
       notifyListeners();
       return;
     }
 
-    // Yeni değeri hesapla
     int newValue = achievement.currentValue + amount;
-    if (newValue > achievement.targetValue) {
-      newValue = achievement.targetValue;
-    }
-    
+    if (newValue > achievement.targetValue) newValue = achievement.targetValue;
+
     achievement.currentValue = newValue;
-    
-    // SADECE ilk kez hedefe ulaşıldığında bildirimi tetikle
+
     if (achievement.currentValue >= achievement.targetValue && !achievement.isUnlocked) {
       achievement.isUnlocked = true;
       _showUnlockNotification(context, achievement);
     }
 
     notifyListeners();
-    // Hem yerel hem Firebase'e kaydet
     _saveProgress(achievement);
   }
 
   // KATEGORİ ALGILAMA
-  Future<void> incrementCategory(BuildContext context, String categoryName, int correctCount) async {
-    // 1. Genel sayaçları her zaman artır
+  Future<void> incrementCategory(
+      BuildContext context, String categoryName, int correctCount) async {
     updateProgress(context, 'first_blood', 1);
     updateProgress(context, 'clinical_chief', correctCount);
-    updateProgress(context, 'emergency_112', correctCount); 
-    updateProgress(context, 'sparta_300', correctCount);    
+    updateProgress(context, 'emergency_112', correctCount);
+    updateProgress(context, 'sparta_300', correctCount);
     updateProgress(context, 'question_monster', correctCount);
     updateProgress(context, 'dus_legend', correctCount);
-    updateProgress(context, 'conquest_1453', correctCount); 
-    updateProgress(context, 'republic_1923', correctCount); 
+    updateProgress(context, 'conquest_1453', correctCount);
+    updateProgress(context, 'republic_1923', correctCount);
 
-    // 2. Kategoriye özel artışlar
     final lowerName = categoryName.toLowerCase();
-
-    if (lowerName.contains('anatomi')) updateProgress(context, 'anatomy_wolf', correctCount);
-    else if (lowerName.contains('biyokimya')) updateProgress(context, 'bio_genius', correctCount);
-    else if (lowerName.contains('perio')) updateProgress(context, 'perio_guard', correctCount);
-    else if (lowerName.contains('protetik') || lowerName.contains('protez')) updateProgress(context, 'pro_architect', correctCount);
-    else if (lowerName.contains('cerrah')) updateProgress(context, 'surgery_master', correctCount);
-    else if (lowerName.contains('radyo')) updateProgress(context, 'radio_eye', correctCount);
-    else if (lowerName.contains('endo')) updateProgress(context, 'endo_king', correctCount);
-    else if (lowerName.contains('pedo') || lowerName.contains('çocuk')) updateProgress(context, 'pedo_hero', correctCount);
-    else if (lowerName.contains('orto')) updateProgress(context, 'orto_bender', correctCount);
-    else if (lowerName.contains('resto') || lowerName.contains('tedavi')) updateProgress(context, 'resto_artist', correctCount);
+    if (lowerName.contains('anatomi'))
+      updateProgress(context, 'anatomy_wolf', correctCount);
+    else if (lowerName.contains('biyokimya'))
+      updateProgress(context, 'bio_genius', correctCount);
+    else if (lowerName.contains('perio'))
+      updateProgress(context, 'perio_guard', correctCount);
+    else if (lowerName.contains('protetik') || lowerName.contains('protez'))
+      updateProgress(context, 'pro_architect', correctCount);
+    else if (lowerName.contains('cerrah'))
+      updateProgress(context, 'surgery_master', correctCount);
+    else if (lowerName.contains('radyo'))
+      updateProgress(context, 'radio_eye', correctCount);
+    else if (lowerName.contains('endo'))
+      updateProgress(context, 'endo_king', correctCount);
+    else if (lowerName.contains('pedo') || lowerName.contains('çocuk'))
+      updateProgress(context, 'pedo_hero', correctCount);
+    else if (lowerName.contains('orto'))
+      updateProgress(context, 'orto_bender', correctCount);
+    else if (lowerName.contains('resto') || lowerName.contains('tedavi'))
+      updateProgress(context, 'resto_artist', correctCount);
   }
 
   // ZAMAN VE SKOR KONTROLÜ
-  void checkTimeAndScore(BuildContext context, int totalScore, int maxScore, int correctCount) {
+  void checkTimeAndScore(
+      BuildContext context, int totalScore, int maxScore, int correctCount) {
     final now = DateTime.now();
     final hour = now.hour;
-    final weekday = now.weekday; // 1=Pazartesi, 7=Pazar
+    final weekday = now.weekday;
 
-    // --- SKOR ROZETLERİ ---
-    if (totalScore == maxScore && maxScore > 0) {
+    if (totalScore == maxScore && maxScore > 0)
       updateProgress(context, 'perfectionist', 1);
-    }
-    if (correctCount == 7) {
-      updateProgress(context, 'lucky_seven', 1); // Tam 7 doğru
-    }
-    if (totalScore >= 50) {
-      updateProgress(context, 'passed_threshold', 1);
-    }
+    if (correctCount == 7) updateProgress(context, 'lucky_seven', 1);
+    if (totalScore >= 50) updateProgress(context, 'passed_threshold', 1);
 
-    // --- ZAMAN ROZETLERİ ---
     if (hour >= 0 && hour < 5) updateProgress(context, 'night_owl', 1);
     if (hour >= 5 && hour < 8) updateProgress(context, 'early_bird', 1);
-    if (hour >= 12 && hour < 14) updateProgress(context, 'lunch_break', 1); // Öğle arası
+    if (hour >= 12 && hour < 14) updateProgress(context, 'lunch_break', 1);
+    if (weekday == 6 || weekday == 7) updateProgress(context, 'weekend_warrior', 1);
+    if (weekday == 1) updateProgress(context, 'monday_hero', 1);
+  }
 
-    // Hafta sonu (Cumartesi=6, Pazar=7)
-    if (weekday == 6 || weekday == 7) {
-      updateProgress(context, 'weekend_warrior', 1);
-    }
-    // Pazartesi (1)
-    if (weekday == 1) {
-      updateProgress(context, 'monday_hero', 1);
+  // ─────────────────────────────────────────
+  //  FIREBASE REFRESH (Ekran açılışında çağrılır)
+  // ─────────────────────────────────────────
+
+  /// Ekran her açıldığında Firebase'den güncel veriyi zorla çek
+  Future<void> refreshFromFirebase() async {
+    final uid = _loadedUserId;
+    if (uid == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('achievements')
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+      if (_loadedUserId != uid) return;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final index = _achievements.indexWhere((a) => a.id == doc.id);
+        if (index == -1) continue;
+
+        int serverValue = (data['currentValue'] as num?)?.toInt() ?? 0;
+        bool serverUnlocked = data['isUnlocked'] as bool? ?? false;
+
+        if (serverValue >= _achievements[index].targetValue) {
+          serverUnlocked = true;
+        }
+
+        // Firebase'den gelen veri her zaman kazanır
+        _achievements[index].currentValue = serverValue;
+        _achievements[index].isUnlocked = serverUnlocked;
+      }
+
+      notifyListeners();
+      _saveLocalOnly(uid);
+    } catch (e) {
+      debugPrint("Achievement refresh error: $e");
     }
   }
 
-  // --- KAYIT VE YÜKLEME (FIREBASE DESTEKLİ) ---
-  
-  // 1. Verileri Yükle (Local + Firebase)
-  Future<void> _loadProgress() async {
-    // Önce Yerel Veriyi Yükle (Hızlı Açılış İçin)
-    final prefs = await SharedPreferences.getInstance();
-    final String? dataString = prefs.getString('achievements_v4');
+  // ─────────────────────────────────────────
+  //  KAYIT VE YÜKLEME
+  // ─────────────────────────────────────────
 
-    if (dataString != null) {
-      final List<dynamic> jsonList = jsonDecode(dataString);
-      for (var jsonItem in jsonList) {
-        final index = _achievements.indexWhere((a) => a.id == jsonItem['id']);
-        if (index != -1) {
-          _achievements[index] = Achievement.fromMap(jsonItem, _achievements[index]);
-        }
-      }
+  void _resetAchievements() {
+    for (var a in _achievements) {
+      a.currentValue = 0;
+      a.isUnlocked = false;
+    }
+    notifyListeners();
+  }
+
+  Future<void> _clearLocalCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('achievements_v4');
+    if (_loadedUserId != null) {
+      await prefs.remove('achievements_v4_$_loadedUserId');
+    }
+  }
+
+  String _localCacheKey(String uid) => 'achievements_v4_$uid';
+
+  Future<void> _loadProgress() async {
+    final uid = _loadedUserId;
+    if (uid == null) return;
+
+    // Adım 1: Local cache'i göster (hızlı açılış)
+    final prefs = await SharedPreferences.getInstance();
+    final String? localData = prefs.getString(_localCacheKey(uid));
+
+    if (localData != null) {
+      _applyJsonList(jsonDecode(localData));
       notifyListeners();
     }
 
-    // Sonra Firebase'den Güncel Veriyi Çek (User Logged In ise)
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('achievements')
-            .get();
+    // Adım 2: Firebase'den TAM veriyi çek
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('achievements')
+          .get();
 
-        if (snapshot.docs.isNotEmpty) {
-          for (var doc in snapshot.docs) {
-            final id = doc.id;
-            final data = doc.data();
-            final index = _achievements.indexWhere((a) => a.id == id);
-            
-            if (index != -1) {
-              // Firebase verisi yerel veriden daha ilerideyse veya kilit açılmışsa güncelle
-              int serverValue = data['currentValue'] ?? 0;
-              bool serverUnlocked = data['isUnlocked'] ?? false;
-              
-              // 🔥 HATA ÇÖZÜMÜ: Firebase'de false kalsa bile değer hedefe ulaştıysa true yap.
-              if (serverValue >= _achievements[index].targetValue) {
-                serverUnlocked = true;
-              }
-              
-              if (serverUnlocked || serverValue > _achievements[index].currentValue) {
-                 _achievements[index].currentValue = serverValue;
-                 _achievements[index].isUnlocked = serverUnlocked;
-              }
-            }
+      if (snapshot.docs.isNotEmpty) {
+        if (_loadedUserId != uid) return;
+
+        for (var doc in snapshot.docs) {
+          final data = doc.data();
+          final index = _achievements.indexWhere((a) => a.id == doc.id);
+          if (index == -1) continue;
+
+          int serverValue = (data['currentValue'] as num?)?.toInt() ?? 0;
+          bool serverUnlocked = data['isUnlocked'] as bool? ?? false;
+
+          if (serverValue >= _achievements[index].targetValue) {
+            serverUnlocked = true;
           }
-          notifyListeners();
-          // Güncel veriyi yerele de kaydet ki sonraki açılışta hızlı olsun
-          _saveLocalOnly(); 
+
+          if (serverUnlocked || serverValue > _achievements[index].currentValue) {
+            _achievements[index].currentValue = serverValue;
+            _achievements[index].isUnlocked = serverUnlocked;
+          }
         }
-      } catch (e) {
-        debugPrint("Achievement Firebase Load Error: $e");
+
+        notifyListeners();
+        _saveLocalOnly(uid);
+      }
+    } catch (e) {
+      debugPrint("Achievement Firebase Load Error: $e");
+    }
+  }
+
+  void _applyJsonList(List<dynamic> jsonList) {
+    for (var jsonItem in jsonList) {
+      final index = _achievements.indexWhere((a) => a.id == jsonItem['id']);
+      if (index != -1) {
+        _achievements[index] = Achievement.fromMap(jsonItem, _achievements[index]);
       }
     }
   }
 
-  // 2. Verileri Kaydet (Local + Firebase)
   Future<void> _saveProgress(Achievement achievement) async {
-    // 2a. Yerele Kaydet
-    await _saveLocalOnly();
+    final uid = _loadedUserId;
+    if (uid == null) return;
 
-    // 2b. Firebase'e Kaydet
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('achievements')
-            .doc(achievement.id)
-            .set({
-              'currentValue': achievement.currentValue,
-              'isUnlocked': achievement.isUnlocked,
-              'lastUpdated': FieldValue.serverTimestamp(),
-            }, SetOptions(merge: true));
-      } catch (e) {
-        debugPrint("Achievement Firebase Save Error: $e");
-      }
+    await _saveLocalOnly(uid);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('achievements')
+          .doc(achievement.id)
+          .set({
+        'currentValue': achievement.currentValue,
+        'isUnlocked': achievement.isUnlocked,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Achievement Firebase Save Error: $e");
     }
   }
 
-  // Sadece Yerele Kaydetme (Toplu)
-  Future<void> _saveLocalOnly() async {
+  Future<void> _saveLocalOnly(String uid) async {
     final prefs = await SharedPreferences.getInstance();
     final data = _achievements.map((a) => a.toMap()).toList();
-    await prefs.setString('achievements_v4', jsonEncode(data));
+    await prefs.setString(_localCacheKey(uid), jsonEncode(data));
   }
 
-  // --- BİLDİRİM (SNACKBAR) ---
-  // --- BİLDİRİM (SNACKBAR) ---
+  // ─────────────────────────────────────────
+  //  BİLDİRİM
+  // ─────────────────────────────────────────
+
   void _showUnlockNotification(BuildContext context, Achievement achievement) {
-    // 🔥 YENİ: Bildirimi anında göstermek yerine kuyruğa (Queue) ekliyoruz.
-    // Eğer o an ekranda Seri (Streak) bildirimi varsa, o bitene kadar bekleyecek.
     NotificationQueue.instance.enqueueAchievement(() async {
-      
-      // Senin mevcut mükemmel SnackBar tasarımın (Hiç dokunmadık)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4), // 4 saniye ekranda kalır
+          duration: const Duration(seconds: 4),
           content: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF0D47A1), Color(0xFF1976D2)], // Premium Mavi Geçiş
+                colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -446,7 +510,6 @@ class AchievementService extends ChangeNotifier {
             ),
             child: Row(
               children: [
-                // İkon Kutusu
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(
@@ -456,7 +519,6 @@ class AchievementService extends ChangeNotifier {
                   child: Icon(achievement.iconData, color: Colors.amberAccent, size: 28),
                 ),
                 const SizedBox(width: 16),
-                // Yazı Alanı
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,11 +554,7 @@ class AchievementService extends ChangeNotifier {
           ),
         ),
       );
-
-      // 🔥 YENİ: Eğer kullanıcı peş peşe 2 rozet kazanırsa (örn: hem 100 soru rozeti hem anatomi rozeti)
-      // bunların üst üste binmemesi için ilk SnackBar'ın süresi (4 saniye) kadar kuyruğu bekletiyoruz.
       await Future.delayed(const Duration(seconds: 4));
-
     });
   }
 }
