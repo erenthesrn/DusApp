@@ -504,7 +504,9 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           ),
         )
-      : Container(color: const Color(0xFFF5F9FF));
+      // ESKİ HALİ: : Container(color: const Color(0xFFF5F9FF));
+      // YENİ HALİ AŞAĞIDAKİ GİBİ OLACAK:
+      : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
     Color navBarColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.8) : Colors.white;
 
@@ -1102,10 +1104,10 @@ class DashboardScreen extends StatelessWidget {
                   }
                 ),
 
-                // 🔥 OFFLINE MOD BUTONU (KALACAK)
+                // 🔥 OFFLINE MOD BUTONU (GÜNCELLENDİ)
                 const SizedBox(height: 16),
                 _buildActionBtnHorizontal(
-                  'Offline Mod ✈️', 
+                  'Offline Mod', 
                   'Konuları indir, internetsiz çöz', 
                   Icons.cloud_download_outlined, 
                   isDarkMode ? const Color(0xFF0EA5E9) : Colors.lightBlue, 
