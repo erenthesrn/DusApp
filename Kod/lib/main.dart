@@ -6,8 +6,13 @@ import 'services/focus_service.dart';
 // Not: Firebase importlarını buradan kaldırabilirsin, Splash'e taşıyacağız.
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+// 🔥 1. main fonksiyonunu 'async' yapıyoruz
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 🔥 2. BEYAZ EKRAN PARLAMA ÇÖZÜMÜ:
+  // Uygulama çizilmeden hemen önce temayı okuyoruz (Milisaniyeler sürer)
+  await ThemeProvider.instance.initializeTheme();
   
   // DİKKAT: Artık burada await Firebase... yok!
   // Uygulama anında açılacak.

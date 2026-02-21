@@ -483,7 +483,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               isDarkMode ? Icons.wb_sunny_rounded : Icons.nightlight_round,
               color: isDarkMode ? Colors.amber : Colors.indigo
             ),
-            onPressed: () => themeProvider.toggleTheme(!isDarkMode)
+            onPressed: () => themeProvider.setTheme(!isDarkMode)
           )
         ],
       ),
@@ -539,7 +539,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             subtitle: Text(isDarkMode ? "Açık" : "Kapalı", style: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey)),
                             trailing: Switch(
                               value: isDarkMode,
-                              onChanged: (value) => setState(() => themeProvider.toggleTheme(value)),
+                              onChanged: (value) => setState(() => themeProvider.setTheme(value)),
                               activeColor: const Color(0xFF0D47A1),
                             ),
                           ),
