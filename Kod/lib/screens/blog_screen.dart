@@ -1,52 +1,10 @@
-import 'dart:async';
+import 'dart:math'; // Animasyon hesaplamaları için eklendi
 import 'dart:ui';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart'; // HapticFeedback için
-import '../admin/question_uploader.dart';
+import 'package:flutter/services.dart';
 
 // -----------------------------------------------------------------------------
-// 1. VERİ MODELİ
-// -----------------------------------------------------------------------------
-class BlogPost {
-  final String id;
-  final String title;
-  final String content;
-  final String category;
-  final String imageUrl;
-  final DateTime publishedAt;
-  final String readTime;
-  final bool isAudioAvailable;
-
-  BlogPost({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.category,
-    required this.imageUrl,
-    required this.publishedAt,
-    required this.readTime,
-    this.isAudioAvailable = false,
-  });
-
-  factory BlogPost.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    return BlogPost(
-      id: doc.id,
-      title: data['title'] ?? 'Başlıksız İçerik',
-      content: data['content'] ?? 'İçerik yüklenemedi.',
-      category: data['category'] ?? 'Genel',
-      imageUrl: data['imageUrl'] ?? 'https://images.unsplash.com/photo-1584515933487-9d317552d894?auto=format&fit=crop&w=800&q=80',
-      publishedAt: (data['publishedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      readTime: data['readTime'] ?? '3 dk',
-      isAudioAvailable: data['isAudioAvailable'] ?? false,
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// 2. ANA EKRAN (BLOG SCREEN -> DUS KAMPÜSÜ)
+// DUS REHBERİ (COGNITIVE OASIS) - ANA EKRAN
 // -----------------------------------------------------------------------------
 class BlogScreen extends StatefulWidget {
   const BlogScreen({super.key});
@@ -55,601 +13,448 @@ class BlogScreen extends StatefulWidget {
   State<BlogScreen> createState() => _BlogScreenState();
 }
 
-class _BlogScreenState extends State<BlogScreen> with TickerProviderStateMixin {
+class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateMixin {
+  late ScrollController _scrollController;
+  late AnimationController _animationController;
   
-  // --- STATE ---
-  String _selectedCategory = "Tümü";
-  final List<String> _categories = ["Tümü", "Rehberlik", "Ders Taktikleri", "Haberler", "Motivasyon"];
-  
-  // Animasyonlar
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-
-  // Vaka Kartı State
-  bool _isCaseRevealed = false;
-
-  // SMART NOTES (AKIL NOTLARI) VERİSİ
-  final List<Map<String, dynamic>> _smartNotes = [
-    {
-      "title": "N. Facialis Dalları",
-      "note": "T-Z-B-M-C\n(Temporal, Zigomatik, Bukkal, Mandibular, Servikal)",
-      "color": const Color(0xFFFFE0B2), // Açık Turuncu
-      "textColor": const Color(0xFFE65100)
-    },
-    {
-      "title": "Sifilis Evreleri",
-      "note": "Şanslı Güller Lastik Sever\n(Şankr, Gül, Latent, Gom)",
-      "color": const Color(0xFFE1BEE7), // Açık Mor
-      "textColor": const Color(0xFF4A148C)
-    },
-    {
-      "title": "Lokal Anestezikler",
-      "note": "Amid grubu 'i' harfini iki kere içerir.\nÖrn: Lidokain, Bupivakain.",
-      "color": const Color(0xFFC8E6C9), // Açık Yeşil
-      "textColor": const Color(0xFF1B5E20)
-    },
-  ];
+  bool _isScrolled = false;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _scrollController = ScrollController()
+      ..addListener(() {
+        if (_scrollController.offset > 50 && !_isScrolled) {
+          setState(() => _isScrolled = true);
+        } else if (_scrollController.offset <= 50 && _isScrolled) {
+          setState(() => _isScrolled = false);
+        }
+      });
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..forward();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _scrollController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0D1117) : const Color(0xFFF2F5F8);
-    final titleColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F2328);
-    final accentColor = const Color(0xFF0969DA);
+    final backgroundColor = isDark ? const Color(0xFF090A0F) : const Color(0xFFF4F6F9);
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // --- APP BAR ---
-          SliverAppBar(
-            backgroundColor: bgColor,
-            expandedHeight: 100.0,
-            floating: true,
-            pinned: true,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "DUS Rehberi",
-                    style: TextStyle(
-                      color: titleColor,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  // Canlı Sayaç
-                  Row(
-                    children: [
-                      ScaleTransition(
-                        scale: _pulseAnimation,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.greenAccent,
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.greenAccent, blurRadius: 5)]
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "1,234 kişi çalışıyor",
-                        style: TextStyle(
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+      backgroundColor: backgroundColor,
+      body: Stack(
+        children: [
+          // Arka Plandaki Atmosferik Renk Küreleri (Mesh Gradient Hissi)
+          Positioned(top: -100, left: -100, child: _buildAmbientBlob(const Color(0xFF0969DA), 300)),
+          Positioned(top: 200, right: -150, child: _buildAmbientBlob(const Color(0xFF8A2BE2), 250)),
+          
+          // Ana Kaydırılabilir İçerik
+          CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              _buildSliverAppBar(isDark),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+              _buildProgressCard(isDark),
+              const SliverToBoxAdapter(child: SizedBox(height: 30)),
+              _buildSectionTitle("Hızlı Araçlar", isDark),
+              _buildQuickActions(isDark),
+              const SliverToBoxAdapter(child: SizedBox(height: 30)),
+              _buildSectionTitle("Günün Vakası", isDark),
+              _buildInteractiveCaseCard(isDark),
+              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              _buildSectionTitle("Özel İçerikler", isDark),
+              _buildEditorialGrid(isDark),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 1. ATMOSFER VE APP BAR ---
+
+  Widget _buildAmbientBlob(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withOpacity(0.15),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+        child: Container(color: Colors.transparent),
+      ),
+    );
+  }
+
+  SliverAppBar _buildSliverAppBar(bool isDark) {
+    return SliverAppBar(
+      expandedHeight: 120.0,
+      floating: false,
+      pinned: true,
+      elevation: 0,
+      backgroundColor: _isScrolled ? (isDark ? const Color(0xFF090A0F).withOpacity(0.9) : Colors.white.withOpacity(0.9)) : Colors.transparent,
+      flexibleSpace: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: _isScrolled ? 20 : 0, sigmaY: _isScrolled ? 20 : 0),
+          child: FlexibleSpaceBar(
+            titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            title: Text(
+              "DUS Kampüsü",
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
+                fontSize: 28,
               ),
             ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: isDark ? Colors.white10 : Colors.white,
-                  child: Icon(Icons.search, size: 20, color: titleColor),
+          ),
+        ),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 24.0, top: 8.0),
+          child: CircleAvatar(
+            backgroundColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+            child: IconButton(
+              icon: Icon(Icons.bookmark_outline_rounded, color: isDark ? Colors.white : Colors.black87),
+              onPressed: () => HapticFeedback.lightImpact(),
+            ),
+          ),
+        )
+      ],
+    );
+  }
+
+  // --- 2. İLHAM VERİCİ PROGRESS KARTI (Glassmorphism) ---
+
+  Widget _buildProgressCard(bool isDark) {
+    return SliverToBoxAdapter(
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic)),
+        child: FadeTransition(
+          opacity: _animationController,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF0969DA).withOpacity(0.08), blurRadius: 30, offset: const Offset(0, 15))
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("DUS 2026", style: TextStyle(color: const Color(0xFF0969DA), fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1.2)),
+                            const SizedBox(height: 8),
+                            Text("Sınava Kalan\nSüre: 142 Gün", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w900, fontSize: 24, height: 1.2, letterSpacing: -0.5)),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(color: const Color(0xFF0969DA).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                              child: const Text("Bugün 120 soru çözdün 🔥", style: TextStyle(color: Color(0xFF0969DA), fontSize: 12, fontWeight: FontWeight.bold)),
+                            )
+                          ],
+                        ),
+                      ),
+                      // Şık İkonografi
+                      Container(
+                        width: 80, height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(colors: [Color(0xFF0969DA), Color(0xFF8A2BE2)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                          boxShadow: [BoxShadow(color: const Color(0xFF8A2BE2).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
+                        ),
+                        child: const Icon(Icons.rocket_rounded, color: Colors.white, size: 40),
+                      )
+                    ],
+                  ),
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- 3. HIZLI ARAÇLAR KAPSÜLLERİ ---
+
+  Widget _buildSectionTitle(String title, bool isDark) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 24, bottom: 16, right: 24),
+        child: Text(
+          title,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87, letterSpacing: -0.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(bool isDark) {
+    final actions = [
+      {"icon": Icons.calculate_rounded, "label": "Puan", "color": const Color(0xFF0969DA)},
+      {"icon": Icons.timer_rounded, "label": "Sayaç", "color": const Color(0xFFFF9500)},
+      {"icon": Icons.analytics_rounded, "label": "Tercih", "color": const Color(0xFF34C759)},
+      {"icon": Icons.calendar_month_rounded, "label": "Takvim", "color": const Color(0xFFAF52DE)},
+    ];
+
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: 110,
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: actions.length,
+          itemBuilder: (context, index) {
+            final action = actions[index];
+            return GestureDetector(
+              onTap: () => HapticFeedback.mediumImpact(),
+              child: Container(
+                width: 85,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.03) : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: (action["color"] as Color).withOpacity(0.2), width: 1),
+                  boxShadow: [BoxShadow(color: (action["color"] as Color).withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: (action["color"] as Color).withOpacity(0.15), shape: BoxShape.circle),
+                      child: Icon(action["icon"] as IconData, color: action["color"] as Color, size: 28),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(action["label"] as String, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black87)),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // --- 4. GÜNÜN VAKASI (3D FLIP KART MEKANİĞİ) ---
+
+  Widget _buildInteractiveCaseCard(bool isDark) {
+    return const SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.0),
+        child: InteractiveCaseWidget(), 
+      ),
+    );
+  }
+
+  // --- 5. EDİTÖRYAL DUS REHBERİ (APPLE APP STORE TARZI HERO KARTLAR) ---
+
+  Widget _buildEditorialGrid(bool isDark) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return _buildEditorialCard(isDark, index);
+          },
+          childCount: 3,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditorialCard(bool isDark, int index) {
+    final images = [
+      "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80"
+    ];
+    final titles = ["Sınav Kaygısını Yenmenin 5 Bilimsel Yolu", "Etkili Tekrar Stratejileri: Aralıklı Öğrenme", "Derece Yapanların Çalışma Rutinleri"];
+    final tags = ["MOTİVASYON", "TAKTİK", "REHBERLİK"];
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+      },
+      child: Container(
+        height: 320,
+        margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10))],
+          image: DecorationImage(image: NetworkImage(images[index]), fit: BoxFit.cover),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+              stops: const [0.4, 1.0],
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Text(tags[index], style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(titles[index], style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, height: 1.2, letterSpacing: -0.5)),
+              const SizedBox(height: 12),
+              Row(
+                children: const [
+                  Icon(Icons.access_time_rounded, color: Colors.white70, size: 16),
+                  SizedBox(width: 6),
+                  Text("4 dk okuma", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                ],
               )
             ],
           ),
-
-          // --- 1. SMART NOTES (AKIL NOTLARI) ---
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.lightbulb, color: Colors.amber[700], size: 20),
-                      const SizedBox(width: 8),
-                      Text("Smart Notes", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: titleColor)),
-                      const Spacer(),
-                      Text("Tümü", style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 140,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: _smartNotes.length,
-                    itemBuilder: (context, index) {
-                      final note = _smartNotes[index];
-                      return _buildSmartNoteCard(note);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-          // --- 🔥 YENİ: HIZLI ERİŞİM BUTONLARI ---
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF161B22) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    if (!isDark) BoxShadow(color: Colors.grey.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildQuickAccessItem(Icons.calculate_outlined, "Puan\nHesapla", Colors.blue, isDark),
-                    _buildQuickAccessItem(Icons.timer_outlined, "Sınav\nSayacı", Colors.orange, isDark),
-                    _buildQuickAccessItem(Icons.smart_toy_outlined, "Tercih\nRobotu", Colors.purple, isDark),
-                    _buildQuickAccessItem(Icons.calendar_month_outlined, "Sınav\nTakvimi", Colors.teal, isDark),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-          // --- 2. GÜNÜN VAKASI (INTERACTIVE) ---
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildCaseOfTheDay(isDark),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-          // --- 3. KATEGORİ SEÇİCİ ---
-          SliverToBoxAdapter(
-            child: Container(
-              height: 40,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = cat == _selectedCategory;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedCategory = cat),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                      decoration: BoxDecoration(
-                        color: isSelected ? accentColor : (isDark ? const Color(0xFF161B22) : Colors.white),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? Colors.transparent : (isDark ? Colors.white10 : Colors.grey.shade300)
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : (isDark ? Colors.grey[400] : Colors.grey[700]),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // --- 4. BLOG AKIŞI ---
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('blog_posts').orderBy('publishedAt', descending: true).snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) return SliverToBoxAdapter(child: Center(child: Text("Hata: ${snapshot.error}")));
-              if (snapshot.connectionState == ConnectionState.waiting) return const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()));
-
-              final docs = snapshot.data!.docs;
-              List<BlogPost> posts = docs.map((d) => BlogPost.fromFirestore(d)).toList();
-              
-              if (_selectedCategory != "Tümü") {
-                posts = posts.where((p) => p.category == _selectedCategory).toList();
-              }
-
-              if (posts.isEmpty) {
-                 return SliverToBoxAdapter(
-                   child: Padding(
-                     padding: const EdgeInsets.all(40.0),
-                     child: Column(
-                       children: [
-                         Icon(Icons.article_outlined, size: 48, color: Colors.grey.shade400),
-                         const SizedBox(height: 10),
-                         Text("Henüz yazı eklenmemiş.", style: TextStyle(color: Colors.grey.shade500)),
-                       ],
-                     ),
-                   ),
-                 );
-              }
-
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildBlogCard(posts[index], isDark),
-                      );
-                    },
-                    childCount: posts.length,
-                  ),
-                ),
-              );
-            },
-          ),
-          
-          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-        ],
-      ),
-      
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        backgroundColor: Colors.orange,
-        child: const Icon(Icons.cloud_upload_rounded),
-        onPressed: () async {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Yükleniyor...")));
-        },
+        ),
       ),
     );
   }
+}
 
-  // --- WIDGETS ---
+// -----------------------------------------------------------------------------
+// GÜNÜN VAKASI İÇİN ÖZEL INTERAKTİF WIDGET (Oyunlaştırma)
+// -----------------------------------------------------------------------------
+class InteractiveCaseWidget extends StatefulWidget {
+  const InteractiveCaseWidget({super.key});
 
-  // 🔥 YENİ: HIZLI ERİŞİM BUTONU WIDGET'I
-  Widget _buildQuickAccessItem(IconData icon, String label, Color color, bool isDark) {
+  @override
+  State<InteractiveCaseWidget> createState() => _InteractiveCaseWidgetState();
+}
+
+class _InteractiveCaseWidgetState extends State<InteractiveCaseWidget> {
+  bool _isFlipped = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: () {
-        // Burada ilgili araçlara navigasyon yapılacak (Şimdilik SnackBar)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$label yakında aktif!")));
+        HapticFeedback.mediumImpact();
+        setState(() => _isFlipped = !_isFlipped);
       },
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.grey[400] : Colors.grey[700],
-              height: 1.1
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 1. SMART NOTE KARTI (Post-it Tarzı)
-  Widget _buildSmartNoteCard(Map<String, dynamic> note) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: note['color'],
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.push_pin, size: 14, color: note['textColor']),
-              const Spacer(),
-              Icon(Icons.copy_rounded, size: 14, color: note['textColor'].withOpacity(0.5)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            note['title'],
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: note['textColor'],
-              fontWeight: FontWeight.w900,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Text(
-              note['note'],
-              style: TextStyle(
-                color: note['textColor'].withOpacity(0.9),
-                fontSize: 11,
-                height: 1.2,
-                fontWeight: FontWeight.w600
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 2. GÜNÜN VAKASI (Interactive Case)
-  Widget _buildCaseOfTheDay(bool isDark) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161B22) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _isCaseRevealed ? Colors.green.withOpacity(0.5) : (isDark ? Colors.white10 : Colors.blue.withOpacity(0.1)), width: 2),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, 5))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Text("GÜNÜN VAKASI", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-              const Spacer(),
-              const Icon(Icons.medical_services_outlined, size: 18, color: Colors.grey),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "25 yaşında erkek hasta, diş ağrısı şikayetiyle başvuruyor. Ağrı özellikle soğukta artıyor ve uyaran kalkınca hemen geçiyor. Radyografta çürük pulpaya yakın.",
-            style: TextStyle(fontSize: 14, height: 1.4, color: isDark ? Colors.white70 : Colors.black87),
-          ),
-          const SizedBox(height: 16),
-          
-          if (!_isCaseRevealed)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Colors.white10 : Colors.grey[100],
-                  elevation: 0,
-                  foregroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-                ),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _isCaseRevealed = true);
-                },
-                child: const Text("Tanıyı Gör", style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text("Tanı: Reversible Pulpitis", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14)),
-                  SizedBox(height: 4),
-                  Text("Tedavi: Çürük temizlenir, kuafaj veya dolgu yapılır.", style: TextStyle(color: Colors.green, fontSize: 12)),
-                ],
-              ),
-            )
-        ],
-      ),
-    );
-  }
-
-  // 3. BLOG KARTI (Daha kompakt ve şık)
-  Widget _buildBlogCard(BlogPost post, bool isDark) {
-    return GestureDetector(
-      onTap: () => _openBlogDetail(post, isDark),
-      child: Container(
-        height: 110,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161B22) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            if (!isDark) BoxShadow(color: Colors.grey.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4))
-          ],
-        ),
-        child: Row(
-          children: [
-            // Resim
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-              child: Image.network(post.imageUrl, width: 110, height: 110, fit: BoxFit.cover),
-            ),
-            
-            // İçerik
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Text(post.category.toUpperCase(), style: const TextStyle(color: Color(0xFF0969DA), fontSize: 10, fontWeight: FontWeight.w800)),
-                        const Spacer(),
-                        if(post.isAudioAvailable) const Icon(Icons.headphones, size: 14, color: Colors.orange),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(post.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14, fontWeight: FontWeight.bold, height: 1.2)),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time_rounded, size: 12, color: Colors.grey[500]),
-                        const SizedBox(width: 4),
-                        Text(post.readTime, style: TextStyle(color: Colors.grey[500], fontSize: 11)),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // DETAY SAYFASI
-  void _openBlogDetail(BlogPost post, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, scrollController) {
-          return Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0D1117) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            ),
-            child: ListView(
-              controller: scrollController,
-              padding: EdgeInsets.zero,
-              children: [
-                Stack(
-                  children: [
-                    Hero(
-                      tag: post.id,
-                      child: Container(
-                        height: 300,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                          image: DecorationImage(image: NetworkImage(post.imageUrl), fit: BoxFit.cover),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 10, right: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.black54),
-                        style: IconButton.styleFrom(backgroundColor: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(color: const Color(0xFF0969DA).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                            child: Text(post.category, style: const TextStyle(color: Color(0xFF0969DA), fontWeight: FontWeight.bold)),
-                          ),
-                          const Spacer(),
-                          const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(post.readTime, style: const TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        post.title,
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, height: 1.2),
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(),
-                      const SizedBox(height: 20),
-                      Text(
-                        post.content,
-                        style: TextStyle(fontSize: 16, height: 1.6, color: isDark ? Colors.grey[300] : Colors.grey[800]),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          final rotate = Tween(begin: 3.1415927, end: 0.0).animate(animation);
+          return AnimatedBuilder(
+            animation: rotate,
+            child: child,
+            builder: (context, widget) {
+              final isUnder = (ValueKey(_isFlipped) != widget?.key);
+              var tilt = ((animation.value - 0.5).abs() - 0.5) * 0.003;
+              tilt *= isUnder ? -1.0 : 1.0;
+              final value = isUnder ? min(rotate.value, 3.1415927 / 2) : rotate.value;
+              return Transform(
+                transform: Matrix4.rotationY(value)..setEntry(3, 0, tilt),
+                alignment: Alignment.center,
+                child: widget,
+              );
+            },
           );
         },
+        child: _isFlipped ? _buildBackSide(isDark) : _buildFrontSide(isDark),
+      ),
+    );
+  }
+
+  Widget _buildFrontSide(bool isDark) {
+    return Container(
+      key: const ValueKey(false),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.05), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.psychology_rounded, color: Color(0xFFFF9500), size: 24),
+              const SizedBox(width: 10),
+              Text("Teşhis Et", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "25 yaşında erkek hasta, diş ağrısı şikayetiyle başvuruyor. Ağrı özellikle soğukta artıyor ve uyaran kalkınca hemen geçiyor. Radyografta çürük pulpaya yakın.",
+            style: TextStyle(fontSize: 16, height: 1.5, color: isDark ? Colors.white70 : Colors.black87),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: Text("Çözmek için dokun", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 13)),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackSide(bool isDark) {
+    return Container(
+      key: const ValueKey(true),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF34C759),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: const Color(0xFF34C759).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Icon(Icons.check_circle_rounded, color: Colors.white, size: 32),
+          SizedBox(height: 16),
+          Text("Reversible Pulpitis", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5)),
+          SizedBox(height: 12),
+          Text(
+            "Tedavi: Çürük temizlenir, kuafaj veya dolgu yapılır. Uyaran ortadan kalkınca ağrı kesildiği için irreversibl aşamaya geçmemiştir.",
+            style: TextStyle(fontSize: 15, height: 1.5, color: Colors.white, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }
