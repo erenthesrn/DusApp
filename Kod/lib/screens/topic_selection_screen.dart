@@ -73,14 +73,25 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
     // 1. Tema Kontrolü
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // 2. Renk Tanımları (Premium Palette)
-    // Arkaplan: Derin Uzay Siyahı veya Yumuşak Buz Mavisi
-    Color scaffoldBackgroundColor = isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F9FF);
+    // 2. Renk Tanımları
     Color appBarTitleColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
+
+    // Profil sayfası ile tamamen aynı arka plan tanımı
+    Widget background = isDarkMode
+      ? Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
+            )
+          ),
+        )
+      : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
     return Scaffold(
       extendBodyBehindAppBar: true, // Glass effect için
-      backgroundColor: scaffoldBackgroundColor, 
+      backgroundColor: Colors.transparent, // Arka planı transparan yapıyoruz
       appBar: AppBar(
         title: Text(
           widget.title, 
@@ -97,12 +108,18 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: scaffoldBackgroundColor.withOpacity(0.7)),
+            // Profil sayfası ile aynı AppBar blur arka plan rengi
+            child: Container(
+              color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
+            ),
           ),
         ),
       ),
       body: Stack(
         children: [
+          // Profil ekranındaki Arka Plan Widget'ı en alta eklendi
+          background,
+
           // Arka Plan Glow Efekti (Dinamik Renkli - Sağ Üst Köşe)
           if (isDarkMode)
             Positioned(

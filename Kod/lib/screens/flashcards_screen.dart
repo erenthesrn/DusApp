@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui'; // 🔥 YENİ: Blur efekti için eklendi
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -46,14 +47,27 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0A0E14) : const Color(0xFFF5F9FF);
     final cardColor = isDark ? const Color(0xFF161B22) : Colors.white;
     final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+
+    // 🔥 YENİ: Profil sayfası ile tamamen aynı arka plan tanımı
+    Widget background = isDark
+      ? Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
+            )
+          ),
+        )
+      : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
     // Kategori Seçilmediyse Listeyi Göster
     if (_selectedCategory == null) {
       return Scaffold(
-        backgroundColor: bgColor,
+        extendBodyBehindAppBar: true, // 🔥 YENİ: Glass effect için
+        backgroundColor: Colors.transparent, // 🔥 YENİ: Arka planı transparan yapıyoruz
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showAddCardDialog(context, isDark),
           backgroundColor: const Color(0xFF0D47A1),
@@ -66,49 +80,65 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
           leading: BackButton(color: textColor),
           title: Text("Bilgi Kartları", style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold)),
           centerTitle: true,
+          // 🔥 YENİ: AppBar Blur Efekti
+          flexibleSpace: ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                color: (isDark ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
+              ),
+            ),
+          ),
         ),
         // 🔥 FIREBASE STREAM BUILDER (Verileri Canlı Dinle)
-        body: StreamBuilder<QuerySnapshot>(
-          stream: _getFlashcardsStream(),
-          builder: (context, snapshot) {
-            // 1. Statik verileri önce bir kopyala
-            _finalData = Map.from(_staticData);
+        body: Stack(
+          children: [
+            background, // 🔥 YENİ: Arka Plan eklendi
+            StreamBuilder<QuerySnapshot>(
+              stream: _getFlashcardsStream(),
+              builder: (context, snapshot) {
+                // 1. Statik verileri önce bir kopyala
+                _finalData = Map.from(_staticData);
 
-            // 2. Firebase'den gelen verileri statik verinin üzerine ekle
-            if (snapshot.hasData) {
-              for (var doc in snapshot.data!.docs) {
-                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-                String category = data['category'] ?? "Genel";
-                String question = data['question'] ?? "";
-                String answer = data['answer'] ?? "";
+                // 2. Firebase'den gelen verileri statik verinin üzerine ekle
+                if (snapshot.hasData) {
+                  for (var doc in snapshot.data!.docs) {
+                    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                    String category = data['category'] ?? "Genel";
+                    String question = data['question'] ?? "";
+                    String answer = data['answer'] ?? "";
 
-                if (!_finalData.containsKey(category)) {
-                  _finalData[category] = [];
+                    if (!_finalData.containsKey(category)) {
+                      _finalData[category] = [];
+                    }
+                    _finalData[category]!.add({"q": question, "a": answer});
+                  }
                 }
-                _finalData[category]!.add({"q": question, "a": answer});
-              }
-            }
 
-            // 3. Listeyi Oluştur
-            return ListView(
-              padding: const EdgeInsets.all(20),
-              children: _finalData.keys.map((category) {
-                return _buildCategoryCard(category, _finalData[category]!.length, isDark);
-              }).toList(),
-            );
-          },
+                // 3. Listeyi Oluştur
+                return ListView(
+                  // 🔥 YENİ: AppBar'ın altında kalmaması için top padding artırıldı
+                  padding: EdgeInsets.fromLTRB(20, kToolbarHeight + MediaQuery.of(context).padding.top + 20, 20, 20),
+                  children: _finalData.keys.map((category) {
+                    return _buildCategoryCard(category, _finalData[category]!.length, isDark);
+                  }).toList(),
+                );
+              },
+            ),
+          ],
         ),
       );
     }
 
     // Kartlar Bittiyse Sonuç Ekranı
     if (_currentIndex >= _currentCards.length) {
-      return _buildResultScreen(isDark, textColor);
+      return _buildResultScreen(isDark, textColor, background); // background parametre olarak eklendi
     }
 
     // KART GÖSTERİM EKRANI
     return Scaffold(
-      backgroundColor: bgColor,
+      extendBodyBehindAppBar: true, // 🔥 YENİ: Glass effect için
+      backgroundColor: Colors.transparent, // 🔥 YENİ: Arka planı transparan yapıyoruz
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -134,82 +164,100 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
             ),
           )
         ],
-      ),
-      body: Column(
-        children: [
-          // Progress Bar
-          LinearProgressIndicator(
-            value: (_currentIndex + 1) / _currentCards.length,
-            backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
-            color: const Color(0xFF448AFF),
-            minHeight: 4,
-          ),
-          
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: GestureDetector(
-                  onTap: _flipCard,
-                  child: TweenAnimationBuilder(
-                    tween: Tween<double>(begin: 0, end: _isFlipped ? 180 : 0),
-                    duration: const Duration(milliseconds: 500),
-                    builder: (context, double value, child) {
-                      bool isBack = value >= 90;
-                      return Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity()
-                          ..setEntry(3, 2, 0.001) 
-                          ..rotateY(value * pi / 180),
-                        child: isBack
-                            ? Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()..rotateY(pi), 
-                                child: _buildCardContent(
-                                  _currentCards[_currentIndex]['a']!, 
-                                  isBack: true, 
-                                  isDark: isDark,
-                                  cardColor: cardColor,
-                                  textColor: textColor
-                                ),
-                              )
-                            : _buildCardContent(
-                                _currentCards[_currentIndex]['q']!, 
-                                isBack: false, 
-                                isDark: isDark,
-                                cardColor: cardColor,
-                                textColor: textColor
-                              ),
-                      );
-                    },
-                  ),
-                ),
-              ),
+        // 🔥 YENİ: AppBar Blur Efekti
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: (isDark ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
             ),
           ),
-
-          // --- 🔥 GÜNCELLENEN BUTON ALANI (PREMIUM TASARIM) ---
+        ),
+      ),
+      body: Stack(
+        children: [
+          background, // 🔥 YENİ: Arka Plan eklendi
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-            child: Row(
+            // 🔥 YENİ: Content AppBar altında kalmasın diye padding
+            padding: EdgeInsets.only(top: kToolbarHeight + MediaQuery.of(context).padding.top),
+            child: Column(
               children: [
+                // Progress Bar
+                LinearProgressIndicator(
+                  value: (_currentIndex + 1) / _currentCards.length,
+                  backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
+                  color: const Color(0xFF448AFF),
+                  minHeight: 4,
+                ),
+                
                 Expanded(
-                  child: _buildActionButton( // Artık Custom Tasarım Kullanıyor
-                    label: "Hatırlayamadım", 
-                    icon: Icons.close_rounded, 
-                    color: Colors.red.shade400, 
-                    onTap: () => _nextCard(false),
-                    isDarkMode: isDark, // Parametre eklendi
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: GestureDetector(
+                        onTap: _flipCard,
+                        child: TweenAnimationBuilder(
+                          tween: Tween<double>(begin: 0, end: _isFlipped ? 180 : 0),
+                          duration: const Duration(milliseconds: 500),
+                          builder: (context, double value, child) {
+                            bool isBack = value >= 90;
+                            return Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.identity()
+                                ..setEntry(3, 2, 0.001) 
+                                ..rotateY(value * pi / 180),
+                              child: isBack
+                                  ? Transform(
+                                      alignment: Alignment.center,
+                                      transform: Matrix4.identity()..rotateY(pi), 
+                                      child: _buildCardContent(
+                                        _currentCards[_currentIndex]['a']!, 
+                                        isBack: true, 
+                                        isDark: isDark,
+                                        cardColor: cardColor,
+                                        textColor: textColor
+                                      ),
+                                    )
+                                  : _buildCardContent(
+                                      _currentCards[_currentIndex]['q']!, 
+                                      isBack: false, 
+                                      isDark: isDark,
+                                      cardColor: cardColor,
+                                      textColor: textColor
+                                    ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: _buildActionButton( // Artık Custom Tasarım Kullanıyor
-                    label: "Biliyorum", 
-                    icon: Icons.check_rounded, 
-                    color: const Color(0xFF00BFA5), 
-                    onTap: () => _nextCard(true),
-                    isDarkMode: isDark, // Parametre eklendi
+
+                // --- 🔥 GÜNCELLENEN BUTON ALANI (PREMIUM TASARIM) ---
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionButton( 
+                          label: "Hatırlayamadım", 
+                          icon: Icons.close_rounded, 
+                          color: Colors.red.shade400, 
+                          onTap: () => _nextCard(false),
+                          isDarkMode: isDark, 
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _buildActionButton( 
+                          label: "Biliyorum", 
+                          icon: Icons.check_rounded, 
+                          color: const Color(0xFF00BFA5), 
+                          onTap: () => _nextCard(true),
+                          isDarkMode: isDark, 
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -235,7 +283,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
         decoration: BoxDecoration(
           color: isDarkMode ? const Color(0xFF161B22) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.5), width: 1.5), // Çerçeve belirginleştirildi
+          border: Border.all(color: color.withOpacity(0.5), width: 1.5), 
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.15),
@@ -486,57 +534,63 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   }
 
   // --- Sonuç Ekranı ---
-  Widget _buildResultScreen(bool isDark, Color textColor) {
+  Widget _buildResultScreen(bool isDark, Color textColor, Widget background) {
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0E14) : const Color(0xFFF5F9FF),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.emoji_events, size: 80, color: Colors.orange),
-              const SizedBox(height: 24),
-              Text(
-                "Tebrikler!",
-                style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: textColor),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "$_selectedCategory setini tamamladın.",
-                style: GoogleFonts.inter(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 40),
-              
-              Row(
+      extendBodyBehindAppBar: true, // 🔥 YENİ: Uyum için eklendi
+      backgroundColor: Colors.transparent, // 🔥 YENİ
+      body: Stack(
+        children: [
+          background, // 🔥 YENİ: Arka Plan eklendi
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(child: _buildStatBox("Biliyorum", "$_knownCount", Colors.teal, isDark)),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildStatBox("Tekrar Et", "$_unknownCount", Colors.red, isDark)),
+                  const Icon(Icons.emoji_events, size: 80, color: Colors.orange),
+                  const SizedBox(height: 24),
+                  Text(
+                    "Tebrikler!",
+                    style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: textColor),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "$_selectedCategory setini tamamladın.",
+                    style: GoogleFonts.inter(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 40),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: _buildStatBox("Biliyorum", "$_knownCount", Colors.teal, isDark)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildStatBox("Tekrar Et", "$_unknownCount", Colors.red, isDark)),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                         setState(() {
+                           _selectedCategory = null; 
+                         });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D47A1),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text("Yeni Set Seç", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                  )
                 ],
               ),
-              
-              const SizedBox(height: 40),
-              
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                     setState(() {
-                       _selectedCategory = null; 
-                     });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0D47A1),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text("Yeni Set Seç", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-              )
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

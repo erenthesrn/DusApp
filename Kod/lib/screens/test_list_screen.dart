@@ -77,12 +77,24 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Color scaffoldBackgroundColor = isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F9FF);
     Color appBarTitleColor = isDarkMode ? const Color(0xFFE2E8F0) : Colors.black87;
+
+    // Profil sayfası ile tamamen aynı arka plan tanımı
+    Widget background = isDarkMode
+      ? Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
+            )
+          ),
+        )
+      : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
     return Scaffold(
       extendBodyBehindAppBar: true, 
-      backgroundColor: scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent, // Arka planı transparan yapıyoruz
       appBar: AppBar(
         title: Text(
           "$_cleanTitle Testleri",
@@ -99,7 +111,10 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: scaffoldBackgroundColor.withOpacity(0.7)),
+            // Profil sayfası ile aynı AppBar blur arka plan rengi
+            child: Container(
+              color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
+            ),
           ),
         ),
         // 🔥 YENİ: Offline durumu göster
@@ -133,6 +148,9 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
       ),
       body: Stack(
         children: [
+          // Profil ekranındaki Arka Plan Widget'ı en alta eklendi
+          background,
+
           if (isDarkMode) ...[
              Positioned(
               top: -50, right: -50,
