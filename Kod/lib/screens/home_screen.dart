@@ -176,14 +176,13 @@ class _HomeScreenState extends State<HomeScreen> {
         testNo: m['testNo'] ?? 0, 
         level: m['topic'] ?? m['subject'] ?? "Genel", 
         imageUrl: m['imageUrl'], 
-
       );
     }).toList();
   }
 
+  // 🔥 ÇALIŞMA ALANI (TEMEL BİLİMLER) - CYBER GLASS MENÜ 🔥
   void _showTopicSelection(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color backgroundColor = isDarkMode ? const Color(0xFF161B22) : Colors.white; 
     final Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B); 
     final Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
 
@@ -191,87 +190,93 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       backgroundColor: Colors.transparent, 
       isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: backgroundColor, 
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4, 
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.white24 : Colors.grey.shade300, 
-                    borderRadius: BorderRadius.circular(2)
-                  )
-                ),
-              ),
-              
-              Text("Çalışma Alanı", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor)),
-              const SizedBox(height: 4),
-              Text("Hangi alanda pratik yapmak istersin?", style: GoogleFonts.inter(fontSize: 14, color: subtitleColor)),
-              const SizedBox(height: 32),
-              
-              Row(
+      builder: (context) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15), // Cam bulanıklığı
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF0D1117).withOpacity(0.75) : Colors.white.withOpacity(0.85), 
+              border: isDarkMode ? Border(top: BorderSide(color: Colors.white.withOpacity(0.1))) : null,
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _buildModernCard(
-                      context, 
-                      title: "Temel\nBilimler", 
-                      icon: Icons.biotech_outlined, 
-                      color: Colors.orange, 
-                      topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"],
-                      onTapOverride: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context, 
-                          MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Temel Bilimler", topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"], themeColor: Colors.orange))
-                        ).then((_) => _checkAndCelebrate()); 
-                      }
+                  Center(
+                    child: Container(
+                      width: 40, height: 4, 
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white24 : Colors.grey.shade400, 
+                        borderRadius: BorderRadius.circular(2)
+                      )
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildModernCard(
-                      context, 
-                      title: "Klinik\nBilimler", 
-                      icon: Icons.health_and_safety_outlined, 
-                      color: Colors.blue, 
-                      topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"],
-                      onTapOverride: () {
-                         Navigator.pop(context);
-                         Navigator.push(
+                  
+                  Text("Çalışma Alanı", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor)),
+                  const SizedBox(height: 4),
+                  Text("Hangi alanda pratik yapmak istersin?", style: GoogleFonts.inter(fontSize: 14, color: subtitleColor)),
+                  const SizedBox(height: 32),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildModernCard(
                           context, 
-                          MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Klinik Bilimler", topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"], themeColor: Colors.blue))
-                        ).then((_) => _checkAndCelebrate()); 
-                      }
-                    ),
+                          title: "Temel\nBilimler", 
+                          icon: Icons.biotech_outlined, 
+                          color: Colors.orange, 
+                          topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"],
+                          onTapOverride: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context, 
+                              MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Temel Bilimler", topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"], themeColor: Colors.orange))
+                            ).then((_) => _checkAndCelebrate()); 
+                          }
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildModernCard(
+                          context, 
+                          title: "Klinik\nBilimler", 
+                          icon: Icons.health_and_safety_outlined, 
+                          color: Colors.blue, 
+                          topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"],
+                          onTapOverride: () {
+                             Navigator.pop(context);
+                             Navigator.push(
+                              context, 
+                              MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Klinik Bilimler", topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"], themeColor: Colors.blue))
+                            ).then((_) => _checkAndCelebrate()); 
+                          }
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+
+                  _buildModernCard(
+                    context,
+                    title: "Sınav Provası",
+                    subtitle: "Tüm derslerden karışık deneme",
+                    icon: Icons.timer_outlined,
+                    color: const Color(0xFF673AB7),
+                    isWide: true,
+                    onTapOverride: () {
+                       Navigator.pop(context);
+                       Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen(isTrial: true, fixedDuration: 150)))
+                       .then((_) => _checkAndCelebrate());
+                    }
                   ),
                 ],
               ),
-              
-              const SizedBox(height: 16),
-
-              _buildModernCard(
-                context,
-                title: "Sınav Provası",
-                subtitle: "Tüm derslerden karışık deneme",
-                icon: Icons.timer_outlined,
-                color: const Color(0xFF673AB7),
-                isWide: true,
-                onTapOverride: () {
-                   Navigator.pop(context);
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen(isTrial: true, fixedDuration: 150)))
-                   .then((_) => _checkAndCelebrate());
-                }
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -303,7 +308,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _isMistakesMenuOpen = true;
 
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
     final Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
     final Color subtitleColor = isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade400;
 
@@ -319,7 +323,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isDismissible: true,
       enableDrag: true,
       builder: (context) => _MistakesMenuContent(
-        bgColor: bgColor,
         isDarkMode: isDarkMode,
         titleColor: titleColor,
         subtitleColor: subtitleColor,
@@ -341,54 +344,72 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Color bgColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: bgColor, 
+      backgroundColor: Colors.transparent, 
       isScrollControlled: true, 
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.7, 
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Hangi Dersi Tekrar Edeceksin?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: grouped.keys.length,
-                    separatorBuilder: (c, i) => Divider(color: isDarkMode ? Colors.white12 : Colors.grey.shade300),
-                    itemBuilder: (context, index) {
-                      String subject = grouped.keys.elementAt(index);
-                      int count = grouped[subject]!.length;
-                      return ListTile(
-                        leading: CircleAvatar(backgroundColor: Colors.teal.shade50, child: Icon(Icons.book, color: Colors.teal)),
-                        title: Text(subject, style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(12)),
-                          child: Text("$count Yanlış", style: TextStyle(color: Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.bold))
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          List<Question> questions = _convertMistakesToQuestions(grouped[subject]!);
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(
-                            isTrial: true,
-                            questions: questions,
-                            topic: "$subject Tekrarı",
-                          )))
-                          .then((_) => _checkAndCelebrate()); 
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.7, 
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF0D1117).withOpacity(0.75) : Colors.white.withOpacity(0.85),
+                border: isDarkMode ? Border(top: BorderSide(color: Colors.white.withOpacity(0.1))) : null,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40, height: 4, 
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white24 : Colors.grey.shade400, 
+                          borderRadius: BorderRadius.circular(2)
+                        )
+                      ),
+                    ),
+                    Text("Hangi Dersi Tekrar Edeceksin?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: grouped.keys.length,
+                        separatorBuilder: (c, i) => Divider(color: isDarkMode ? Colors.white12 : Colors.grey.shade300),
+                        itemBuilder: (context, index) {
+                          String subject = grouped.keys.elementAt(index);
+                          int count = grouped[subject]!.length;
+                          return ListTile(
+                            leading: CircleAvatar(backgroundColor: Colors.teal.shade50, child: const Icon(Icons.book, color: Colors.teal)),
+                            title: Text(subject, style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(12)),
+                              child: Text("$count Yanlış", style: TextStyle(color: Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.bold))
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              List<Question> questions = _convertMistakesToQuestions(grouped[subject]!);
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(
+                                isTrial: true,
+                                questions: questions,
+                                topic: "$subject Tekrarı",
+                              )))
+                              .then((_) => _checkAndCelebrate()); 
+                            },
+                          );
                         },
-                      );
-                    },
-                  ),
-                )
-              ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
             ),
           ),
         );
@@ -396,6 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 🔥 ALT MENÜ KARTLARI İÇİN CYBER GLASS TASARIMI 🔥
   Widget _buildModernCard(BuildContext context, {
     required String title, 
     required IconData icon, 
@@ -408,79 +430,89 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
-    Color cardColor = isDarkMode ? const Color(0xFF161B22) : Colors.white; 
+    Color cardColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white.withOpacity(0.7); 
     Color subtitleColor = isDarkMode ? Colors.white60 : Colors.blueGrey;
-    Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1); 
+    Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : Colors.white; 
 
     return Container(
       height: isWide ? 100 : 160,
       decoration: BoxDecoration(
-        color: cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode ? Colors.black.withOpacity(0.3) : color.withOpacity(0.08), 
-            blurRadius: 8, 
+            color: isDarkMode ? Colors.black.withOpacity(0.2) : color.withOpacity(0.1), 
+            blurRadius: 10, 
             offset: const Offset(0, 5)
           ),
         ]
       ),
-      child: Material(
-        color: Colors.transparent,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: onTapOverride ?? () {
-            Navigator.pop(context);
-            if (topics != null) {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: title.replaceAll('\n', ' '), topics: topics, themeColor: color))
-              );
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: isWide 
-            ? Row( 
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(icon, color: color, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                      if (subtitle != null)
-                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor)),
-                    ],
-                  )
-                ],
-              )
-            : Column( 
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(icon, color: color, size: 32),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor, height: 1.2)),
-                      if (subtitle != null)
-                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                ],
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Karta özel cam bulanıklığı
+          child: Container(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: onTapOverride ?? () {
+                  Navigator.pop(context);
+                  if (topics != null) {
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: title.replaceAll('\n', ' '), topics: topics, themeColor: color))
+                    );
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: isWide 
+                  ? Row( 
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                          child: Icon(icon, color: color, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+                            if (subtitle != null)
+                              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor)),
+                          ],
+                        )
+                      ],
+                    )
+                  : Column( 
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                          child: Icon(icon, color: color, size: 32),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor, height: 1.2)),
+                            if (subtitle != null)
+                              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      ],
+                    ),
+                ),
               ),
+            ),
           ),
         ),
       ),
@@ -504,11 +536,9 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           ),
         )
-      // ESKİ HALİ: : Container(color: const Color(0xFFF5F9FF));
-      // YENİ HALİ AŞAĞIDAKİ GİBİ OLACAK:
       : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
-    Color navBarColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.8) : Colors.white;
+    Color navBarColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.8) : Colors.white.withOpacity(0.9);
 
     List<Widget> currentPages = [
       DashboardScreen(
@@ -616,9 +646,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// YANLI ŞLAR MENÜSÜ WİDGET'I
+// YANLIŞLAR MENÜSÜ WİDGET'I
 class _MistakesMenuContent extends StatefulWidget {
-  final Color bgColor;
   final bool isDarkMode;
   final Color titleColor;
   final Color subtitleColor;
@@ -628,7 +657,6 @@ class _MistakesMenuContent extends StatefulWidget {
   final void Function(BuildContext, List<Map<String, dynamic>>) onShowSubjectList;
 
   const _MistakesMenuContent({
-    required this.bgColor,
     required this.isDarkMode,
     required this.titleColor,
     required this.subtitleColor,
@@ -673,107 +701,113 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: widget.bgColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4, 
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: widget.isDarkMode ? Colors.white24 : Colors.grey.shade300, 
-                  borderRadius: BorderRadius.circular(2)
-                )
-              ),
-            ),
-            
-            Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: widget.titleColor)),
-            const SizedBox(height: 4),
-            
-            _isLoading 
-              ? const SizedBox(
-                  height: 20,
-                  child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
-                )
-              : Text(
-                  "Toplam ${_mistakes?.length ?? 0} yanlışın var. Nasıl ilerleyelim?", 
-                  style: GoogleFonts.inter(fontSize: 14, color: widget.subtitleColor)
-                ),
-            
-            const SizedBox(height: 32),
-            
-            Row(
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          decoration: BoxDecoration(
+            color: widget.isDarkMode ? const Color(0xFF0D1117).withOpacity(0.75) : Colors.white.withOpacity(0.85),
+            border: widget.isDarkMode ? Border(top: BorderSide(color: Colors.white.withOpacity(0.1))) : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildModernCard(
-                    context, 
-                    title: "Karışık\nTekrar", 
-                    icon: Icons.shuffle_rounded, 
-                    color: Colors.purple, 
-                    subtitle: "Rastgele Sınav",
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (_mistakes == null || _mistakes!.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Henüz yanlışın yok! Harikasın 🎉"))
-                        );
-                        return;
-                      }
-                      List<Map<String, dynamic>> shuffled = List.from(_mistakes!)..shuffle();
-                      List<Question> questions = widget.convertToQuestions(shuffled);
-                      Navigator.push(
-                        context, 
-                        MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı"))
-                      ).then((_) => widget.onCheckCelebrate()); 
-                    }
+                Center(
+                  child: Container(
+                    width: 40, height: 4, 
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: widget.isDarkMode ? Colors.white24 : Colors.grey.shade400, 
+                      borderRadius: BorderRadius.circular(2)
+                    )
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildModernCard(
-                    context, 
-                    title: "Konu\nBazlı", 
-                    icon: Icons.filter_list_rounded, 
-                    color: Colors.teal, 
-                    subtitle: "Ders Seç",
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (_mistakes == null || _mistakes!.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Henüz yanlışın yok!"))
-                        );
-                        return;
-                      }
-                      widget.onShowSubjectList(context, _mistakes!);
-                    }
-                  ),
+                
+                Text("Yanlış Yönetimi", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: widget.titleColor)),
+                const SizedBox(height: 4),
+                
+                _isLoading 
+                  ? const SizedBox(
+                      height: 20,
+                      child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+                    )
+                  : Text(
+                      "Toplam ${_mistakes?.length ?? 0} yanlışın var. Nasıl ilerleyelim?", 
+                      style: GoogleFonts.inter(fontSize: 14, color: widget.subtitleColor)
+                    ),
+                
+                const SizedBox(height: 32),
+                
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModernCard(
+                        context, 
+                        title: "Karışık\nTekrar", 
+                        icon: Icons.shuffle_rounded, 
+                        color: Colors.purple, 
+                        subtitle: "Rastgele Sınav",
+                        onTap: () {
+                          Navigator.pop(context);
+                          if (_mistakes == null || _mistakes!.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Henüz yanlışın yok! Harikasın 🎉"))
+                            );
+                            return;
+                          }
+                          List<Map<String, dynamic>> shuffled = List.from(_mistakes!)..shuffle();
+                          List<Question> questions = widget.convertToQuestions(shuffled);
+                          Navigator.push(
+                            context, 
+                            MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı"))
+                          ).then((_) => widget.onCheckCelebrate()); 
+                        }
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildModernCard(
+                        context, 
+                        title: "Konu\nBazlı", 
+                        icon: Icons.filter_list_rounded, 
+                        color: Colors.teal, 
+                        subtitle: "Ders Seç",
+                        onTap: () {
+                          Navigator.pop(context);
+                          if (_mistakes == null || _mistakes!.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Henüz yanlışın yok!"))
+                            );
+                            return;
+                          }
+                          widget.onShowSubjectList(context, _mistakes!);
+                        }
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                _buildModernCard(
+                  context,
+                  title: "Listeyi İncele",
+                  subtitle: "Hatalarını tek tek gör ve analiz et",
+                  icon: Icons.dashboard_customize_outlined,
+                  color: const Color.fromARGB(255, 205, 16, 35), 
+                  isWide: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MistakesDashboard()));
+                  }
                 ),
               ],
             ),
-            
-            const SizedBox(height: 16),
-            
-            _buildModernCard(
-              context,
-              title: "Listeyi İncele",
-              subtitle: "Hatalarını tek tek gör ve analiz et",
-              icon: Icons.dashboard_customize_outlined,
-              color: const Color.fromARGB(255, 205, 16, 35), 
-              isWide: true,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const MistakesDashboard()));
-              }
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -788,71 +822,81 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
     required VoidCallback onTap
   }) {
     Color textColor = widget.isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
-    Color cardColor = widget.isDarkMode ? const Color(0xFF161B22) : Colors.white; 
+    Color cardColor = widget.isDarkMode ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white.withOpacity(0.7); 
     Color subtitleColor = widget.isDarkMode ? Colors.white60 : Colors.blueGrey;
-    Color borderColor = widget.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1); 
+    Color borderColor = widget.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.white; 
 
     return Container(
       height: isWide ? 100 : 160,
       decoration: BoxDecoration(
-        color: cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: widget.isDarkMode ? Colors.black.withOpacity(0.3) : color.withOpacity(0.08), 
-            blurRadius: 8, 
+            color: widget.isDarkMode ? Colors.black.withOpacity(0.2) : color.withOpacity(0.1), 
+            blurRadius: 10, 
             offset: const Offset(0, 5)
           ),
         ]
       ),
-      child: Material(
-        color: Colors.transparent,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: _isLoading ? null : onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: isWide 
-            ? Row( 
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(icon, color: color, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                      if (subtitle != null)
-                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor)),
-                    ],
-                  )
-                ],
-              )
-            : Column( 
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(icon, color: color, size: 32),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor, height: 1.2)),
-                      if (subtitle != null)
-                        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                ],
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: _isLoading ? null : onTap,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: isWide 
+                  ? Row( 
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                          child: Icon(icon, color: color, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+                            if (subtitle != null)
+                              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor)),
+                          ],
+                        )
+                      ],
+                    )
+                  : Column( 
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                          child: Icon(icon, color: color, size: 32),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textColor, height: 1.2)),
+                            if (subtitle != null)
+                              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      ],
+                    ),
+                ),
               ),
+            ),
           ),
         ),
       ),
@@ -1120,7 +1164,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           
-          // 🔥 DÜZELTME BURADA: Dashboard'un yüksekliğini hesaba katıp 150px boşluk ekliyoruz.
           const SizedBox(height: 150),
         ],
       ),

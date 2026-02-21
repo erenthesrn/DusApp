@@ -1,3 +1,4 @@
+// lib/screens/achievements_screen.dart
 import 'dart:ui'; // Blur efektleri için
 import 'package:flutter/material.dart';
 import '../services/achievement_service.dart';
@@ -22,9 +23,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
       duration: const Duration(milliseconds: 1000),
     );
     _controller.forward();
-    
-    // Verilerin güncelliğinden emin olmak için reload tetiklenebilir (Opsiyonel)
-    // AchievementService.instance.reload(); 
   }
 
   @override
@@ -38,22 +36,31 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
     // --- TEMA AYARLARI ---
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
-    // Premium Renk Paleti
-    final backgroundColor = isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F9FF);
-    final textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
-    final cardColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
+    // Cyber Glass Metin Renkleri
+    final textColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
 
-    // 🔥 DÜZELTME BURADA: AnimatedBuilder ile servisi dinliyoruz 🔥
+    // Cyber Glass Arka Plan Tanımı
+    Widget background = isDarkMode
+        ? Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
+              ),
+            ),
+          )
+        : Container(color: const Color(0xFFE0F7FA));
+
     return AnimatedBuilder(
       animation: AchievementService.instance, // Servis değişikliklerini dinle
       builder: (context, child) {
-        // Servisten canlı veriyi alıyoruz (Builder içinde olmalı)
         final achievements = AchievementService.instance.achievements;
         final unlockedCount = achievements.where((a) => a.isUnlocked).length;
 
         return Scaffold(
           extendBodyBehindAppBar: true, // Glass effect için body yukarı uzar
-          backgroundColor: backgroundColor, 
+          backgroundColor: Colors.transparent, // Arka planın görünmesi için
           appBar: AppBar(
             title: Text("Kupa Dolabı", style: TextStyle(fontWeight: FontWeight.w800, color: textColor, letterSpacing: 0.5)),
             centerTitle: true,
@@ -63,13 +70,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
             flexibleSpace: ClipRRect(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: backgroundColor.withOpacity(0.5)),
+                child: Container(color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5)),
               ),
             ),
           ),
           body: Stack(
             children: [
-              // Arka Plan Glow Efekti (Sadece Dark Mode)
+              background, // 1. Katman: Cyber Arka Plan
+              
+              // 2. Katman: Arka Plan Glow Efekti (Sadece Dark Mode)
               if (isDarkMode)
                 Positioned(
                   top: -100, left: -50,
@@ -85,6 +94,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                   ),
                 ),
 
+              // 3. Katman: İçerik
               Column(
                 children: [
                   SizedBox(height: kToolbarHeight + MediaQuery.of(context).padding.top + 10), // AppBar boşluğu
@@ -102,8 +112,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: isDarkMode 
-                              ? [const Color(0xFF1A237E), const Color(0xFF0D47A1)] // Derin Gece Mavisi
-                              : [const Color(0xFF2962FF), const Color(0xFF42A5F5)], // Canlı Mavi
+                              ? [const Color(0xFF1A237E), const Color(0xFF0D47A1)] 
+                              : [const Color(0xFF2962FF), const Color(0xFF42A5F5)], 
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -115,7 +125,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                               offset: const Offset(0, 10)
                             ),
                           ],
-                          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -150,7 +160,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                                 ),
                               ],
                             ),
-                            // Kupa İkonu Efekti
                             Stack(
                               alignment: Alignment.center,
                               children: [
@@ -167,7 +176,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                                     shape: BoxShape.circle,
                                     boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.4), blurRadius: 20, spreadRadius: 5)]
                                   ),
-                                  child: const Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD700), size: 48), // Altın Rengi
+                                  child: const Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD700), size: 48), 
                                 ),
                               ],
                             ),
@@ -177,20 +186,19 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                     ),
                   ),
 
-                  // --- ROZET IZGARASI (GRID) ---
+                  // --- ROZET IZGARASI (GLASS GRID) ---
                   Expanded(
                     child: GridView.builder(
                       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
                       physics: const BouncingScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2, 
-                        childAspectRatio: 0.75, // Daha uzun, şık kartlar
+                        childAspectRatio: 0.75, 
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
                       itemCount: achievements.length,
                       itemBuilder: (context, index) {
-                        // Her kart için gecikmeli animasyon
                         final Animation<double> animation = Tween<double>(begin: 0.0, end: 1.0).animate(
                           CurvedAnimation(
                             parent: _controller,
@@ -201,10 +209,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
                         return AnimatedBuilder(
                           animation: animation,
                           builder: (context, child) => Transform.translate(
-                            offset: Offset(0, 50 * (1 - animation.value)), // Aşağıdan yukarı kayma
+                            offset: Offset(0, 50 * (1 - animation.value)),
                             child: Opacity(
                               opacity: animation.value,
-                              child: _buildAchievementCard(context, achievements[index], isDarkMode, cardColor),
+                              child: _buildGlassAchievementCard(context, achievements[index], isDarkMode),
                             ),
                           ),
                         );
@@ -220,28 +228,28 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
     );
   }
 
-  Widget _buildAchievementCard(BuildContext context, Achievement item, bool isDarkMode, Color cardColor) {
-    final titleColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
-    final descColor = isDarkMode ? Colors.white38 : Colors.grey.shade600;
+  // 🔥 Cyber Glass Kart Yapısı 🔥
+  Widget _buildGlassAchievementCard(BuildContext context, Achievement item, bool isDarkMode) {
+    final titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+    final descColor = isDarkMode ? Colors.white70 : Colors.grey.shade700;
 
-    // Kilitli/Açık durumuna göre border
     BoxBorder border;
     List<BoxShadow> shadows;
 
     if (item.isUnlocked) {
-      border = Border.all(color: Colors.amber.withOpacity(0.5), width: 1.5);
+      border = Border.all(color: Colors.amber.withOpacity(0.6), width: 1.5);
       shadows = [
         BoxShadow(
-          color: Colors.amber.withOpacity(isDarkMode ? 0.15 : 0.2), 
+          color: Colors.amber.withOpacity(isDarkMode ? 0.15 : 0.3), 
           blurRadius: 15, 
           offset: const Offset(0, 8)
         )
       ];
     } else {
-      border = Border.all(color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05));
+      border = Border.all(color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.white, width: 1.5);
       shadows = [
         BoxShadow(
-          color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03), 
+          color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.05), 
           blurRadius: 10, 
           offset: const Offset(0, 5)
         )
@@ -250,135 +258,146 @@ class _AchievementsScreenState extends State<AchievementsScreen> with SingleTick
 
     return Container(
       decoration: BoxDecoration(
-        color: cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: border,
-        boxShadow: shadows,
+        boxShadow: shadows, // Gölge dış çerçevede kalır
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // İKON ALANI
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // Glow
-              if (item.isUnlocked)
-                Container(
-                  width: 60, height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.4), blurRadius: 20, spreadRadius: 2)]
-                  ),
-                ),
-              
-              // İkon Arka Planı
-              Container(
-                width: 72, height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: item.isUnlocked 
-                      ? Colors.orange.withOpacity(0.1) 
-                      : (isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
-                  border: item.isUnlocked ? Border.all(color: Colors.orange.withOpacity(0.3)) : null,
-                ),
-                child: Icon(
-                  item.iconData,
-                  size: 32,
-                  color: item.isUnlocked ? Colors.orange : (isDarkMode ? Colors.white24 : Colors.grey.shade400),
-                ),
-              ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Cam bulanıklığı
+          child: Container(
+            decoration: BoxDecoration(
+              // Transparan arka planlar (Glassmorphism)
+              color: isDarkMode ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(24),
+              border: border,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 16), // Üst boşluk
+                
+                // İKON ALANI
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (item.isUnlocked)
+                      Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.5), blurRadius: 20, spreadRadius: 2)]
+                        ),
+                      ),
+                    
+                    Container(
+                      width: 72, height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: item.isUnlocked 
+                            ? Colors.orange.withOpacity(0.15) 
+                            : (isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04)),
+                        border: item.isUnlocked ? Border.all(color: Colors.orange.withOpacity(0.5)) : null,
+                      ),
+                      child: Icon(
+                        item.iconData,
+                        size: 32,
+                        color: item.isUnlocked ? Colors.orange : (isDarkMode ? Colors.white38 : Colors.grey.shade500),
+                      ),
+                    ),
 
-              // Kilit İkonu (Mini)
-              if (!item.isUnlocked)
-                Positioned(
-                  right: 0, bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? const Color(0xFF21262D) : Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: isDarkMode ? Colors.white10 : Colors.grey.shade200),
-                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)]
+                    if (!item.isUnlocked)
+                      Positioned(
+                        right: 0, bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? const Color(0xFF21262D) : Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: isDarkMode ? Colors.white10 : Colors.grey.shade300),
+                            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]
+                          ),
+                          child: Icon(Icons.lock_outline, size: 14, color: isDarkMode ? Colors.white54 : Colors.grey.shade600), 
+                        ),
+                      ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // BAŞLIK
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: Text(
+                    item.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: item.isUnlocked ? titleColor : titleColor.withOpacity(0.5),
                     ),
-                    child: Icon(Icons.lock_outline, size: 14, color: isDarkMode ? Colors.white38 : Colors.grey), 
                   ),
                 ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // BAŞLIK
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Text(
-              item.title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: item.isUnlocked ? titleColor : titleColor.withOpacity(0.5),
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 6),
-          
-          // AÇIKLAMA
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Text(
-              item.description,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: descColor, height: 1.3),
-            ),
-          ),
-          
-          const Spacer(),
-          
-          // DURUM ÇUBUĞU VEYA ROZET
-          if (item.isUnlocked)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.orange.shade400, Colors.deepOrange.shade500]),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)), // Kartın altına yapışık
-              ),
-              child: const Text(
-                "KAZANILDI",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: item.progressPercentage,
-                      backgroundColor: isDarkMode ? Colors.white10 : Colors.grey.shade200,
-                      color: const Color(0xFF448AFF),
-                      minHeight: 4,
+                
+                const SizedBox(height: 6),
+                
+                // AÇIKLAMA
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: Text(
+                    item.description,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: descColor, height: 1.3),
+                  ),
+                ),
+                
+                const Spacer(),
+                
+                // DURUM ÇUBUĞU VEYA ROZET
+                if (item.isUnlocked)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [Colors.orange.shade400, Colors.deepOrange.shade500]),
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)), // Kartın alt kavisiyle eşitlendi
+                    ),
+                    child: const Text(
+                      "KAZANILDI",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: item.progressPercentage,
+                            backgroundColor: isDarkMode ? Colors.white10 : Colors.grey.shade300,
+                            color: const Color(0xFF448AFF),
+                            minHeight: 4,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "${item.currentValue} / ${item.targetValue}",
+                          style: TextStyle(fontSize: 10, color: descColor, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "${item.currentValue} / ${item.targetValue}",
-                    style: TextStyle(fontSize: 10, color: descColor, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
