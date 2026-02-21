@@ -1015,10 +1015,16 @@ class DashboardScreen extends StatelessWidget {
                               ),
                             ),
 
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
-                              child: const Icon(Icons.notifications_none, color: Colors.white),
+                            // BİLDİRİMLER YERİNE EKLENEN OFFLINE MOD BUTONU
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => const OfflineManagerScreen()));
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                                child: const Icon(Icons.download_rounded, color: Colors.white),
+                              ),
                             )
                           ],
                         ),
@@ -1148,18 +1154,7 @@ class DashboardScreen extends StatelessWidget {
                   }
                 ),
 
-                // 🔥 OFFLINE MOD BUTONU (GÜNCELLENDİ)
-                const SizedBox(height: 16),
-                _buildActionBtnHorizontal(
-                  'Offline Mod', 
-                  'Konuları indir, internetsiz çöz', 
-                  Icons.cloud_download_outlined, 
-                  isDarkMode ? const Color(0xFF0EA5E9) : Colors.lightBlue, 
-                  isDarkMode,
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const OfflineManagerScreen()));
-                  }
-                ),
+                
               ],
             ),
           ),
