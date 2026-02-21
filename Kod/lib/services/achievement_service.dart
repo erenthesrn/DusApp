@@ -231,6 +231,16 @@ class AchievementService extends ChangeNotifier {
     // Eğer zaten açılmışsa tekrar işlem yapma (Yerel kontrol)
     if (achievement.isUnlocked) return;
 
+    // 🔥 HATA ÇÖZÜMÜ: Bildirim Bug'ını Engelleme
+    // Eğer kullanıcının mevcut ilerlemesi ZATEN hedefe ulaşmışsa, bu başarımı
+    // geçmişte kazanmıştır. Bildirim göstermeden sessizce true yapıp çıkıyoruz.
+    if (achievement.currentValue >= achievement.targetValue) {
+      achievement.isUnlocked = true;
+      _saveProgress(achievement); // Düzeltmeyi kaydet
+      notifyListeners();
+      return;
+    }
+
     // Yeni değeri hesapla
     int newValue = achievement.currentValue + amount;
     if (newValue > achievement.targetValue) {
@@ -239,10 +249,9 @@ class AchievementService extends ChangeNotifier {
     
     achievement.currentValue = newValue;
     
-    bool justUnlocked = false;
+    // SADECE ilk kez hedefe ulaşıldığında bildirimi tetikle
     if (achievement.currentValue >= achievement.targetValue && !achievement.isUnlocked) {
       achievement.isUnlocked = true;
-      justUnlocked = true;
       _showUnlockNotification(context, achievement);
     }
 
@@ -349,6 +358,11 @@ class AchievementService extends ChangeNotifier {
               // Firebase verisi yerel veriden daha ilerideyse veya kilit açılmışsa güncelle
               int serverValue = data['currentValue'] ?? 0;
               bool serverUnlocked = data['isUnlocked'] ?? false;
+              
+              // 🔥 HATA ÇÖZÜMÜ: Firebase'de false kalsa bile değer hedefe ulaştıysa true yap.
+              if (serverValue >= _achievements[index].targetValue) {
+                serverUnlocked = true;
+              }
               
               if (serverUnlocked || serverValue > _achievements[index].currentValue) {
                  _achievements[index].currentValue = serverValue;

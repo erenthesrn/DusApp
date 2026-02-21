@@ -36,14 +36,23 @@ class Achievement {
 
   // Telefondan veriyi geri okuma
   factory Achievement.fromMap(Map<String, dynamic> map, Achievement original) {
+    int loadedValue = map['currentValue'] ?? 0;
+    bool loadedUnlocked = map['isUnlocked'] ?? false;
+
+    // 🔥 HATA ÇÖZÜMÜ: Eğer okunan değer hedefe eşit veya büyükse, 
+    // sistem hata yapıp false kaydetmiş olsa bile kesinlikle true kabul et.
+    if (loadedValue >= original.targetValue) {
+      loadedUnlocked = true;
+    }
+
     return Achievement(
       id: original.id,
       title: original.title,
       description: original.description,
       iconData: original.iconData,
       targetValue: original.targetValue,
-      currentValue: map['currentValue'] ?? 0,
-      isUnlocked: map['isUnlocked'] ?? false,
+      currentValue: loadedValue,
+      isUnlocked: loadedUnlocked,
     );
   }
 }
