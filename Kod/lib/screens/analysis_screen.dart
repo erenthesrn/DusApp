@@ -4,19 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../services/theme_provider.dart';
 
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
 
-  // Performans için static formatlayıcılar
   static final DateFormat _ymdFormat = DateFormat('yyyy-MM-dd');
   static final DateFormat _dayMonthFormat = DateFormat('d MMM');
   static final DateFormat _dayNameFormat = DateFormat('E');
 
-  // ... _processPremiumData fonksiyonu (Veri işleme mantığı) ...
+  // --- Veri İşleme Mantığı ---
   Map<String, dynamic> _processPremiumData(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return {};
 
@@ -249,8 +247,6 @@ class AnalysisScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 DÜZELTME 1: Dinamik Üst Boşluk Hesabı (Notch + AppBar + 20px)
-    // Bu sayede "Performans Analizi" yazısı içeriğin üstüne binmez.
     final double topContentPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 20;
 
     return ListenableBuilder(
@@ -260,16 +256,21 @@ class AnalysisScreen extends StatelessWidget {
         final isDark = theme.isDarkMode;
         final user = FirebaseAuth.instance.currentUser;
 
+        // 🔥 PROFİLİM EKRANI ARKA PLANIYLA BİREBİR AYNI (Gradient ve Buzlu Cam Efekti)
         final bgColors = isDark 
             ? [const Color(0xFF0A0E14), const Color(0xFF161B22)] 
-            : [const Color(0xFFfafafa), const Color(0xFFf5f5f5)];
+            : [const Color.fromARGB(255, 224, 247, 250), const Color(0xFFFFFFFF)];
         
         final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1e293b);
 
         return Scaffold(
           extendBodyBehindAppBar: true,
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text("Performans Analizi", style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: textColor, fontSize: 20)),
+            title: Text(
+              "Performans Analizi", 
+              style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 20)
+            ),
             centerTitle: true,
             backgroundColor: Colors.transparent, 
             elevation: 0,
@@ -278,14 +279,24 @@ class AnalysisScreen extends StatelessWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  color: (isDark ? const Color(0xFF0A0E14) : Colors.white).withOpacity(0.5),
+                  color: (isDark ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
                 ),
               ),
             ),
           ),
-          body: Container(
-            decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: bgColors)),
-            child: user == null 
+          body: Stack(
+            children: [
+              // Arka Plan Katmanı
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft, 
+                    end: Alignment.bottomRight, 
+                    colors: bgColors
+                  )
+                ),
+              ),
+              user == null 
                 ? const Center(child: Text("Giriş yapmalısınız."))
                 : StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -308,15 +319,12 @@ class AnalysisScreen extends StatelessWidget {
 
                       return SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        // 🔥 DÜZELTME 2: 
-                        // top: topContentPadding (Dinamik üst boşluk)
-                        // bottom: 150 (Dashboard üstüne binmemesi için güvenli alan)
                         padding: EdgeInsets.only(top: topContentPadding, left: 16, right: 16, bottom: 150),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildMotivationalHeader(analytics, isDark, textColor),
-                            const SizedBox(height: 20),
+                            _buildMotivationalHeader(analytics, isDark),
+                            const SizedBox(height: 24),
 
                             _buildMainMetrics(analytics, isDark),
                             const SizedBox(height: 24),
@@ -351,27 +359,51 @@ class AnalysisScreen extends StatelessWidget {
                       );
                     },
                   ),
+            ],
           ),
         );
       }
     );
   }
 
-  // --- Yardımcı Widget'lar (Değişiklik yok) ---
+  // --- Yardımcı Widget'lar (Profilim Ekranı Tasarım Diliyle) ---
 
-  Widget _buildMotivationalHeader(Map<String, dynamic> data, bool isDark, Color textColor) {
+  Widget _buildGlassContainer({required Widget child, required bool isDark, double? height, EdgeInsetsGeometry padding = const EdgeInsets.all(20)}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          height: height,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.6)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 15, offset: const Offset(0, 5))
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMotivationalHeader(Map<String, dynamic> data, bool isDark) {
     String trend = data['trend'];
     IconData trendIcon = trend == "Yükseliş" ? Icons.trending_up : trend == "Düşüş" ? Icons.trending_down : Icons.trending_flat;
     Color trendColor = trend == "Yükseliş" ? const Color(0xFF69F0AE) : trend == "Düşüş" ? const Color(0xFFFF5252) : const Color(0xFFFFD740);
 
+    // 🔥 İLK KODDAKİ RENKLER BURAYA AKTARILDI
+    final headerGradient = isDark
+        ? [const Color(0xFF0D47A1).withOpacity(0.8), const Color(0xFF1976D2).withOpacity(0.8)]
+        : [const Color(0xFF1976D2), const Color(0xFF42A5F5)];
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark 
-              ? [const Color(0xFF2563EB).withOpacity(0.8), const Color(0xFF7C3AED).withOpacity(0.8)]
-              : [const Color(0xFF60a5fa), const Color(0xFFa78bfa)],
-        ),
+        gradient: LinearGradient(colors: headerGradient),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(color: (isDark ? Colors.black : Colors.blue).withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))
@@ -384,11 +416,11 @@ class AnalysisScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Genel Performansın", style: GoogleFonts.inter(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500)),
+                Text("Genel Performansın", style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 Text(
                   "${data['totalNet'].toStringAsFixed(1)} Net",
-                  style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white),
                 ),
                 const SizedBox(height: 8),
                 Container(
@@ -401,7 +433,7 @@ class AnalysisScreen extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         trend,
-                        style: GoogleFonts.inter(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -423,41 +455,31 @@ class AnalysisScreen extends StatelessWidget {
   }
 
   Widget _buildMetricCard(String label, String value, IconData icon, Color color, bool isDark) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1), width: 1),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
-            ],
+    return _buildGlassContainer(
+      isDark: isDark,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15), 
+              borderRadius: BorderRadius.circular(10)
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                value,
-                style: GoogleFonts.robotoMono(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-            ],
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -467,7 +489,7 @@ class AnalysisScreen extends StatelessWidget {
       children: [
         Expanded(
           child: _buildMetricCard(
-            "Ortalama Net",
+            "Ort. Net",
             data['avgNet'].toStringAsFixed(1),
             Icons.analytics_outlined,
             const Color(0xFF3b82f6),
@@ -477,7 +499,7 @@ class AnalysisScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _buildMetricCard(
-            "Başarı Oranı",
+            "Başarı",
             "%${(data['avgAccuracy'] * 100).toInt()}",
             Icons.check_circle_outline,
             const Color(0xFF10b981),
@@ -487,7 +509,7 @@ class AnalysisScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _buildMetricCard(
-            "Test Sayısı",
+            "Test",
             "${data['testCount']}",
             Icons.quiz_outlined,
             const Color(0xFFf59e0b),
@@ -502,9 +524,9 @@ class AnalysisScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : textColor)),
         const SizedBox(height: 2),
-        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey.shade600)),
+        Text(subtitle, style: TextStyle(fontSize: 11, color: isDark ? Colors.white38 : Colors.grey.shade600)),
       ],
     );
   }
@@ -521,156 +543,153 @@ class AnalysisScreen extends StatelessWidget {
     if (maxY > 10) interval = (maxY / 5).ceilToDouble();
     if (maxY % interval != 0) maxY = ((maxY ~/ interval) + 1) * interval;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF3b82f6).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF3b82f6).withOpacity(0.3))
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.show_chart, size: 14, color: Color(0xFF3b82f6)),
-                const SizedBox(width: 6),
-                Text(
-                  "Ortalama: ${avgNet.toStringAsFixed(1)}",
-                  style: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF3b82f6) : const Color(0xFF1E3A8A), fontWeight: FontWeight.w600),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3b82f6).withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF3b82f6).withOpacity(0.3))
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.show_chart, size: 14, color: Color(0xFF3b82f6)),
+              const SizedBox(width: 6),
+              Text(
+                "Ortalama: ${avgNet.toStringAsFixed(1)}",
+                style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF3b82f6) : const Color(0xFF1E3A8A), fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: LineChart(
+            LineChartData(
+              minY: minY,
+              maxY: maxY,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: interval,
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
+                  strokeWidth: 1,
+                ),
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    interval: 1,
+                    getTitlesWidget: (value, meta) {
+                      int index = value.toInt();
+                      if (index >= 0 && index < dates.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            dates[index],
+                            style: TextStyle(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 35,
+                    interval: interval,
+                    getTitlesWidget: (value, meta) {
+                      String text = value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
+                      return Text(
+                        text,
+                        style: TextStyle(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey, fontWeight: FontWeight.w600),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              lineTouchData: LineTouchData(
+                enabled: true,
+                touchSpotThreshold: 20,
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipColor: (spot) => isDark ? const Color(0xFF1F2937) : Colors.white,
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                  tooltipBorder: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((spot) {
+                      if (spot.barIndex == 0) {
+                        int index = spot.x.toInt();
+                        String date = index < dates.length ? dates[index] : "";
+                        return LineTooltipItem(
+                          "$date\n${spot.y.toStringAsFixed(1)} net",
+                          const TextStyle(color: Color(0xFF3b82f6), fontWeight: FontWeight.bold, fontSize: 12),
+                        );
+                      } else {
+                        return LineTooltipItem(
+                          "Ort: ${spot.y.toStringAsFixed(1)}",
+                          const TextStyle(color: Color(0xFFf59e0b), fontWeight: FontWeight.bold, fontSize: 12),
+                        );
+                      }
+                    }).toList();
+                  },
+                ),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  curveSmoothness: 0.35,
+                  color: const Color(0xFF3b82f6),
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: FlDotData(
+                    show: true,
+                    getDotPainter: (spot, percent, barData, index) {
+                      return FlDotCirclePainter(
+                        radius: 4,
+                        color: const Color(0xFF161B22),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF3b82f6),
+                      );
+                    },
+                  ),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF3b82f6).withOpacity(0.3),
+                        const Color(0xFF3b82f6).withOpacity(0.0),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+                LineChartBarData(
+                  spots: [FlSpot(0, avgNet), FlSpot(spots.length - 1, avgNet)],
+                  isCurved: false,
+                  color: const Color(0xFFf59e0b).withOpacity(0.5),
+                  barWidth: 2,
+                  dashArray: [5, 5],
+                  dotData: FlDotData(show: false),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                minY: minY,
-                maxY: maxY,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: interval,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        int index = value.toInt();
-                        if (index >= 0 && index < dates.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              dates[index],
-                              style: GoogleFonts.inter(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 35,
-                      interval: interval,
-                      getTitlesWidget: (value, meta) {
-                        String text = value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
-                        return Text(
-                          text,
-                          style: GoogleFonts.robotoMono(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey, fontWeight: FontWeight.w600),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  touchSpotThreshold: 20,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (spot) => isDark ? const Color(0xFF1F2937) : Colors.white,
-                    fitInsideHorizontally: true,
-                    fitInsideVertically: true,
-                    tooltipBorder: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        if (spot.barIndex == 0) {
-                          int index = spot.x.toInt();
-                          String date = index < dates.length ? dates[index] : "";
-                          return LineTooltipItem(
-                            "$date\n${spot.y.toStringAsFixed(1)} net",
-                            GoogleFonts.inter(color: const Color(0xFF3b82f6), fontWeight: FontWeight.bold, fontSize: 12),
-                          );
-                        } else {
-                          return LineTooltipItem(
-                            "Ort: ${spot.y.toStringAsFixed(1)}",
-                            GoogleFonts.inter(color: const Color(0xFFf59e0b), fontWeight: FontWeight.bold, fontSize: 12),
-                          );
-                        }
-                      }).toList();
-                    },
-                  ),
-                ),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: const Color(0xFF3b82f6),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          color: const Color(0xFF161B22),
-                          strokeWidth: 2,
-                          strokeColor: const Color(0xFF3b82f6),
-                        );
-                      },
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF3b82f6).withOpacity(0.3),
-                          const Color(0xFF3b82f6).withOpacity(0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: [FlSpot(0, avgNet), FlSpot(spots.length - 1, avgNet)],
-                    isCurved: false,
-                    color: const Color(0xFFf59e0b).withOpacity(0.5),
-                    barWidth: 2,
-                    dashArray: [5, 5],
-                    dotData: FlDotData(show: false),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -678,86 +697,68 @@ class AnalysisScreen extends StatelessWidget {
     int maxActivity = activities.reduce(max);
     if (maxActivity == 0) maxActivity = 1;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
-            ],
-          ),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 100,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(activities.length, (index) {
-                    int count = activities[index];
-                    double heightFactor = count / maxActivity;
-                    if (count > 0 && heightFactor < 0.15) heightFactor = 0.15;
+    return _buildGlassContainer(
+      isDark: isDark,
+      child: SizedBox(
+        height: 100,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(activities.length, (index) {
+            int count = activities[index];
+            double heightFactor = count / maxActivity;
+            if (count > 0 && heightFactor < 0.15) heightFactor = 0.15;
 
-                    bool isToday = index == activities.length - 1;
+            bool isToday = index == activities.length - 1;
 
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (count > 0)
-                          Text(
-                            '$count',
-                            style: GoogleFonts.robotoMono(
-                              fontSize: 10,
-                              color: isToday ? const Color(0xFF3b82f6) : (isDark ? Colors.white38 : Colors.grey),
-                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                            ),
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (count > 0)
+                  Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isToday ? const Color(0xFF3b82f6) : (isDark ? Colors.white38 : Colors.grey),
+                      fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Expanded(
+                  child: Container(
+                    width: 24,
+                    alignment: Alignment.bottomCenter,
+                    child: FractionallySizedBox(
+                      heightFactor: count == 0 ? 0.05 : heightFactor,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: count == 0
+                                ? [isDark ? Colors.white10 : Colors.grey.shade300, isDark ? Colors.white10 : Colors.grey.shade300]
+                                : isToday
+                                    ? [const Color(0xFF3b82f6), const Color(0xFF8b5cf6)]
+                                    : [const Color(0xFF60a5fa).withOpacity(0.7), const Color(0xFF3b82f6).withOpacity(0.7)],
                           ),
-                        const SizedBox(height: 4),
-                        Expanded(
-                          child: Container(
-                            width: 24,
-                            alignment: Alignment.bottomCenter,
-                            child: FractionallySizedBox(
-                              heightFactor: count == 0 ? 0.05 : heightFactor,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: count == 0
-                                        ? [isDark ? Colors.white10 : Colors.grey.shade300, isDark ? Colors.white10 : Colors.grey.shade300]
-                                        : isToday
-                                            ? [const Color(0xFF3b82f6), const Color(0xFF8b5cf6)]
-                                            : [const Color(0xFF60a5fa).withOpacity(0.7), const Color(0xFF3b82f6).withOpacity(0.7)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                            ),
-                          ),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          labels[index],
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: isToday ? const Color(0xFF3b82f6) : (isDark ? Colors.white38 : Colors.grey),
-                            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(height: 8),
+                Text(
+                  labels[index],
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isToday ? const Color(0xFF3b82f6) : (isDark ? Colors.white38 : Colors.grey),
+                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            );
+          }),
         ),
       ),
     );
@@ -794,177 +795,149 @@ class AnalysisScreen extends StatelessWidget {
   }
 
   Widget _buildStatItem(String label, String value, IconData icon, Color color, bool isDark) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.transparent),
+    return _buildGlassContainer(
+      isDark: isDark,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
                 ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(value, style: GoogleFonts.robotoMono(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
-                    ),
-                    Text(label, style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey)),
-                  ],
-                ),
-              ),
-            ],
+                Text(label, style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey)),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildTopicCard(Map<String, dynamic> data, bool isDark) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: (data['color'] as Color).withOpacity(0.3), width: 1),
-            boxShadow: [
-              BoxShadow(color: (data['color'] as Color).withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return _buildGlassContainer(
+      isDark: isDark,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: data['color'],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                data['topic'],
-                                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
-                              ),
-                            ),
-                            Text(
-                              data['improvement'],
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "${data['count']} test • ${data['status']}",
-                          style: GoogleFonts.inter(fontSize: 12, color: data['color'], fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: (data['color'] as Color).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: (data['color'] as Color).withOpacity(0.2))
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          "%${(data['average'] * 100).toInt()}",
-                          style: GoogleFonts.robotoMono(fontSize: 18, fontWeight: FontWeight.bold, color: data['color']),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 4,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withOpacity(0.2) : (data['color'] as Color).withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
+                  color: data['color'],
+                  borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildMiniStat("Ortalama", data['avgNet'].toStringAsFixed(1), isDark),
-                        _buildMiniStat("Doğru", "${data['correct']}", isDark),
-                        _buildMiniStat("Yanlış", "${data['wrong']}", isDark),
-                        _buildMiniStat("Boş", "${data['empty']}", isDark),
+                        Expanded(
+                          child: Text(
+                            data['topic'],
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+                          ),
+                        ),
+                        Text(
+                          data['improvement'],
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: (data['color'] as Color).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.lightbulb_outline, size: 16, color: data['color']),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              data['recommendation'],
-                              style: GoogleFonts.inter(fontSize: 11, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${data['count']} test • ${data['status']}",
+                      style: TextStyle(fontSize: 12, color: data['color'], fontWeight: FontWeight.w600),
                     ),
-                    if (data['needsAttention'])
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFf59e0b)),
-                            const SizedBox(width: 6),
-                            Text(
-                              "${data['daysSince']} gündür bu konuyla ilgili test çözmedin!",
-                              style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFf59e0b), fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (data['color'] as Color).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: (data['color'] as Color).withOpacity(0.2))
+                ),
+                child: Text(
+                  "%${(data['average'] * 100).toInt()}",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: data['color']),
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withOpacity(0.2) : (data['color'] as Color).withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildMiniStat("Ortalama", data['avgNet'].toStringAsFixed(1), isDark),
+                    _buildMiniStat("Doğru", "${data['correct']}", isDark),
+                    _buildMiniStat("Yanlış", "${data['wrong']}", isDark),
+                    _buildMiniStat("Boş", "${data['empty']}", isDark),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (data['color'] as Color).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lightbulb_outline, size: 16, color: data['color']),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          data['recommendation'],
+                          style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (data['needsAttention'])
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFf59e0b)),
+                        const SizedBox(width: 6),
+                        Text(
+                          "${data['daysSince']} gündür bu konuyla ilgili test çözmedin!",
+                          style: const TextStyle(fontSize: 10, color: Color(0xFFf59e0b), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -972,9 +945,9 @@ class AnalysisScreen extends StatelessWidget {
   Widget _buildMiniStat(String label, String value, bool isDark) {
     return Column(
       children: [
-        Text(value, style: GoogleFonts.robotoMono(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87)),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87)),
         const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.inter(fontSize: 9, color: isDark ? Colors.white38 : Colors.grey)),
+        Text(label, style: TextStyle(fontSize: 9, color: isDark ? Colors.white38 : Colors.grey)),
       ],
     );
   }
@@ -1014,74 +987,42 @@ class AnalysisScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("💡 Akıllı Öneriler", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+        Text("💡 Akıllı Öneriler", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : textColor)),
         const SizedBox(height: 12),
         ...insights.map((insight) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: (insight['color'] as Color).withOpacity(0.3)),
-                  boxShadow: [
-                    BoxShadow(color: (insight['color'] as Color).withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: (insight['color'] as Color).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(insight['icon'], color: insight['color'], size: 22),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildGlassContainer(
+              isDark: isDark,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: (insight['color'] as Color).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(insight['title'], style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(insight['message'], style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey)),
-                        ],
-                      ),
+                    child: Icon(insight['icon'], color: insight['color'], size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(insight['title'], style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFFE6EDF3) : Colors.black87),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(insight['message'], style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey)),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
         }).toList(),
       ],
-    );
-  }
-
-  Widget _buildGlassContainer({required Widget child, required bool isDark, double? height}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161B22).withOpacity(0.6) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 15, offset: const Offset(0, 8))
-            ],
-          ),
-          child: child,
-        ),
-      ),
     );
   }
 
@@ -1092,9 +1033,9 @@ class AnalysisScreen extends StatelessWidget {
         children: [
           Icon(Icons.auto_graph, size: 100, color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade300),
           const SizedBox(height: 20),
-          Text("Henüz Test Çözmedin", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.grey)),
+          Text("Henüz Test Çözmedin", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.grey)),
           const SizedBox(height: 8),
-          Text("Test çözmeye başladığında analizlerin burada görünecek", style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white38 : Colors.grey)),
+          Text("Test çözmeye başladığında analizlerin burada görünecek", style: TextStyle(fontSize: 14, color: isDark ? Colors.white38 : Colors.grey)),
         ],
       ),
     );
