@@ -3,20 +3,10 @@
 // Duolingo tarzı, pill-shaped, yumuşak animasyonlu seri bildirimi.
 // Hiçbir overlay veya dialog kullanmaz — saf OverlayEntry yaklaşımı.
 // GPU dostu: yalnızca transform + opacity (composite layer tetiklemez).
-//
-// 🎵 Müzik özelliği:
-//   - Banner çıktığında sağda küçük müzik ikonu + animasyonlu EQ barları görünür.
-//   - İkona tıklandığında assets/audio/streak_music.mp3 yaklaşık 6-7 sn çalar,
-//     ardından fade-out ile durur.
-//   - Gerekli pubspec.yaml bağımlılığı: audioplayers: ^6.0.0
-//     ve assets/audio/streak_music.mp3 dosyası.
 
 import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'streak_info_sheet.dart';
 
 class StreakBanner {
@@ -36,60 +26,102 @@ class StreakBanner {
       return;
     }
 
+    final completer = Completer<void>();
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
-
-    final controller = AnimationController(
-      vsync: _TickerProviderShim(),
-      duration: const Duration(milliseconds: 420),
-      reverseDuration: const Duration(milliseconds: 320),
-    );
-
-    void onTap() async {
-      await StreakInfoSheet.show(
-        context: context,
-        streakDays: streakDays,
-        isDarkMode: isDarkMode,
-      );
-    }
 
     entry = OverlayEntry(
       builder: (_) => _StreakBannerWidget(
         streakDays: streakDays,
         isDarkMode: isDarkMode,
-        controller: controller,
-        onTap: onTap,
+        onDismiss: () {
+          entry.remove();
+          onDismissed?.call();
+          if (!completer.isCompleted) completer.complete();
+        },
       ),
     );
 
     overlay.insert(entry);
-    await controller.forward();
-
-    await Future.delayed(const Duration(milliseconds: 12000));
-
-    await controller.reverse();
-    entry.remove();
-    controller.dispose();
-
-    onDismissed?.call();
+    return completer.future; // Banner tamamen kapanana kadar bekle
   }
 }
 
 // ---------------------------------------------------------------------------
-// Banner widget
+// Banner widget (Artık StatefulWidget ve kendi zamanlayıcısını yönetiyor)
 // ---------------------------------------------------------------------------
-class _StreakBannerWidget extends StatelessWidget {
+class _StreakBannerWidget extends StatefulWidget {
   final int streakDays;
   final bool isDarkMode;
-  final AnimationController controller;
-  final VoidCallback onTap;
+  final VoidCallback onDismiss;
 
   const _StreakBannerWidget({
     required this.streakDays,
     required this.isDarkMode,
-    required this.controller,
-    required this.onTap,
+    required this.onDismiss,
   });
+
+  @override
+  State<_StreakBannerWidget> createState() => _StreakBannerWidgetState();
+}
+
+class _StreakBannerWidgetState extends State<_StreakBannerWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  Timer? _closeTimer;
+  bool _isClosing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+      reverseDuration: const Duration(milliseconds: 320),
+    );
+
+    _controller.forward();
+    // 1. Durum: Hiçbir şeye tıklanmazsa varsayılan olarak 5 saniye içinde kapanır
+    _startCloseTimer(const Duration(seconds: 5));
+  }
+
+  @override
+  void dispose() {
+    _closeTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _startCloseTimer(Duration duration) {
+    _closeTimer?.cancel();
+    _closeTimer = Timer(duration, _closeBanner);
+  }
+
+  Future<void> _closeBanner() async {
+    if (_isClosing) return;
+    _isClosing = true;
+    _closeTimer?.cancel();
+    await _controller.reverse();
+    widget.onDismiss();
+  }
+
+  void _onMusicToggled(bool isPlaying) {
+    if (isPlaying) {
+      // 2. Durum: Müzik çalmaya başladı, banner süresini 10 saniyeye uzat
+      _startCloseTimer(const Duration(seconds: 10));
+    } else {
+      // 3. Durum: Müzik ikonuna tekrar basılarak durduruldu, banner'ı hemen kapat
+      _closeBanner();
+    }
+  }
+
+  Future<void> _onTap() async {
+    await StreakInfoSheet.show(
+      context: context,
+      streakDays: widget.streakDays,
+      isDarkMode: widget.isDarkMode,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,20 +129,20 @@ class _StreakBannerWidget extends StatelessWidget {
       begin: const Offset(0, 1.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: controller,
+      parent: _controller,
       curve: Curves.easeOutBack,
       reverseCurve: Curves.easeInCubic,
     ));
 
     final fade = CurvedAnimation(
-      parent: controller,
+      parent: _controller,
       curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       reverseCurve: Curves.easeIn,
     );
 
-    final bgColor = isDarkMode ? const Color(0xFF1E2530) : Colors.white;
-    final textColor = isDarkMode ? Colors.white : const Color(0xFF1A1A2E);
-    final shadowColor = isDarkMode
+    final bgColor = widget.isDarkMode ? const Color(0xFF1E2530) : Colors.white;
+    final textColor = widget.isDarkMode ? Colors.white : const Color(0xFF1A1A2E);
+    final shadowColor = widget.isDarkMode
         ? Colors.black.withOpacity(0.5)
         : Colors.black.withOpacity(0.12);
 
@@ -124,12 +156,11 @@ class _StreakBannerWidget extends StatelessWidget {
           child: FadeTransition(
             opacity: fade,
             child: GestureDetector(
-              onTap: onTap,
+              onTap: _onTap,
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
                     color: bgColor,
                     borderRadius: BorderRadius.circular(50),
@@ -141,7 +172,7 @@ class _StreakBannerWidget extends StatelessWidget {
                         spreadRadius: 0,
                       ),
                       BoxShadow(
-                        color: isDarkMode
+                        color: widget.isDarkMode
                             ? Colors.white.withOpacity(0.06)
                             : Colors.white.withOpacity(0.9),
                         blurRadius: 0,
@@ -150,7 +181,7 @@ class _StreakBannerWidget extends StatelessWidget {
                       ),
                     ],
                     border: Border.all(
-                      color: isDarkMode
+                      color: widget.isDarkMode
                           ? Colors.white.withOpacity(0.08)
                           : Colors.black.withOpacity(0.04),
                       width: 1,
@@ -159,13 +190,13 @@ class _StreakBannerWidget extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _FireIcon(isDarkMode: isDarkMode),
+                      _FireIcon(isDarkMode: widget.isDarkMode),
                       const SizedBox(width: 10),
                       RichText(
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: '$streakDays',
+                              text: '${widget.streakDays}',
                               style: const TextStyle(
                                 fontFamily: 'Courier',
                                 fontSize: 22,
@@ -190,7 +221,7 @@ class _StreakBannerWidget extends StatelessWidget {
                       const SizedBox(width: 10),
                       Icon(
                         Icons.keyboard_arrow_up_rounded,
-                        color: isDarkMode ? Colors.white38 : Colors.black26,
+                        color: widget.isDarkMode ? Colors.white38 : Colors.black26,
                         size: 18,
                       ),
                       // ── Dikey ayraç ──────────────────────────────────────
@@ -198,12 +229,15 @@ class _StreakBannerWidget extends StatelessWidget {
                         width: 1,
                         height: 28,
                         margin: const EdgeInsets.symmetric(horizontal: 10),
-                        color: isDarkMode
+                        color: widget.isDarkMode
                             ? Colors.white.withOpacity(0.12)
                             : Colors.black.withOpacity(0.08),
                       ),
                       // ── Müzik butonu ─────────────────────────────────────
-                      _MusicButton(isDarkMode: isDarkMode),
+                      _MusicButton(
+                        isDarkMode: widget.isDarkMode,
+                        onToggled: _onMusicToggled,
+                      ),
                     ],
                   ),
                 ),
@@ -217,11 +251,16 @@ class _StreakBannerWidget extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 🎵 Müzik butonu — ikon + EQ barları + ses çalma
+// 🎵 Müzik butonu
 // ---------------------------------------------------------------------------
 class _MusicButton extends StatefulWidget {
   final bool isDarkMode;
-  const _MusicButton({required this.isDarkMode});
+  final ValueChanged<bool> onToggled; // Parent'a durum bildirmek için eklendi
+
+  const _MusicButton({
+    required this.isDarkMode,
+    required this.onToggled,
+  });
 
   @override
   State<_MusicButton> createState() => _MusicButtonState();
@@ -229,16 +268,13 @@ class _MusicButton extends StatefulWidget {
 
 class _MusicButtonState extends State<_MusicButton>
     with TickerProviderStateMixin {
-  // EQ barları için ayrı controller'lar (her biri farklı hızda)
   late final List<AnimationController> _barControllers;
   late final List<Animation<double>> _barAnimations;
 
-  // Ses oynatıcı
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   Timer? _stopTimer;
 
-  // Bar sayısı ve sabit hız çarpanları
   static const int _barCount = 4;
   final List<double> _speedFactors = [1.0, 0.75, 1.3, 0.9];
   final List<double> _minHeights = [0.25, 0.35, 0.20, 0.40];
@@ -248,11 +284,10 @@ class _MusicButtonState extends State<_MusicButton>
     super.initState();
 
     _barControllers = List.generate(_barCount, (i) {
-      final ctrl = AnimationController(
+      return AnimationController(
         vsync: this,
         duration: Duration(milliseconds: (500 * _speedFactors[i]).round()),
       )..repeat(reverse: true);
-      return ctrl;
     });
 
     _barAnimations = List.generate(_barCount, (i) {
@@ -276,15 +311,23 @@ class _MusicButtonState extends State<_MusicButton>
   }
 
   Future<void> _handleTap() async {
-    if (_isPlaying) return; // Zaten çalıyorsa tekrar başlatma
+    if (_isPlaying) {
+      // Eğer halihazırda çalıyorsa müziği durdur ve parent'a (banner'a) false gönder
+      await _player.stop();
+      if (mounted) setState(() => _isPlaying = false);
+      _stopTimer?.cancel();
+      widget.onToggled(false); 
+      return;
+    }
 
     setState(() => _isPlaying = true);
+    widget.onToggled(true);
 
-    // assets/audio/streak_music.mp3 dosyasını çal
     await _player.play(AssetSource('audio/streak_music.mp3'));
 
-    // ~6.5 saniye sonra durdur
-    _stopTimer = Timer(const Duration(milliseconds: 12000), () async {
+    // 10 saniye sonra müziği kendiliğinden durdur
+    _stopTimer?.cancel();
+    _stopTimer = Timer(const Duration(seconds: 10), () async {
       await _player.stop();
       if (mounted) setState(() => _isPlaying = false);
     });
@@ -292,22 +335,15 @@ class _MusicButtonState extends State<_MusicButton>
 
   @override
   Widget build(BuildContext context) {
-    final accentColor =
-        _isPlaying ? const Color(0xFF4ECDC4) : const Color(0xFFFF6B35);
-    final mutedColor =
-        widget.isDarkMode ? Colors.white38 : Colors.black26;
+    final accentColor = _isPlaying ? const Color(0xFF4ECDC4) : const Color(0xFFFF6B35);
+    final mutedColor = widget.isDarkMode ? Colors.white38 : Colors.black26;
 
     return GestureDetector(
-      // Banner'ın kendi onTap'ını engelleme
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        _handleTap();
-        // Üst GestureDetector'a (sheet açan) bubble etmesini önle
-      },
+      onTap: _handleTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Müzik ikonu ────────────────────────────────────────────────
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: Icon(
@@ -318,7 +354,6 @@ class _MusicButtonState extends State<_MusicButton>
             ),
           ),
           const SizedBox(height: 4),
-          // ── EQ Barları ─────────────────────────────────────────────────
           SizedBox(
             width: 22,
             height: 14,
@@ -329,9 +364,7 @@ class _MusicButtonState extends State<_MusicButton>
                 return AnimatedBuilder(
                   animation: _barAnimations[i],
                   builder: (_, __) {
-                    final heightFraction = _isPlaying
-                        ? _barAnimations[i].value
-                        : _minHeights[i]; // Çalmıyorken mini yükseklik
+                    final heightFraction = _isPlaying ? _barAnimations[i].value : _minHeights[i];
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 120),
                       width: 3,
@@ -393,12 +426,4 @@ class _FireIconState extends State<_FireIcon>
       child: const Text('🔥', style: TextStyle(fontSize: 26)),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Minimal TickerProvider
-// ---------------------------------------------------------------------------
-class _TickerProviderShim extends TickerProvider {
-  @override
-  Ticker createTicker(TickerCallback onTick) => Ticker(onTick);
 }

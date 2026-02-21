@@ -1,0 +1,16 @@
+[
+  {
+    "id": 10000000,
+    "test_no": 3,
+    "question": "Çıkmış Benzeri! Fossa cranii media'da yer alan foramen rotundum'dan aşağıdaki kranial sinir dallarından hangisi geçer?",
+    "options": [
+      "A) Nervus ophthalmicus",
+      "B) Nervus maxillaris",
+      "C) Nervus mandibularis",
+      "D) Nervus facialis",
+      "E) Nervus opticus"
+    ],
+    "answer_index": 1,
+    "explanation": "Nervus trigeminus'un (V. kranial sinir) ikinci dalı olan Nervus maxillaris (V2), sphenoid kemikte yer alan foramen rotundum'dan geçerek kafatasını terk eder ve fossa pterygopalatina'ya ulaşır. Nervus ophthalmicus (V1) fissura orbitalis superior'dan, Nervus mandibularis (V3) ise foramen ovale'den geçer."
+  }
+]
