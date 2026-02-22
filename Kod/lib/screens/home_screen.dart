@@ -385,13 +385,46 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemBuilder: (context, index) {
                           String subject = grouped.keys.elementAt(index);
                           int count = grouped[subject]!.length;
+
+                          // 1. DERSLERE ÖZEL İKON VE RENK TESPİTİ
+                          IconData subjectIcon = Icons.menu_book_rounded;
+                          Color subjectColor = Colors.teal;
+                          
+                          final s = subject.toLowerCase();
+                          if (s.contains('anatomi')) { subjectIcon = Icons.accessibility_new_rounded; subjectColor = Colors.orange; }
+                          else if (s.contains('histoloji')) { subjectIcon = Icons.biotech_rounded; subjectColor = Colors.pink; }
+                          else if (s.contains('fizyoloji')) { subjectIcon = Icons.monitor_heart_rounded; subjectColor = Colors.red; }
+                          else if (s.contains('biyokimya')) { subjectIcon = Icons.science_rounded; subjectColor = Colors.purple; }
+                          else if (s.contains('mikrobiyoloji')) { subjectIcon = Icons.coronavirus_rounded; subjectColor = Colors.green; }
+                          else if (s.contains('patoloji')) { subjectIcon = Icons.sick_rounded; subjectColor = Colors.brown; }
+                          else if (s.contains('farmakoloji') || s.contains('farma')) { subjectIcon = Icons.medication_rounded; subjectColor = Colors.teal; }
+                          else if (s.contains('biyoloji')) { subjectIcon = Icons.eco_rounded; subjectColor = Colors.lime; }
+                          else if (s.contains('protetik')) { subjectIcon = Icons.health_and_safety_rounded; subjectColor = Colors.lightBlue; }
+                          else if (s.contains('restoratif')) { subjectIcon = Icons.healing_rounded; subjectColor = Colors.blue; }
+                          else if (s.contains('endodonti')) { subjectIcon = Icons.medical_services_rounded; subjectColor = Colors.orangeAccent; }
+                          else if (s.contains('perio')) { subjectIcon = Icons.water_drop_rounded; subjectColor = Colors.deepOrange; }
+                          else if (s.contains('ortodonti')) { subjectIcon = Icons.sentiment_satisfied_alt_rounded; subjectColor = Colors.indigo; }
+                          else if (s.contains('pedodonti')) { subjectIcon = Icons.child_care_rounded; subjectColor = Colors.amber; }
+                          else if (s.contains('cerrahi')) { subjectIcon = Icons.content_cut_rounded; subjectColor = Colors.redAccent; }
+                          else if (s.contains('radyoloji')) { subjectIcon = Icons.sensors_rounded; subjectColor = Colors.blueGrey; }
+
                           return ListTile(
-                            leading: CircleAvatar(backgroundColor: Colors.teal.shade50, child: const Icon(Icons.book, color: Colors.teal)),
+                            leading: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: subjectColor.withOpacity(isDarkMode ? 0.2 : 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(subjectIcon, color: subjectColor, size: 24),
+                            ),
                             title: Text(subject, style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(12)),
-                              child: Text("$count Yanlış", style: TextStyle(color: Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.bold))
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(isDarkMode ? 0.2 : 0.1), 
+                                borderRadius: BorderRadius.circular(12)
+                              ),
+                              child: Text("$count Yanlış", style: TextStyle(color: isDarkMode ? Colors.redAccent : Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.bold))
                             ),
                             onTap: () {
                               Navigator.pop(context);
