@@ -42,6 +42,26 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
     "Radyoloji": const Color(0xFF78909C),
   };
 
+  // Derslere özel ikonlar
+  final Map<String, IconData> _subjectIcons = {
+    "Anatomi": Icons.accessibility_new_rounded,
+    "Histoloji": Icons.biotech_rounded,
+    "Fizyoloji": Icons.monitor_heart_rounded,
+    "Biyokimya": Icons.science_rounded,
+    "Mikrobiyoloji": Icons.coronavirus_rounded,
+    "Patoloji": Icons.sick_rounded,
+    "Farmakoloji": Icons.medication_rounded,
+    "Biyoloji": Icons.eco_rounded,
+    "Protetik": Icons.health_and_safety_rounded,
+    "Restoratif": Icons.healing_rounded,
+    "Endodonti": Icons.medical_services_rounded,
+    "Perio": Icons.water_drop_rounded,
+    "Ortodonti": Icons.sentiment_satisfied_alt_rounded,
+    "Pedodonti": Icons.child_care_rounded,
+    "Cerrahi": Icons.content_cut_rounded,
+    "Radyoloji": Icons.sensors_rounded,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -99,7 +119,6 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
 
     late Map<String, int> counts;
@@ -127,7 +146,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
           )
         : const BoxDecoration(color: Color.fromARGB(255, 224, 247, 250)),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Burası çok önemli, arka planı şeffaf yaptık
+        backgroundColor: Colors.transparent, 
         appBar: AppBar(
         title: Text("Eksiklerimi Kapat",
             style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold, fontSize: 20)),
@@ -189,14 +208,21 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
                           itemBuilder: (context, index) {
                             String subject = sortedSubjects[index];
                             int count = counts[subject] ?? 0;
+                            
                             Color color = Colors.teal;
+                            IconData subjectIcon = Icons.menu_book_rounded; 
+                            
                             for (var key in _subjectColors.keys) {
                               if (subject.toLowerCase().contains(key.toLowerCase())) {
                                 color = _subjectColors[key]!;
+                                if (_subjectIcons.containsKey(key)) {
+                                  subjectIcon = _subjectIcons[key]!;
+                                }
                                 break;
                               }
                             }
-                            return _buildSubjectCard(subject, count, color, isDark);
+                            
+                            return _buildSubjectCard(subject, count, color, subjectIcon, isDark);
                           },
                         ),
                         const SizedBox(height: 40),
@@ -204,9 +230,10 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
                     ),
                   ),
                 ),
-      ), // Scaffold'u kapatıyoruz
-    ); // Container'ı kapatıyoruz (Bunu ekledik!)
+      ),
+    ); 
   }
+  
   Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
@@ -290,7 +317,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
     );
   }
 
-  Widget _buildSubjectCard(String subject, int count, Color color, bool isDark) {
+  Widget _buildSubjectCard(String subject, int count, Color color, IconData iconData, bool isDark) {
     return GestureDetector(
       onTap: () async {
         var filtered = _allMistakes.where((m) {
@@ -314,7 +341,11 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
         ),
         child: Stack(
           children: [
-            Positioned(right: -10, bottom: -10, child: Icon(Icons.book, size: 60, color: color.withOpacity(0.05))),
+            Positioned(
+              right: -10, 
+              bottom: -10, 
+              child: Icon(iconData, size: 60, color: color.withOpacity(0.05))
+            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -324,7 +355,7 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(Icons.bookmark_outline, color: color, size: 20),
+                    child: Icon(iconData, color: color, size: 20),
                   ),
                   const Spacer(),
                   Text(subject,
@@ -363,6 +394,44 @@ class MistakesListScreen extends StatefulWidget {
 class _MistakesListScreenState extends State<MistakesListScreen> {
   late List<Map<String, dynamic>> _currentList;
   SortOption _currentSort = SortOption.newest;
+
+  final Map<String, Color> _subjectColors = {
+    "Anatomi": const Color(0xFFFB8C00),
+    "Histoloji": const Color(0xFFEC407A),
+    "Fizyoloji": const Color(0xFFEF5350),
+    "Biyokimya": const Color(0xFFAB47BC),
+    "Mikrobiyoloji": const Color(0xFF66BB6A),
+    "Patoloji": const Color(0xFF8D6E63),
+    "Farmakoloji": const Color(0xFF26A69A),
+    "Biyoloji": const Color(0xFFD4E157),
+    "Protetik": const Color(0xFF29B6F6),
+    "Restoratif": const Color(0xFF42A5F5),
+    "Endodonti": const Color(0xFFFFA726),
+    "Perio": const Color(0xFFFF7043),
+    "Ortodonti": const Color(0xFF5C6BC0),
+    "Pedodonti": const Color(0xFFFFCA28),
+    "Cerrahi": const Color(0xFFB71C1C),
+    "Radyoloji": const Color(0xFF78909C),
+  };
+
+  final Map<String, IconData> _subjectIcons = {
+    "Anatomi": Icons.accessibility_new_rounded,
+    "Histoloji": Icons.biotech_rounded,
+    "Fizyoloji": Icons.monitor_heart_rounded,
+    "Biyokimya": Icons.science_rounded,
+    "Mikrobiyoloji": Icons.coronavirus_rounded,
+    "Patoloji": Icons.sick_rounded,
+    "Farmakoloji": Icons.medication_rounded,
+    "Biyoloji": Icons.eco_rounded,
+    "Protetik": Icons.health_and_safety_rounded,
+    "Restoratif": Icons.healing_rounded,
+    "Endodonti": Icons.medical_services_rounded,
+    "Perio": Icons.water_drop_rounded,
+    "Ortodonti": Icons.sentiment_satisfied_alt_rounded,
+    "Pedodonti": Icons.child_care_rounded,
+    "Cerrahi": Icons.content_cut_rounded,
+    "Radyoloji": Icons.sensors_rounded,
+  };
 
   @override
   void initState() {
@@ -501,10 +570,23 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final Color cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
     final Color subTextColor = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+
+    // Bulunduğumuz ekranın ders rengini ve ikonunu tespit ediyoruz
+    Color screenColor = const Color(0xFF009688); // Varsayılan renk
+    IconData? screenIcon;
+
+    for (var key in _subjectColors.keys) {
+      if (widget.title.toLowerCase().contains(key.toLowerCase())) {
+        screenColor = _subjectColors[key]!;
+        if (_subjectIcons.containsKey(key)) {
+          screenIcon = _subjectIcons[key]!;
+        }
+        break;
+      }
+    }
 
     return Container(
       decoration: isDark 
@@ -517,11 +599,11 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
           )
         : const BoxDecoration(color: Color.fromARGB(255, 224, 247, 250)),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Yine şeffaf yapıyoruz ki arkadaki efekt görünsün
+        backgroundColor: Colors.transparent, 
         floatingActionButton: _currentList.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: _startMistakeQuiz,
-              backgroundColor: const Color(0xFF009688),
+              backgroundColor: screenColor, // FAB rengi dersin rengiyle uyumlu oldu
               elevation: 4,
               icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
               label: Text("Bu Yanlışları Çöz",
@@ -529,7 +611,16 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
             )
           : null,
       appBar: AppBar(
-        title: Text(widget.title, style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (screenIcon != null) ...[
+              Icon(screenIcon, color: screenColor, size: 24),
+              const SizedBox(width: 8),
+            ],
+            Text(widget.title, style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold)),
+          ],
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -572,8 +663,8 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
                     child: _buildMistakeCard(mistake, isDark, cardColor, textColor, subTextColor));
               },
             ),
-      ), // Scaffold'u kapatıyoruz
-    ); // Container'ı kapatıyoruz (Bunu ekledik!)
+      ), 
+    );
   }
 
   Widget _buildMistakeCard(
@@ -626,7 +717,6 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ DÜZELTME: Konu chip'i ve butonlar ayrı satırlarda
             _buildCardHeader(
               context: context,
               isDark: isDark,
@@ -778,7 +868,6 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     );
   }
 
-  // ✅ ÇÖZÜM: Kart başlığı ayrı widget — konu chip'i ve butonlar asla çakışmaz
   Widget _buildCardHeader({
     required BuildContext context,
     required bool isDark,
@@ -788,26 +877,49 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     required Question questionObj,
     required Map<String, dynamic> mistake,
   }) {
+    
+    // Her bir kartın ders ismine göre renk ve ikon atamasını yapıyoruz
+    Color chipColor = Colors.blue;
+    IconData chipIcon = Icons.menu_book_rounded;
+    for (var key in _subjectColors.keys) {
+      if (topicText.toLowerCase().contains(key.toLowerCase())) {
+        chipColor = _subjectColors[key]!;
+        if (_subjectIcons.containsKey(key)) {
+          chipIcon = _subjectIcons[key]!;
+        }
+        break;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // SATIR 1: Konu chip'i (tam genişlik kullanabilir)
+        // SATIR 1: Konu chip'i (Ders ikonu eklendi ve renklendirildi)
         Row(
           children: [
             Flexible(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.blueAccent.withOpacity(0.1) : Colors.blue.shade50,
+                  color: isDark ? chipColor.withOpacity(0.15) : chipColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  border: Border.all(color: chipColor.withOpacity(0.3)),
                 ),
-                child: Text(
-                  "$topicText • Test $testNo",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis, // Çok uzun olursa kırpılır, asla taşmaz
-                  style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(chipIcon, size: 14, color: chipColor),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        "$topicText • Test $testNo",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                            fontSize: 11, fontWeight: FontWeight.w600, color: chipColor),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -816,7 +928,7 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
 
         const SizedBox(height: 10),
 
-        // SATIR 2: Butonlar (sağa hizalı, konu chip'inden bağımsız)
+        // SATIR 2: Butonlar
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
