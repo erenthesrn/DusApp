@@ -34,6 +34,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
 
   // Dinamik olarak birleştirilmiş liste burada tutulacak
   Map<String, List<Map<String, dynamic>>> _finalData = {};
+  Map<String, dynamic> _customCategoryIcons = {}; // 🔥 YENİ: Artık hem int (ikon) hem String (emoji) tutacak
 
   String? _selectedCategory;
   List<Map<String, dynamic>> _currentCards = [];
@@ -107,6 +108,13 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                     String category = data['category'] ?? "Genel";
                     String question = data['question'] ?? "";
                     String answer = data['answer'] ?? "";
+
+                    // 🔥 YENİ: Kullanıcının seçtiği ikon veya emojiyi kaydediyoruz
+                    if (data.containsKey('iconEmoji')) {
+                      _customCategoryIcons[category] = data['iconEmoji'];
+                    } else if (data.containsKey('iconCode')) {
+                      _customCategoryIcons[category] = data['iconCode'];
+                    }
 
                     if (!_finalData.containsKey(category)) {
                       _finalData[category] = [];
@@ -312,70 +320,199 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   }
 
   // --- 🔥 YENİ EKLENEN: KART EKLEME DİYALOĞU ---
+  // --- 🔥 YENİ EKLENEN: KART EKLEME DİYALOĞU ---
   void _showAddCardDialog(BuildContext context, bool isDark) {
     final TextEditingController categoryCtrl = TextEditingController();
     final TextEditingController questionCtrl = TextEditingController();
     final TextEditingController answerCtrl = TextEditingController();
+
+    // 🔥 YENİ: Kullanıcının seçebileceği ikon listesi (Tıp ve Bilim Odaklı Genişletildi)
+    final List<IconData> iconList = [
+      Icons.style, Icons.science, Icons.monitor_heart, Icons.biotech,
+      Icons.coronavirus, Icons.health_and_safety, Icons.medical_services,
+      Icons.medication, Icons.accessibility_new, Icons.psychology,
+      Icons.bloodtype, Icons.vaccines, Icons.healing, Icons.local_hospital,
+      Icons.medical_information, Icons.masks, Icons.sanitizer, Icons.clean_hands,
+      Icons.child_care, Icons.pregnant_woman, Icons.elderly, Icons.personal_injury,
+      Icons.visibility, Icons.hearing, Icons.thermostat, Icons.water_drop,
+      Icons.air, Icons.hub, Icons.bug_report, Icons.face_retouching_natural,
+      Icons.sentiment_satisfied_alt, Icons.emergency, Icons.shield,
+      Icons.menu_book, Icons.star_rounded, Icons.bolt_rounded, Icons.favorite_rounded
+    ];
+    IconData? selectedIcon = Icons.style; // Varsayılan ikon
+    String? selectedEmoji; // 🔥 YENİ: Seçilen emoji
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: isDark ? const Color(0xFF161B22) : Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20, 
-            left: 24, 
-            right: 24, 
-            top: 24
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Kendi Kartını Oluştur", style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-              const SizedBox(height: 20),
-              
-              _buildTextField(categoryCtrl, "Deste Başlığı (Örn: Patoloji)", isDark, Icons.folder_open),
-              const SizedBox(height: 12),
-              _buildTextField(questionCtrl, "Soru", isDark, Icons.help_outline, maxLines: 2),
-              const SizedBox(height: 12),
-              _buildTextField(answerCtrl, "Cevap", isDark, Icons.lightbulb_outline, maxLines: 3),
-              const SizedBox(height: 24),
-              
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (categoryCtrl.text.isEmpty || questionCtrl.text.isEmpty || answerCtrl.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Lütfen tüm alanları doldur!")));
-                      return;
-                    }
-                    
-                    // Firebase'e Kaydet
-                    User? user = FirebaseAuth.instance.currentUser;
-                    if (user != null) {
-                      await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('flashcards').add({
-                        'category': categoryCtrl.text.trim(),
-                        'question': questionCtrl.text.trim(),
-                        'answer': answerCtrl.text.trim(),
-                        'createdAt': FieldValue.serverTimestamp(),
-                      });
-                      Navigator.pop(context); // Kapat
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kart başarıyla eklendi! 🎉"), backgroundColor: Colors.green));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0D47A1),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text("Desteye Ekle", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (BuildContext innerContext, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(innerContext).viewInsets.bottom + 20, 
+                left: 24, 
+                right: 24, 
+                top: 24
               ),
-            ],
-          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Kendi Kartını Oluştur", style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                  const SizedBox(height: 20),
+                  
+                  _buildTextField(categoryCtrl, "Deste Başlığı (Örn: Patoloji)", isDark, Icons.folder_open),
+                  const SizedBox(height: 16),
+                  
+                  // 🔥 YENİ: İkon & Emoji Seçici UI
+                  Text("Deste İkonu Seç (Kendi Emojini Eklemek İçin + Kullan)", style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade400 : Colors.blueGrey)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 50,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: iconList.length + 1, // +1 Emoji seçme butonu için
+                      itemBuilder: (listContext, index) {
+                        // Eğer en sona geldiysek EMOJİ EKLEME (+) butonunu çiz
+                        if (index == iconList.length) {
+                          final isEmojiSelected = selectedEmoji != null;
+                          return GestureDetector(
+                            onTap: () async {
+                              // Emoji girmesi için ufak bir pop-up çıkartıyoruz
+                              String? emoji = await showDialog<String>(
+                                context: innerContext,
+                                builder: (BuildContext context) {
+                                  TextEditingController emojiCtrl = TextEditingController();
+                                  return AlertDialog(
+                                    backgroundColor: isDark ? const Color(0xFF161B22) : Colors.white,
+                                    title: Text("Klavye Emojisi Gir", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16)),
+                                    content: TextField(
+                                      controller: emojiCtrl,
+                                      maxLength: 3, 
+                                      style: const TextStyle(fontSize: 32),
+                                      textAlign: TextAlign.center,
+                                      decoration: InputDecoration(
+                                        hintText: "🦷", // Diş emojisi örnek
+                                        hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("İptal")),
+                                      TextButton(onPressed: () => Navigator.pop(context, emojiCtrl.text), child: const Text("Seç")),
+                                    ],
+                                  );
+                                }
+                              );
+                              
+                              if (emoji != null && emoji.trim().isNotEmpty) {
+                                setModalState(() {
+                                  selectedEmoji = emoji.trim();
+                                  selectedIcon = null; // İkon seçimini kaldır
+                                });
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isEmojiSelected ? const Color(0xFF0D47A1) : (isDark ? Colors.white10 : Colors.grey.shade100),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: isEmojiSelected ? const Color(0xFF0D47A1) : Colors.transparent, width: 2)
+                              ),
+                              child: isEmojiSelected
+                                  ? Center(child: Text(selectedEmoji!, style: const TextStyle(fontSize: 18)))
+                                  : Icon(Icons.add, color: isDark ? Colors.grey : Colors.blueGrey, size: 24),
+                            ),
+                          );
+                        }
+
+                        // Normal İkon Çizimi
+                        final currentIcon = iconList[index];
+                        final isSelected = currentIcon == selectedIcon && selectedEmoji == null;
+                        return GestureDetector(
+                          onTap: () {
+                            setModalState(() {
+                              selectedIcon = currentIcon;
+                              selectedEmoji = null; // İkon seçilirse emojiyi iptal et
+                            });
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                ? const Color(0xFF0D47A1) 
+                                : (isDark ? Colors.white10 : Colors.grey.shade100),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? const Color(0xFF0D47A1) : Colors.transparent,
+                                width: 2
+                              )
+                            ),
+                            child: Icon(
+                              currentIcon, 
+                              color: isSelected ? Colors.white : (isDark ? Colors.grey : Colors.blueGrey),
+                              size: 24,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildTextField(questionCtrl, "Soru", isDark, Icons.help_outline, maxLines: 2),
+                  const SizedBox(height: 12),
+                  _buildTextField(answerCtrl, "Cevap", isDark, Icons.lightbulb_outline, maxLines: 3),
+                  const SizedBox(height: 24),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (categoryCtrl.text.isEmpty || questionCtrl.text.isEmpty || answerCtrl.text.isEmpty) {
+                          ScaffoldMessenger.of(innerContext).showSnackBar(const SnackBar(content: Text("Lütfen tüm alanları doldur!")));
+                          return;
+                        }
+
+                        // Veritabanına gidecek paketi hazırlıyoruz
+                        Map<String, dynamic> cardData = {
+                          'category': categoryCtrl.text.trim(),
+                          'question': questionCtrl.text.trim(),
+                          'answer': answerCtrl.text.trim(),
+                          'createdAt': FieldValue.serverTimestamp(),
+                        };
+
+                        // Seçime göre Emoji mi yoksa İkon kodu mu eklenecek belirliyoruz
+                        if (selectedEmoji != null) {
+                          cardData['iconEmoji'] = selectedEmoji;
+                        } else if (selectedIcon != null) {
+                          cardData['iconCode'] = selectedIcon!.codePoint;
+                        }
+                        
+                        // Firebase'e Kaydet
+                        User? user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('flashcards').add(cardData);
+                          Navigator.pop(innerContext); // Kapat
+                          ScaffoldMessenger.of(innerContext).showSnackBar(const SnackBar(content: Text("Kart başarıyla eklendi! 🎉"), backgroundColor: Colors.green));
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D47A1),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text("Desteye Ekle", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
         );
       }
     );
@@ -410,11 +547,27 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
 
   // --- Kategori Kartı Tasarımı ---
   Widget _buildCategoryCard(String title, int count, bool isDark) {
-    // Hazır kategoriler için ikonlar
-    IconData icon = Icons.style;
     Color iconColor = Colors.blue;
-    if(title == "Anatomi") { icon = Icons.accessibility_new; iconColor = Colors.orange; }
-    else if(title == "Fizyoloji") { icon = Icons.monitor_heart; iconColor = Colors.red; }
+    Widget iconWidget = const Icon(Icons.style, color: Colors.blue);
+    
+    // 🔥 YENİ: İkon veya Emoji belirleme
+    if (_customCategoryIcons.containsKey(title)) {
+      iconColor = const Color(0xFF00BFA5);
+      final customIcon = _customCategoryIcons[title];
+      if (customIcon is String) {
+        // Emoji ise Text olarak göster
+        iconWidget = Text(customIcon, style: const TextStyle(fontSize: 22));
+      } else {
+        // Normal Material Icon ise
+        iconWidget = Icon(IconData(customIcon, fontFamily: 'MaterialIcons'), color: iconColor);
+      }
+    } else if(title == "Anatomi") { 
+      iconColor = Colors.orange; 
+      iconWidget = Icon(Icons.accessibility_new, color: iconColor);
+    } else if(title == "Fizyoloji") { 
+      iconColor = Colors.red; 
+      iconWidget = Icon(Icons.monitor_heart, color: iconColor);
+    }
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -446,7 +599,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
             color: iconColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: iconColor),
+          child: iconWidget, // YENİ: Artık Icon veya Text(Emoji) gösterebiliyor
         ),
         title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black87)),
         subtitle: Text("$count Kart", style: GoogleFonts.inter(color: Colors.grey)),
