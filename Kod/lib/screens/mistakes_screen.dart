@@ -116,9 +116,19 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
       sortedSubjects.sort((a, b) => counts[b]!.compareTo(counts[a]!));
     }
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
+    return Container(
+      decoration: isDark 
+        ? const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
+            ),
+          )
+        : const BoxDecoration(color: Color.fromARGB(255, 224, 247, 250)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Burası çok önemli, arka planı şeffaf yaptık
+        appBar: AppBar(
         title: Text("Eksiklerimi Kapat",
             style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold, fontSize: 20)),
         centerTitle: false,
@@ -194,9 +204,9 @@ class _MistakesDashboardState extends State<MistakesDashboard> {
                     ),
                   ),
                 ),
-    );
+      ), // Scaffold'u kapatıyoruz
+    ); // Container'ı kapatıyoruz (Bunu ekledik!)
   }
-
   Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
@@ -496,9 +506,19 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
     final Color textColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
     final Color subTextColor = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      floatingActionButton: _currentList.isNotEmpty
+    return Container(
+      decoration: isDark 
+        ? const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
+            ),
+          )
+        : const BoxDecoration(color: Color.fromARGB(255, 224, 247, 250)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Yine şeffaf yapıyoruz ki arkadaki efekt görünsün
+        floatingActionButton: _currentList.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: _startMistakeQuiz,
               backgroundColor: const Color(0xFF009688),
@@ -552,7 +572,8 @@ class _MistakesListScreenState extends State<MistakesListScreen> {
                     child: _buildMistakeCard(mistake, isDark, cardColor, textColor, subTextColor));
               },
             ),
-    );
+      ), // Scaffold'u kapatıyoruz
+    ); // Container'ı kapatıyoruz (Bunu ekledik!)
   }
 
   Widget _buildMistakeCard(

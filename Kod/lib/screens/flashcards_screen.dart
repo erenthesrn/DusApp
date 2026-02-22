@@ -117,8 +117,8 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
 
                 // 3. Listeyi Oluştur
                 return ListView(
-                  // 🔥 YENİ: AppBar'ın altında kalmaması için top padding artırıldı
-                  padding: EdgeInsets.fromLTRB(20, kToolbarHeight + MediaQuery.of(context).padding.top + 20, 20, 20),
+                  // Üst boşluğu sabitledik, gereksiz boşluk kalktı. (Kartlar gözüne hala aşağıda gelirse 90'ı 70 falan yapabilirsin)
+                  padding: const EdgeInsets.fromLTRB(20, 130, 20, 100),
                   children: _finalData.keys.map((category) {
                     return _buildCategoryCard(category, _finalData[category]!.length, isDark);
                   }).toList(),

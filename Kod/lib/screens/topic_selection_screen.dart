@@ -154,7 +154,7 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
 
           // Liste
           ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 120, 20, 40), // AppBar payı bırakıldı
+            padding: const EdgeInsets.fromLTRB(20, 130, 20, 40), // AppBar payı bırakıldı
             physics: const BouncingScrollPhysics(),
             itemCount: widget.topics.length,
             itemBuilder: (context, index) {
