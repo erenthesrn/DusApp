@@ -149,7 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Text("Harikasın! Hem soru hedefini hem de süre hedefini tamamladın.", textAlign: TextAlign.center),
+              Text(
+                "Harikasın! Hem soru hedefini hem de süre hedefini tamamladın.", 
+                textAlign: TextAlign.center,
+              ),
               SizedBox(height: 10),
               Text("Zinciri kırmadın! ⛓️🔥", style: TextStyle(fontWeight: FontWeight.bold)),
             ],
@@ -180,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // 🔥 ÇALIŞMA ALANI (TEMEL BİLİMLER) - CYBER GLASS MENÜ 🔥
+  // 🔥 ÇALIŞMA ALANI (TEMEL & KLİNİK) - CYBER GLASS MENÜ 🔥
   void _showTopicSelection(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B); 
@@ -193,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15), // Cam bulanıklığı
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
             decoration: BoxDecoration(
               color: isDarkMode ? const Color(0xFF0D1117).withOpacity(0.75) : Colors.white.withOpacity(0.85), 
@@ -229,12 +232,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: "Temel\nBilimler", 
                           icon: Icons.biotech_outlined, 
                           color: Colors.orange, 
-                          topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"],
+                          topics: ["Anatomi", "Biyokimya", "Biyoloji ve Genetik", "Farmakoloji", "Fizyoloji", "Histoloji ve Embriyoloji", "Mikrobiyoloji", "Patoloji"],
                           onTapOverride: () {
                             Navigator.pop(context);
                             Navigator.push(
                               context, 
-                              MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Temel Bilimler", topics: ["Anatomi","Histoloji ve Embriyoloji" ,"Fizyoloji", "Biyokimya", "Mikrobiyoloji", "Patoloji", "Farmakoloji","Biyoloji ve Genetik"], themeColor: Colors.orange))
+                              MaterialPageRoute(builder: (context) => TopicSelectionScreen(
+                                title: "Temel Bilimler", 
+                                topics: ["Anatomi", "Biyokimya", "Biyoloji ve Genetik", "Farmakoloji", "Fizyoloji", "Histoloji ve Embriyoloji", "Mikrobiyoloji", "Patoloji"], 
+                                themeColor: Colors.orange
+                              ))
                             ).then((_) => _checkAndCelebrate()); 
                           }
                         ),
@@ -246,12 +253,34 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: "Klinik\nBilimler", 
                           icon: Icons.health_and_safety_outlined, 
                           color: Colors.blue, 
-                          topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"],
+                          topics: [
+                            "Ağız, Diş ve Çene Cerrahisi",
+                            "Ağız, Diş ve Çene Radyolojisi",
+                            "Endodonti",
+                            "Ortodonti",
+                            "Pedodonti",
+                            "Periodontoloji",
+                            "Protetik Diş Tedavisi",
+                            "Restoratif Diş Tedavisi"
+                          ],
                           onTapOverride: () {
                              Navigator.pop(context);
                              Navigator.push(
                               context, 
-                              MaterialPageRoute(builder: (context) => TopicSelectionScreen(title: "Klinik Bilimler", topics: ["Protetik Diş Tedavisi", "Restoratif Diş Tedavisi", "Endodonti", "Periodontoloji", "Ortodonti", "Pedodonti", "Ağız, Diş ve Çene Cerrahisi", "Ağız, Diş ve Çene Radyolojisi"], themeColor: Colors.blue))
+                              MaterialPageRoute(builder: (context) => TopicSelectionScreen(
+                                title: "Klinik Bilimler", 
+                                topics: [
+                                  "Ağız, Diş ve Çene Cerrahisi",
+                                  "Ağız, Diş ve Çene Radyolojisi",
+                                  "Endodonti",
+                                  "Ortodonti",
+                                  "Pedodonti",
+                                  "Periodontoloji",
+                                  "Protetik Diş Tedavisi",
+                                  "Restoratif Diş Tedavisi"
+                                ], 
+                                themeColor: Colors.blue
+                              ))
                             ).then((_) => _checkAndCelebrate()); 
                           }
                         ),
@@ -343,6 +372,9 @@ class _HomeScreenState extends State<HomeScreen> {
       grouped.putIfAbsent(sub, () => []).add(m);
     }
 
+    // 🔥 DERSLERİ ALFABETİK SIRALAYALIM 🔥
+    List<String> sortedSubjects = grouped.keys.toList()..sort((a, b) => a.compareTo(b));
+
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
 
@@ -380,13 +412,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Expanded(
                       child: ListView.separated(
-                        itemCount: grouped.keys.length,
+                        itemCount: sortedSubjects.length,
                         separatorBuilder: (c, i) => Divider(color: isDarkMode ? Colors.white12 : Colors.grey.shade300),
                         itemBuilder: (context, index) {
-                          String subject = grouped.keys.elementAt(index);
+                          String subject = sortedSubjects[index];
                           int count = grouped[subject]!.length;
 
-                          // 1. DERSLERE ÖZEL İKON VE RENK TESPİTİ
                           IconData subjectIcon = Icons.menu_book_rounded;
                           Color subjectColor = Colors.teal;
                           
@@ -450,7 +481,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔥 ALT MENÜ KARTLARI İÇİN CYBER GLASS TASARIMI 🔥
   Widget _buildModernCard(BuildContext context, {
     required String title, 
     required IconData icon, 
@@ -482,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Karta özel cam bulanıklığı
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
           child: Container(
             decoration: BoxDecoration(
               color: cardColor,
@@ -556,7 +586,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // 🔥 ARKA PLAN ANİMASYONU 🔥
     Widget background = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.linear,
@@ -615,7 +644,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      // 🔥 TÜM BAR VE İKONLARI TEK BİR ANİMASYONA BAĞLADIK (TweenAnimationBuilder) 🔥
       bottomNavigationBar: TweenAnimationBuilder<double>(
         duration: const Duration(milliseconds: 200),
         curve: Curves.linear,
@@ -660,9 +688,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔥 İKON RENKLERİ DE ANİMASYONA DAHİL EDİLDİ 🔥
   NavigationDestination _buildNavDest(IconData icon, IconData activeIcon, int idx, double t) {
-    // Renkleri anında değiştirmek yerine 't' değerine göre yumuşakça harmanlıyoruz
     final inactiveColor = Color.lerp(Colors.blueGrey.shade400, Colors.grey.shade600, t)!;
     final activeColor = Color.lerp(const Color(0xFF0D9488), const Color(0xFF448AFF), t)!;
 
@@ -1005,7 +1031,6 @@ class DashboardScreen extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          // 1. ÜST KISIM (HEADER)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
             child: BackdropFilter(
@@ -1057,7 +1082,6 @@ class DashboardScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // BİLDİRİMLER YERİNE EKLENEN OFFLINE MOD BUTONU
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(context, MaterialPageRoute(builder: (context) => const OfflineManagerScreen()));
@@ -1086,7 +1110,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. BUGÜNKÜ HEDEFLER KARTI
           Transform.translate(
             offset: const Offset(0, -40),
             child: Padding(
@@ -1133,7 +1156,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // 3. BUTONLAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -1195,8 +1217,6 @@ class DashboardScreen extends StatelessWidget {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const FocusScreen()));
                   }
                 ),
-
-                
               ],
             ),
           ),
