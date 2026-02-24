@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart - OFFLINE MOD ENTEGRE EDİLMİŞ VERSİYON (DÜZELTME)
+// lib/screens/home_screen.dart - OFFLINE MOD ENTEGRE EDİLMİŞ VERSİYON (KUSURSUZ SENKRONİZASYON)
 
 import 'dart:async';
 import 'dart:ui'; 
@@ -556,22 +556,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    Widget background = isDarkMode 
-      ? Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0A0E14), 
-                Color(0xFF161B22), 
-              ]
-            )
-          ),
-        )
-      : Container(color: const Color.fromARGB(255, 224, 247, 250));
-
-    Color navBarColor = isDarkMode ? const Color(0xFF161B22).withOpacity(0.8) : Colors.white.withOpacity(0.9);
+    // 🔥 ARKA PLAN ANİMASYONU 🔥
+    Widget background = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.linear,
+      decoration: BoxDecoration(
+        gradient: isDarkMode
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0A0E14),
+                  Color(0xFF161B22),
+                ])
+            : null,
+        color: isDarkMode ? null : const Color.fromARGB(255, 224, 247, 250),
+      ),
+    );
 
     List<Widget> currentPages = [
       DashboardScreen(
@@ -614,48 +615,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: ClipRRect( 
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
-          child: Container(
-            decoration: BoxDecoration(
-              color: navBarColor, 
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDarkMode ? 0.4 : 0.05), 
-                  blurRadius: 15, 
-                  offset: const Offset(0, -5),
+      // 🔥 TÜM BAR VE İKONLARI TEK BİR ANİMASYONA BAĞLADIK (TweenAnimationBuilder) 🔥
+      bottomNavigationBar: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.linear,
+        tween: Tween<double>(end: isDarkMode ? 1.0 : 0.0),
+        builder: (context, t, child) {
+          final Color navBarBgColor = Color.lerp(Colors.white.withOpacity(0.9), const Color(0xFF161B22).withOpacity(0.8), t)!;
+          final Color shadowColor = Color.lerp(Colors.black.withOpacity(0.05), Colors.black.withOpacity(0.4), t)!;
+          final Color borderColor = Color.lerp(Colors.transparent, Colors.white.withOpacity(0.1), t)!;
+
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: navBarBgColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(color: shadowColor, blurRadius: 15, offset: const Offset(0, -5)),
+                  ],
+                  border: Border(top: BorderSide(color: borderColor)),
                 ),
-              ],
-              border: isDarkMode ? Border(top: BorderSide(color: Colors.white.withOpacity(0.1))) : null,
+                child: NavigationBar(
+                  height: 80,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  indicatorColor: Colors.transparent,
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
+                  destinations: [
+                    _buildNavDest(Icons.home_outlined, Icons.home, 0, t),
+                    _buildNavDest(Icons.book_outlined, Icons.book, 1, t),
+                    _buildNavDest(Icons.bar_chart_outlined, Icons.bar_chart, 2, t),
+                    _buildNavDest(Icons.person_outline, Icons.person, 3, t),
+                  ],
+                ),
+              ),
             ),
-            child: NavigationBar(
-              height: 80,
-              backgroundColor: Colors.transparent, 
-              elevation: 0,
-              indicatorColor: Colors.transparent,
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
-              destinations: [
-                _buildNavDest(Icons.home_outlined, Icons.home, 0),
-                _buildNavDest(Icons.book_outlined, Icons.book, 1),
-                _buildNavDest(Icons.bar_chart_outlined, Icons.bar_chart, 2),
-                _buildNavDest(Icons.person_outline, Icons.person, 3),
-              ],
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  NavigationDestination _buildNavDest(IconData icon, IconData activeIcon, int idx) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
-    final inactiveColor = isDarkMode ? Colors.grey.shade600 : Colors.blueGrey.shade400;
-    final activeColor = isDarkMode ? const Color(0xFF448AFF) : const Color(0xFF0D9488);
+  // 🔥 İKON RENKLERİ DE ANİMASYONA DAHİL EDİLDİ 🔥
+  NavigationDestination _buildNavDest(IconData icon, IconData activeIcon, int idx, double t) {
+    // Renkleri anında değiştirmek yerine 't' değerine göre yumuşakça harmanlıyoruz
+    final inactiveColor = Color.lerp(Colors.blueGrey.shade400, Colors.grey.shade600, t)!;
+    final activeColor = Color.lerp(const Color(0xFF0D9488), const Color(0xFF448AFF), t)!;
 
     return NavigationDestination(
       icon: Icon(icon, color: inactiveColor, size: 28),
@@ -665,12 +674,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Icon(activeIcon, color: activeColor, size: 28),
           const SizedBox(height: 4),
           Container(
-            width: 4, 
-            height: 4, 
+            width: 4,
+            height: 4,
             decoration: BoxDecoration(
-              color: activeColor, 
-              shape: BoxShape.circle
-            )
+              color: activeColor,
+              shape: BoxShape.circle,
+            ),
           ),
         ],
       ),
