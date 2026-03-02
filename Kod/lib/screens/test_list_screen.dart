@@ -1,14 +1,15 @@
 // lib/screens/test_list_screen.dart - OFFLINE DESTEKLI
 
-import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/question_model.dart';
 import 'quiz_screen.dart';
 import 'result_screen.dart'; 
 import '../services/quiz_service.dart';
-import '../services/offline_service.dart'; // 🔥 YENİ
+import '../services/offline_service.dart';
 
 class TestListScreen extends StatefulWidget {
   final String topic; 
@@ -28,7 +29,36 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
   Set<int> _completedTestNumbers = {}; 
   late AnimationController _controller;
   late String _cleanTitle;
-  bool _isDownloaded = false; // 🔥 YENİ: Bu konu indirildi mi?
+  bool _isDownloaded = false;
+
+  // widget.topic → Firebase 'topic' field eşlemesi
+  // question_uploader.dart'ta topic.toLowerCase() ile kaydediliyor
+  static const Map<String, String> _topicKeyMap = {
+    'Anatomi'       : 'anatomi',
+    'Biyokimya'     : 'biyokimya',
+    'Fizyoloji'     : 'fizyoloji',
+    'Histoloji'     : 'histoloji',
+    'Farmakoloji'   : 'farma',
+    'Patoloji'      : 'patoloji',
+    'Mikrobiyoloji' : 'mikrobiyo',
+    'Biyoloji'      : 'biyoloji',
+    'Cerrahi'       : 'cerrahi',
+    'Endodonti'     : 'endo',
+    'Periodontoloji': 'perio',
+    'Ortodonti'     : 'orto',
+    'Pedodonti'     : 'pedo',
+    'Protetik'      : 'protetik',
+    'Radyoloji'     : 'radyoloji',
+    'Restoratif'    : 'resto',
+  };
+
+  String _getTopicKey(String topic) {
+    for (final entry in _topicKeyMap.entries) {
+      if (topic.contains(entry.key)) return entry.value;
+    }
+    // Fallback: küçük harfe çevir
+    return topic.toLowerCase().replaceAll(RegExp(r'[^a-z0-9ğüşıöç]'), '').trim();
+  }
 
   @override
   void initState() {
@@ -38,7 +68,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _loadTestStatus();
-      _checkDownloadStatus(); // 🔥 YENİ
+      _checkDownloadStatus();
     });
     
     _controller = AnimationController(
@@ -56,7 +86,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
 
   Future<void> _loadTestStatus() async {
     List<int> completedList = await QuizService.getCompletedTests(widget.topic);
-    
     if (mounted) {
       setState(() {
         _completedTestNumbers = completedList.toSet();
@@ -64,7 +93,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     }
   }
 
-  // 🔥 YENİ: İndirme durumunu kontrol et
   Future<void> _checkDownloadStatus() async {
     bool downloaded = await OfflineService.isTopicDownloaded(_cleanTitle);
     if (mounted) {
@@ -79,7 +107,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color appBarTitleColor = isDarkMode ? const Color(0xFFE2E8F0) : Colors.black87;
 
-    // Profil sayfası ile tamamen aynı arka plan tanımı
     Widget background = isDarkMode
       ? Container(
           decoration: const BoxDecoration(
@@ -94,7 +121,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
 
     return Scaffold(
       extendBodyBehindAppBar: true, 
-      backgroundColor: Colors.transparent, // Arka planı transparan yapıyoruz
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(
           "$_cleanTitle Testleri",
@@ -111,18 +138,16 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            // Profil sayfası ile aynı AppBar blur arka plan rengi
             child: Container(
               color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
             ),
           ),
         ),
-        // 🔥 YENİ: Offline durumu göster
         actions: [
           if (_isDownloaded)
             Container(
-              margin: EdgeInsets.only(right: 8),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
@@ -130,7 +155,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: const [
                   Icon(Icons.download_done, color: Colors.green, size: 16),
                   SizedBox(width: 4),
                   Text(
@@ -148,11 +173,10 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
       ),
       body: Stack(
         children: [
-          // Profil ekranındaki Arka Plan Widget'ı en alta eklendi
           background,
 
           if (isDarkMode) ...[
-             Positioned(
+            Positioned(
               top: -50, right: -50,
               child: Container(
                 width: 100, height: 100,
@@ -323,7 +347,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
                       _startQuiz(testNumber); 
                     }
                   },
-                  // 🔥 YENİ: Uzun basınca offline seçeneği
                   onLongPress: _isDownloaded ? () => _showOfflineDialog(testNumber) : null,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
@@ -400,7 +423,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
-  // 🔥 YENİ: Offline dialog
   void _showOfflineDialog(int testNumber) {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
@@ -410,8 +432,8 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.wifi_off, color: Colors.orange),
-            SizedBox(width: 10),
+            const Icon(Icons.wifi_off, color: Colors.orange),
+            const SizedBox(width: 10),
             Text(
               "Offline Mod",
               style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
@@ -424,7 +446,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
         ),
         actions: [
           TextButton(
-            child: Text("İptal"),
+            child: const Text("İptal"),
             onPressed: () => Navigator.pop(context),
           ),
           ElevatedButton.icon(
@@ -432,8 +454,8 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
               backgroundColor: Colors.orange,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            icon: Icon(Icons.cloud_off),
-            label: Text("Offline Başlat"),
+            icon: const Icon(Icons.cloud_off),
+            label: const Text("Offline Başlat"),
             onPressed: () {
               Navigator.pop(context);
               _startQuizOffline(testNumber);
@@ -444,7 +466,6 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
-  // 🔥 YENİ: Offline quiz başlat
   Future<void> _startQuizOffline(int testNumber) async {
     await Navigator.push(
       context, 
@@ -452,7 +473,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
         isTrial: false, 
         topic: widget.topic,      
         testNo: testNumber,
-        useOffline: true, // 🔥 Offline flag
+        useOffline: true,
       ))
     );
     _loadTestStatus();
@@ -519,6 +540,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
   }
 
+  // 🔥 GÜNCELLENDİ: Soruları Firebase 'questions' collection'ından çekiyor
   Future<void> _navigateToReview(int testNumber) async {
     showDialog(
       context: context, 
@@ -527,49 +549,59 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     );
 
     try {
+      // 1️⃣ user_answers, score vb. sonuç verisini getir
       Map<String, dynamic>? result = await QuizService.getQuizResult(widget.topic, testNumber);
       
       if (result == null || result['user_answers'] == null) {
         if (mounted) Navigator.pop(context);
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Bu testin detaylı verisi bulunamadı."))
           );
         }
         return;
       }
 
-      List<dynamic> rawList = result['user_answers'];
-      List<int?> userAnswers = rawList.map((e) => e as int?).toList();
+      List<int?> userAnswers = (result['user_answers'] as List)
+          .map((e) => e as int?)
+          .toList();
 
-      String jsonFileName = "";
-      String t = widget.topic;
-      
-      if (t.contains("Anatomi")) jsonFileName = "anatomi.json";
-      else if (t.contains("Biyokimya")) jsonFileName = "biyokimya.json";
-      else if (t.contains("Fizyoloji")) jsonFileName = "fizyoloji.json";
-      else if (t.contains("Histoloji")) jsonFileName = "histoloji.json";
-      else if (t.contains("Farmakoloji")) jsonFileName = "farmakoloji.json";
-      else if (t.contains("Patoloji")) jsonFileName = "patoloji.json";
-      else if (t.contains("Mikrobiyoloji")) jsonFileName = "mikrobiyoloji.json";
-      else if (t.contains("Biyoloji")) jsonFileName = "biyoloji.json";
-      else if (t.contains("Cerrahi")) jsonFileName = "cerrahi.json";
-      else if (t.contains("Endodonti")) jsonFileName = "endo.json";
-      else if (t.contains("Periodontoloji")) jsonFileName = "perio.json";
-      else if (t.contains("Ortodonti")) jsonFileName = "orto.json";
-      else if (t.contains("Pedodonti")) jsonFileName = "pedo.json";
-      else if (t.contains("Protetik")) jsonFileName = "protetik.json";
-      else if (t.contains("Radyoloji")) jsonFileName = "radyoloji.json";
-      else if (t.contains("Restoratif")) jsonFileName = "resto.json";
-      else {
+      // 2️⃣ widget.topic → Firebase topic key dönüşümü
+      final String topicKey = _getTopicKey(widget.topic);
+
+      // 3️⃣ Firebase 'questions' collection'ından soruları çek
+      final QuerySnapshot questionsSnapshot = await FirebaseFirestore.instance
+          .collection('questions')
+          .where('topic', isEqualTo: topicKey)
+          .where('testNo', isEqualTo: testNumber)
+          .orderBy('questionIndex')
+          .get();
+
+      if (questionsSnapshot.docs.isEmpty) {
         if (mounted) Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Sorular bulunamadı. (topic: $topicKey, test: $testNumber)"))
+          );
+        }
         return;
       }
 
-      String data = await DefaultAssetBundle.of(context).loadString('assets/data/$jsonFileName');
-      List<dynamic> jsonList = json.decode(data);
-      List<Question> allQuestions = jsonList.map((x) => Question.fromJson(x)).toList();
-      List<Question> testQuestions = allQuestions.where((q) => q.testNo == testNumber).toList();
+      // 4️⃣ Firestore dokümanlarını Question modeline dönüştür
+      final List<Question> testQuestions = questionsSnapshot.docs.map((doc) {
+        final d = doc.data() as Map<String, dynamic>;
+        return Question.fromJson({
+          'id'           : d['questionIndex'] ?? 0,
+          'questionIndex': d['questionIndex'] ?? 0,
+          'question'     : d['question']      ?? '',
+          'options'      : d['options']       ?? [],
+          'answerIndex'  : d['correctIndex']  ?? 0,  // uploader'da 'correctIndex' olarak kaydediliyor
+          'explanation'  : d['explanation']   ?? '',
+          'level'        : d['level']         ?? '',
+          'testNo'       : d['testNo']        ?? testNumber,
+          'image_url'    : d['image_url'],
+        });
+      }).toList();
 
       if (mounted) Navigator.pop(context);
 
@@ -584,7 +616,10 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
               testNo: testNumber,
               correctCount: int.parse(result['correct'].toString()),
               wrongCount: int.parse(result['wrong'].toString()),
-              emptyCount: testQuestions.length - (int.parse(result['correct'].toString()) + int.parse(result['wrong'].toString())),
+              emptyCount: testQuestions.length - (
+                int.parse(result['correct'].toString()) + 
+                int.parse(result['wrong'].toString())
+              ),
               score: int.parse(result['score'].toString()),
               isFromSaved: true,
             ),
@@ -595,6 +630,11 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
     } catch (e) {
       if (mounted) Navigator.pop(context);
       debugPrint("İnceleme hatası: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Bir hata oluştu: $e"))
+        );
+      }
     }
   }
 }

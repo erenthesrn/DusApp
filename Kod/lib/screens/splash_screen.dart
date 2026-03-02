@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'dart:async';
 
-// Senin firebase_options dosyanın yolu (kendi projene göre kontrol et)
+// Senin firebase_options dosyanın yolu
 import '../firebase_options.dart'; 
 import 'home_screen.dart';
 import 'login_page.dart';
@@ -22,15 +22,11 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
-  bool _isInitComplete = false;
 
   @override
   void initState() {
     super.initState();
-    // Animasyon kontrolcüsü
     _controller = AnimationController(vsync: this);
-    
-    // Uygulama başlatma işlemlerini tetikle
     _initializeApp();
   }
 
@@ -40,39 +36,30 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     super.dispose();
   }
 
-Future<void> _initializeApp() async {
-  // 1. Animasyonun başlamasına izin ver
-  await Future.delayed(const Duration(milliseconds: 100));
+  Future<void> _initializeApp() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final stopwatch = Stopwatch()..start();
+    
+    await _initBackEndServices();
+    
+    stopwatch.stop();
+    final elapsedMillis = stopwatch.elapsedMilliseconds;
+    
+    const minDisplayTime = 5000; // 5 saniye
+    
+    if (elapsedMillis < minDisplayTime) {
+      await Future.delayed(Duration(milliseconds: minDisplayTime - elapsedMillis));
+    }
 
-  // 2. Stopwatch ile gerçek yükleme süresini ölç
-  final stopwatch = Stopwatch()..start();
-  
-  // Backend servisleri başlat
-  await _initBackEndServices();
-  
-  stopwatch.stop();
-  final elapsedMillis = stopwatch.elapsedMilliseconds;
-  
-  // Minimum görüntüleme süresi (animasyonun anlamlı görünmesi için)
-  const minDisplayTime = 5000; // 2 saniye (3'ten düşürdük)
-  
-  // Eğer yükleme 2 saniyeden kısa sürdüyse, kalan süreyi bekle
-  if (elapsedMillis < minDisplayTime) {
-    await Future.delayed(Duration(milliseconds: minDisplayTime - elapsedMillis));
+    if (mounted) {
+      _navigateToNextScreen();
+    }
   }
-
-  // 3. Yönlendirme
-  if (mounted) {
-    _navigateToNextScreen();
-  }
-}
 
   Future<void> _initBackEndServices() async {
     try {
-      // Tarih formatını ayarla
       await initializeDateFormatting('tr_TR', null);
 
-      // Firebase'i başlat (main.dart'tan aldığımız kod buraya geldi)
       if (Firebase.apps.isEmpty) { 
         if (kIsWeb) {
           await Firebase.initializeApp(
@@ -100,17 +87,14 @@ Future<void> _initializeApp() async {
         }
       }
 
-      // Focus servisini başlat
       FocusService.instance;
       
     } catch (e) {
       debugPrint("Başlatma hatası: $e");
-      // Hata olsa bile devam et, login ekranında hata verir gerekirse
     }
   }
 
   void _navigateToNextScreen() {
-    // Artık Firebase hazır olduğu için currentUser'a bakabiliriz
     User? user = FirebaseAuth.instance.currentUser;
     
     Widget nextScreen;
@@ -133,35 +117,26 @@ Future<void> _initializeApp() async {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    // isDark kontrolü kaldırıldı, arka plan beyaza sabitlendi.
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0E14) : Colors.white,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Lottie Animasyonu
             Lottie.asset(
               'assets/animations/loading_dent.json',
               controller: _controller,
               height: 200,
               repeat: true,
-
               frameRate: FrameRate.max,
-              // Animasyon yüklendiğinde oynat
               onLoaded: (composition) {
                 _controller
                   ..duration = composition.duration
-                  ..repeat(); // Sürekli dönsün
+                  ..repeat();
               },
-              // Eğer Lottie yüklenirken hata verirse boş kutu göster (Crash olmasın)
               errorBuilder: (context, error, stackTrace) {
                  return const SizedBox(height: 200, child: Icon(Icons.error));
-              },
-              // Performans ayarı: FrameBuilder ile kare atlamayı azaltabiliriz
-              frameBuilder: (context, child, composition) {
-                return child;
               },
             ),
             const SizedBox(height: 20),
@@ -170,7 +145,7 @@ Future<void> _initializeApp() async {
               style: GoogleFonts.outfit(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF3b82f6),
+                color: const Color(0xFF3b82f6), // Sabit mavi renk
               ),
             ),
             const SizedBox(height: 10),
@@ -178,7 +153,7 @@ Future<void> _initializeApp() async {
               "Veriler hazırlanıyor...",
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey,
+                color: Colors.grey[600], // Gri tonu netleştirildi
               ),
             ),
           ],

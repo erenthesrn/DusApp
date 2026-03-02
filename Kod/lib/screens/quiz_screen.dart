@@ -810,29 +810,128 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // REPORT DIALOG — kullanıcıdan not alır, Firestore'a kaydeder
+  // ─────────────────────────────────────────────────────────────────────────
   void _showReportDialog(Question question) {
+    final TextEditingController noteController = TextEditingController();
+    bool isSending = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Hata Bildir"),
-        content: const Text("Bu soruda hata mı var?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Vazgeç"),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.flag_outlined, color: Colors.red, size: 22),
+              SizedBox(width: 8),
+              Text("Hata Bildir"),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Bildiriminiz alındı. Teşekkürler!"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Bu soruda ne tür bir hata var?",
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                maxLines: 4,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: "Hatayı açıklayın...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
                 ),
-              );
-            },
-            child: const Text("Bildir"),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: isSending ? null : () => Navigator.pop(context),
+              child: const Text("Vazgeç", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: isSending
+                  ? null
+                  : () async {
+                      final note = noteController.text.trim();
+                      if (note.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Lütfen hatayı açıklayın."),
+                            backgroundColor: Colors.orange,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isSending = true);
+
+                      try {
+                        final user = FirebaseAuth.instance.currentUser;
+                        await FirebaseFirestore.instance
+                            .collection('question_reports')
+                            .add({
+                          'questionId': question.id,
+                          'questionText': question.question,
+                          'reportedAt': FieldValue.serverTimestamp(),
+                          'status': 'open',
+                          'userId': user?.uid ?? 'anonymous',
+                          'userNote': note,
+                        });
+
+                        if (context.mounted) Navigator.pop(context);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Bildiriminiz alındı. Teşekkürler! 🙏"),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() => isSending = false);
+                        debugPrint("⚠️ Report save error: $e");
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Bildirim gönderilemedi. Tekrar deneyin."),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isSending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text("Bildir"),
+            ),
+          ],
+        ),
       ),
     );
   }
