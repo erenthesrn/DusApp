@@ -25,9 +25,10 @@ class QuizService {
         return querySnapshot.docs.first.data();
       }
       
-      // Yerel hafızaya bak
+      // Yerel hafızaya bak — UID bazlı anahtar
       final prefs = await SharedPreferences.getInstance();
-      List<String> localResults = prefs.getStringList('quiz_results') ?? [];
+      final String localKey = 'quiz_results_${user.uid}';
+      List<String> localResults = prefs.getStringList(localKey) ?? [];
       
       for (String res in localResults.reversed) {
         List<String> parts = res.split('|');
@@ -52,11 +53,16 @@ class QuizService {
   static Future<List<int>> getCompletedTests(String topic) async {
     Set<int> completedTests = {};
 
+    final User? user = FirebaseAuth.instance.currentUser;
+
     try {
-      // Yerel veri
+      // Yerel veri — UID bazlı anahtar kullan
       final prefs = await SharedPreferences.getInstance();
-      List<String> localResults = prefs.getStringList('quiz_results') ?? [];
-      
+      final String localKey = user != null
+          ? 'quiz_results_${user.uid}'
+          : 'quiz_results';
+      List<String> localResults = prefs.getStringList(localKey) ?? [];
+
       for (String res in localResults) {
         List<String> parts = res.split('|');
         if (parts.isNotEmpty && parts[0] == topic) {
@@ -68,7 +74,6 @@ class QuizService {
     }
 
     // Firebase'den çek
-    User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
         QuerySnapshot snapshot = await FirebaseFirestore.instance
@@ -104,12 +109,15 @@ class QuizService {
   }) async {
     User? user = FirebaseAuth.instance.currentUser;
 
-    // 1. Yerel kayıt
+    // 1. Yerel kayıt — UID bazlı anahtar kullan
     final prefs = await SharedPreferences.getInstance();
-    List<String> results = prefs.getStringList('quiz_results') ?? [];
+    final String localKey = user != null
+        ? 'quiz_results_${user.uid}'
+        : 'quiz_results';
+    List<String> results = prefs.getStringList(localKey) ?? [];
     String resultJson = "$topic|$testNo|$score|$correctCount|$wrongCount|${DateTime.now()}";
     results.add(resultJson);
-    await prefs.setStringList('quiz_results', results);
+    await prefs.setStringList(localKey, results);
 
     // 2. 🔥 Firebase kaydı - user_answers MUTLAKA ekleniyor
     if (user != null) {

@@ -1,9 +1,9 @@
-// lib/screens/result_screen.dart — v2
+// lib/screens/result_screen.dart — v3
 //
 // DEĞİŞİKLİKLER:
-//  • _updateStreakAndStats() artık (streak, isNewDay) çiftini döndürür
-//  • Banner sadece lastStudyDate != today olduğunda gösterilir
-//  • NotificationQueue.enqueueStreak'e isNewDay parametresi iletilir
+//  • userAnswers listesi questions.length'ten kısa olabilir (eski kayıtlar)
+//    → _safeUserAnswer() helper ile güvenli erişim sağlandı
+//  • Grid'de ve istatistiklerde bu helper kullanılıyor
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -49,6 +49,17 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // GÜVENLI CEVAP ERİŞİMİ
+  // userAnswers eski kayıtlarda questions'dan kısa olabilir → null döner
+  // ─────────────────────────────────────────────────────────────────────────
+  int? _safeUserAnswer(int index) {
+    if (index < widget.userAnswers.length) {
+      return widget.userAnswers[index];
+    }
+    return null; // Eksik cevap → boş sayılır
+  }
+
   @override
   void initState() {
     super.initState();
@@ -77,14 +88,14 @@ class _ResultScreenState extends State<ResultScreen> {
     // 1️⃣  Firebase güncelle → streak sayısı + yeni gün mü?
     final result = await _updateStreakAndStats();
     final int newStreak = result.$1;
-    final bool isNewDay = result.$2;    // 🆕 yeni gün kontrolü
+    final bool isNewDay = result.$2;
 
     // 2️⃣  Streak bildirimi — SADECE yeni günde
     if (mounted) {
       NotificationQueue.instance.enqueueStreak(
         context: context,
         streakDays: newStreak,
-        isNewDay: isNewDay,             // 🆕
+        isNewDay: isNewDay,
         isDarkMode: isDarkMode,
       );
     }
@@ -111,8 +122,6 @@ class _ResultScreenState extends State<ResultScreen> {
 
   // ─────────────────────────────────────────────────────────────────────────
   // FIREBASE GÜNCELLEME
-  // Dönüş: (yeniStreak, isNewDay)
-  //   isNewDay → lastStudyDate bugün değildi (yani seri yeni arttı)
   // ─────────────────────────────────────────────────────────────────────────
 
   Future<(int, bool)> _updateStreakAndStats() async {
@@ -139,7 +148,6 @@ class _ResultScreenState extends State<ResultScreen> {
       final int currentStreak = data['streak'] ?? 0;
 
       int newStreak = currentStreak;
-      // 🆕 Bugün zaten çalışıldıysa isNewDay = false → banner GÖSTERILMEZ
       final bool isNewDay = lastStudyDate != today;
 
       if (isNewDay) {
@@ -149,10 +157,9 @@ class _ResultScreenState extends State<ResultScreen> {
           final diff = dateToday.difference(dateLast).inDays;
           newStreak = (diff == 1) ? currentStreak + 1 : 1;
         } else {
-          newStreak = 1; // İlk defa çalışıyor
+          newStreak = 1;
         }
       }
-      // isNewDay == false ise newStreak değişmez (aynı gün ikinci test)
 
       final String safeTopic = widget.topic.trim();
 
@@ -173,8 +180,9 @@ class _ResultScreenState extends State<ResultScreen> {
       // Yanlışları kaydet
       final List<Map<String, dynamic>> mistakesToSave = [];
       for (int i = 0; i < widget.questions.length; i++) {
-        final bool isWrong = widget.userAnswers[i] != null &&
-            widget.userAnswers[i] != widget.questions[i].answerIndex;
+        final int? answer = _safeUserAnswer(i); // 🔥 güvenli erişim
+        final bool isWrong = answer != null &&
+            answer != widget.questions[i].answerIndex;
         if (isWrong) {
           final q = widget.questions[i];
           mistakesToSave.add({
@@ -182,7 +190,7 @@ class _ResultScreenState extends State<ResultScreen> {
             'question': q.question,
             'options': q.options,
             'correctIndex': q.answerIndex,
-            'userIndex': widget.userAnswers[i],
+            'userIndex': answer,
             'explanation': q.explanation,
             'topic': widget.topic,
             'testNo': widget.testNo,
@@ -197,8 +205,7 @@ class _ResultScreenState extends State<ResultScreen> {
       }
 
       debugPrint(
-        '🔥 Firebase güncellendi. Streak: $newStreak | '
-        'İsNewDay: $isNewDay',
+        '🔥 Firebase güncellendi. Streak: $newStreak | İsNewDay: $isNewDay',
       );
 
       return (newStreak, isNewDay);
@@ -230,7 +237,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // BUILD (değiştirilmedi — aynen korundu)
+  // BUILD
   // ─────────────────────────────────────────────────────────────────────────
 
   @override
@@ -372,8 +379,8 @@ class _ResultScreenState extends State<ResultScreen> {
                     ),
                     itemCount: widget.questions.length,
                     itemBuilder: (context, index) {
-                      int? userAnswer = widget.userAnswers[index];
-                      int correctAnswer =
+                      final int? userAnswer = _safeUserAnswer(index); // 🔥 güvenli erişim
+                      final int correctAnswer =
                           widget.questions[index].answerIndex;
 
                       Color bgColor;
