@@ -1,5 +1,4 @@
 // lib/screens/achievements_screen.dart
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/achievement_service.dart';
 import '../models/achievement_model.dart';
@@ -14,17 +13,18 @@ class AchievementsScreen extends StatefulWidget {
 class _AchievementsScreenState extends State<AchievementsScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  String _selectedFilter = 'Tümü';
+
+  static const _filters = ['Tümü', 'Kazanılan', 'Kilitli', 'Branş', 'Özel'];
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
     );
     _controller.forward();
-
-    // 🔥 Ekran her açıldığında Firebase'den taze veri çek
     AchievementService.instance.refreshFromFirebase();
   }
 
@@ -34,510 +34,712 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     super.dispose();
   }
 
+  List<Achievement> _filtered(List<Achievement> all) {
+    switch (_selectedFilter) {
+      case 'Kazanılan':
+        return all.where((a) => a.isUnlocked).toList();
+      case 'Kilitli':
+        return all.where((a) => !a.isUnlocked).toList();
+      case 'Branş':
+        return all.where((a) => a.groupId != null).toList();
+      case 'Özel':
+        return all.where((a) => a.groupId == null).toList();
+      default:
+        return all;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor =
-        isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
-
-    Widget background = isDarkMode
-        ? Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF0A0E14), Color(0xFF161B22)],
-              ),
-            ),
-          )
-        : Container(color: const Color(0xFFE0F7FA));
+        isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
 
     return AnimatedBuilder(
       animation: AchievementService.instance,
-      builder: (context, child) {
-        final achievements = AchievementService.instance.achievements;
-        final unlockedCount = achievements.where((a) => a.isUnlocked).length;
+      builder: (context, _) {
+        final all = AchievementService.instance.achievements;
+        final unlockedCount = all.where((a) => a.isUnlocked).length;
+        final filtered = _filtered(all);
 
         return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(
-              "Kupa Dolabı",
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: textColor,
-                letterSpacing: 0.5,
-              ),
-            ),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: IconThemeData(color: textColor),
-            flexibleSpace: ClipRRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white)
-                      .withOpacity(0.5),
-                ),
-              ),
-            ),
-          ),
-          body: Stack(
-            children: [
-              background,
-
-              if (isDarkMode)
-                Positioned(
-                  top: -100,
-                  left: -50,
-                  child: ImageFiltered(
-                    imageFilter:
-                        ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-                    child: Container(
-                      width: 300,
-                      height: 300,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+          backgroundColor:
+              isDark ? const Color(0xFF0A0E14) : const Color(0xFFF0F4FF),
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            cacheExtent: 800,
+            slivers: [
+              // ── APP BAR ──
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                backgroundColor:
+                    isDark ? const Color(0xFF0A0E14) : const Color(0xFFF0F4FF),
+                elevation: 0,
+                iconTheme: IconThemeData(color: textColor),
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.pin,
+                  background: _HeroHeader(
+                    unlockedCount: unlockedCount,
+                    totalCount: all.length,
+                    isDark: isDark,
+                    controller: _controller,
                   ),
                 ),
-
-              Column(
-                children: [
-                  SizedBox(
-                    height: kToolbarHeight +
-                        MediaQuery.of(context).padding.top +
-                        10,
+                title: Text(
+                  'Kupa Dolabı',
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
                   ),
+                ),
+                centerTitle: true,
+              ),
 
-                  // --- ÜST BİLGİ KARTI ---
-                  SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, -0.2),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: _controller,
-                      curve: Curves.easeOutBack,
-                    )),
-                    child: FadeTransition(
-                      opacity: _controller,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 10),
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDarkMode
-                                ? [
-                                    const Color(0xFF1A237E),
-                                    const Color(0xFF0D47A1)
-                                  ]
-                                : [
-                                    const Color(0xFF2962FF),
-                                    const Color(0xFF42A5F5)
-                                  ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF2962FF).withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // ── FİLTRE ÇUBUĞU ──
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _FilterBarDelegate(
+                  filters: _filters,
+                  selected: _selectedFilter,
+                  isDark: isDark,
+                  onSelect: (f) => setState(() {
+                    _selectedFilter = f;
+                    _controller
+                      ..reset()
+                      ..forward();
+                  }),
+                ),
+              ),
+
+              // ── ROZET IZGARASI ──
+              filtered.isEmpty
+                  ? SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.stars_rounded,
-                                        color: Colors.yellowAccent.shade100,
-                                        size: 18),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      "Toplam Başarı",
-                                      style: TextStyle(
-                                        color:
-                                            Colors.white.withOpacity(0.9),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: "$unlockedCount",
-                                        style: const TextStyle(
-                                          fontSize: 36,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
-                                          height: 1,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: " / ${achievements.length}",
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w600,
-                                          color:
-                                              Colors.white.withOpacity(0.6),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 70,
-                                  height: 70,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color:
-                                        Colors.white.withOpacity(0.1),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.amber.withOpacity(0.4),
-                                        blurRadius: 20,
-                                        spreadRadius: 5,
-                                      )
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.emoji_events_rounded,
-                                    color: Color(0xFFFFD700),
-                                    size: 48,
-                                  ),
-                                ),
-                              ],
+                            Icon(Icons.search_off_rounded,
+                                size: 64,
+                                color: isDark
+                                    ? Colors.white24
+                                    : Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Bu kategoride başarım yok',
+                              style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white38
+                                      : Colors.grey.shade500),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-
-                  // --- ROZET IZGARASI ---
-                  Expanded(
-                    child: GridView.builder(
-                      padding:
-                          const EdgeInsets.fromLTRB(20, 10, 20, 30),
-                      physics: const BouncingScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.75,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: achievements.length,
-                      itemBuilder: (context, index) {
-                        final Animation<double> animation =
-                            Tween<double>(begin: 0.0, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: _controller,
-                            curve: Interval(
-                              (1 / achievements.length) * index,
-                              1.0,
-                              curve: Curves.easeOut,
-                            ),
-                          ),
-                        );
-
-                        return AnimatedBuilder(
-                          animation: animation,
-                          builder: (context, child) =>
-                              Transform.translate(
-                            offset: Offset(
-                                0, 50 * (1 - animation.value)),
-                            child: Opacity(
-                              opacity: animation.value,
-                              child: _buildGlassAchievementCard(
-                                context,
-                                achievements[index],
-                                isDarkMode,
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.72,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final anim = Tween<double>(begin: 0.0, end: 1.0)
+                                .animate(CurvedAnimation(
+                              parent: _controller,
+                              curve: Interval(
+                                (index / filtered.length).clamp(0.0, 0.85),
+                                1.0,
+                                curve: Curves.easeOutBack,
                               ),
-                            ),
-                          ),
-                        );
-                      },
+                            ));
+                            return AnimatedBuilder(
+                              animation: anim,
+                              builder: (_, child) => Transform.translate(
+                                offset: Offset(0, 50 * (1 - anim.value)),
+                                child: Opacity(
+                                  opacity: anim.value.clamp(0.0, 1.0),
+                                  child: child,
+                                ),
+                              ),
+                              child: RepaintBoundary(
+                                child: _AchievementCard(
+                                  item: filtered[index],
+                                  isDark: isDark,
+                                  isLocked: AchievementService.instance
+                                      .isLocked(filtered[index]),
+                                ),
+                              ),
+                            );
+                          },
+                          childCount: filtered.length,
+                          addAutomaticKeepAlives: false,
+                          addRepaintBoundaries: false,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
             ],
           ),
         );
       },
     );
   }
+}
 
-  Widget _buildGlassAchievementCard(
-      BuildContext context, Achievement item, bool isDarkMode) {
+// ─────────────────────────────────────────
+//  HERO HEADER
+// ─────────────────────────────────────────
+
+class _HeroHeader extends StatelessWidget {
+  final int unlockedCount;
+  final int totalCount;
+  final bool isDark;
+  final AnimationController controller;
+
+  const _HeroHeader({
+    required this.unlockedCount,
+    required this.totalCount,
+    required this.isDark,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalCount > 0 ? unlockedCount / totalCount : 0.0;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+          20, MediaQuery.of(context).padding.top + 56, 20, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF0D1B4B), const Color(0xFF0A0E14)]
+              : [const Color(0xFF1565C0), const Color(0xFF42A5F5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Row(
+            children: [
+              // Trophy animasyonu
+              SlideTransition(
+                position: Tween<Offset>(
+                        begin: const Offset(-0.3, 0), end: Offset.zero)
+                    .animate(CurvedAnimation(
+                        parent: controller, curve: Curves.easeOutBack)),
+                child: Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                          color: const Color(0xFFFFD700).withOpacity(0.5),
+                          blurRadius: 16,
+                          spreadRadius: 2)
+                    ],
+                  ),
+                  child: const Icon(Icons.emoji_events_rounded,
+                      color: Colors.white, size: 34),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Kupa Dolabı',
+                        style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    FadeTransition(
+                      opacity: controller,
+                      child: RichText(
+                        text: TextSpan(children: [
+                          TextSpan(
+                              text: '$unlockedCount',
+                              style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  height: 1)),
+                          TextSpan(
+                              text: ' / $totalCount başarım',
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white60,
+                                  fontWeight: FontWeight.w500)),
+                        ]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Progress bar
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 10,
+                  backgroundColor: Colors.white24,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                '${(progress * 100).toStringAsFixed(0)}% tamamlandı',
+                style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+//  FİLTRE ÇUBUĞU DELEGESİ
+// ─────────────────────────────────────────
+
+class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
+  final List<String> filters;
+  final String selected;
+  final bool isDark;
+  final ValueChanged<String> onSelect;
+
+  _FilterBarDelegate({
+    required this.filters,
+    required this.selected,
+    required this.isDark,
+    required this.onSelect,
+  });
+
+  @override
+  double get minExtent => 56;
+  @override
+  double get maxExtent => 56;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: isDark ? const Color(0xFF0A0E14) : const Color(0xFFF0F4FF),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const BouncingScrollPhysics(),
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final f = filters[i];
+          final isActive = f == selected;
+          return GestureDetector(
+            onTap: () => onSelect(f),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: isActive
+                    ? const LinearGradient(
+                        colors: [Color(0xFF2962FF), Color(0xFF42A5F5)])
+                    : null,
+                color: isActive
+                    ? null
+                    : (isDark
+                        ? const Color(0xFF1C2333)
+                        : Colors.white),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFF2962FF).withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3))
+                      ]
+                    : null,
+              ),
+              child: Text(
+                f,
+                style: TextStyle(
+                  color: isActive
+                      ? Colors.white
+                      : (isDark ? Colors.white54 : Colors.grey.shade600),
+                  fontSize: 13,
+                  fontWeight:
+                      isActive ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_FilterBarDelegate old) =>
+      old.selected != selected || old.isDark != isDark;
+}
+
+// ─────────────────────────────────────────
+//  BAŞARIM KARTI
+// ─────────────────────────────────────────
+
+class _AchievementCard extends StatelessWidget {
+  final Achievement item;
+  final bool isDark;
+  final bool isLocked;
+
+  const _AchievementCard({
+    required this.item,
+    required this.isDark,
+    required this.isLocked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tier = item.tier;
+    final unlocked = item.isUnlocked;
+    final fullyLocked = isLocked && !unlocked;
+
+    // Renk teması
+    final tierColor = tier?.color ?? const Color(0xFF448AFF);
+    final tierGradient = tier?.gradient ??
+        [const Color(0xFF2962FF), const Color(0xFF1565C0)];
+    final tierGlow = tier?.glowColor ?? const Color(0xFF448AFF);
+
+    final cardBg = isDark
+        ? (unlocked ? const Color(0xFF1A2035) : const Color(0xFF111722))
+        : (unlocked ? Colors.white : const Color(0xFFF5F7FF));
+
+    final border = unlocked
+        ? Border.all(color: tierColor.withOpacity(0.6), width: 1.5)
+        : Border.all(
+            color: isDark ? Colors.white10 : Colors.grey.shade200,
+            width: 1.2);
+
+    final shadows = unlocked
+        ? [
+            BoxShadow(
+              color: tierGlow.withOpacity(isDark ? 0.25 : 0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            )
+          ]
+        : [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ];
+
     final titleColor =
-        isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
-    final descColor =
-        isDarkMode ? Colors.white70 : Colors.grey.shade700;
-
-    BoxBorder border;
-    List<BoxShadow> shadows;
-
-    if (item.isUnlocked) {
-      border =
-          Border.all(color: Colors.amber.withOpacity(0.6), width: 1.5);
-      shadows = [
-        BoxShadow(
-          color: Colors.amber
-              .withOpacity(isDarkMode ? 0.15 : 0.3),
-          blurRadius: 15,
-          offset: const Offset(0, 8),
-        )
-      ];
-    } else {
-      border = Border.all(
-        color: isDarkMode
-            ? Colors.white.withOpacity(0.08)
-            : Colors.white,
-        width: 1.5,
-      );
-      shadows = [
-        BoxShadow(
-          color: Colors.black
-              .withOpacity(isDarkMode ? 0.2 : 0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 5),
-        )
-      ];
-    }
+        isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+    final descColor = isDark ? Colors.white60 : Colors.grey.shade600;
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(22),
+        border: border,
         boxShadow: shadows,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? const Color(0xFF161B22).withOpacity(0.6)
-                  : Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(24),
-              border: border,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 16),
-
-                // İKON ALANI
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (item.isUnlocked)
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.orange.withOpacity(0.5),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            )
-                          ],
-                        ),
-                      ),
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: item.isUnlocked
-                            ? Colors.orange.withOpacity(0.15)
-                            : (isDarkMode
-                                ? Colors.white.withOpacity(0.05)
-                                : Colors.black.withOpacity(0.04)),
-                        border: item.isUnlocked
-                            ? Border.all(
-                                color: Colors.orange.withOpacity(0.5))
-                            : null,
-                      ),
-                      child: Icon(
-                        item.iconData,
-                        size: 32,
-                        color: item.isUnlocked
-                            ? Colors.orange
-                            : (isDarkMode
-                                ? Colors.white38
-                                : Colors.grey.shade500),
-                      ),
-                    ),
-                    if (!item.isUnlocked)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? const Color(0xFF21262D)
-                                : Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isDarkMode
-                                  ? Colors.white10
-                                  : Colors.grey.shade300,
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                  color: Colors.black12, blurRadius: 4)
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.lock_outline,
-                            size: 14,
-                            color: isDarkMode
-                                ? Colors.white54
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // BAŞLIK
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: Text(
-                    item.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: item.isUnlocked
-                          ? titleColor
-                          : titleColor.withOpacity(0.5),
-                    ),
+      child: Column(
+        children: [
+          // ── ÜST BÖLÜM ──
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 18, 12, 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // İkon
+                  _TierIcon(
+                    item: item,
+                    tier: tier,
+                    unlocked: unlocked,
+                    fullyLocked: fullyLocked,
+                    isDark: isDark,
+                    tierColor: tierColor,
                   ),
-                ),
+                  const SizedBox(height: 12),
 
-                const SizedBox(height: 6),
+                  // Tier rozeti (bronz/gümüş/altın)
+                  if (tier != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        gradient: unlocked
+                            ? LinearGradient(colors: tierGradient)
+                            : null,
+                        color: unlocked
+                            ? null
+                            : (isDark ? Colors.white10 : Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(tier.tierIcon,
+                              size: 11,
+                              color:
+                                  unlocked ? Colors.white : Colors.grey),
+                          const SizedBox(width: 3),
+                          Text(
+                            tier.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  unlocked ? Colors.white : Colors.grey,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                // AÇIKLAMA
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: Text(
-                    item.description,
+                  if (tier != null) const SizedBox(height: 8),
+
+                  // Başlık
+                  Text(
+                    item.title,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: descColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      height: 1.2,
+                      color: unlocked
+                          ? titleColor
+                          : titleColor.withOpacity(0.4),
+                    ),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  // Açıklama
+                  Text(
+                    fullyLocked
+                        ? 'Önceki kademeyi kazan!'
+                        : item.description,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: fullyLocked
+                          ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                          : descColor,
                       height: 1.3,
+                      fontStyle: fullyLocked
+                          ? FontStyle.italic
+                          : FontStyle.normal,
                     ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
 
-                const Spacer(),
-
-                // DURUM ÇUBUĞU VEYA ROZET
-                if (item.isUnlocked)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [
-                        Colors.orange.shade400,
-                        Colors.deepOrange.shade500
-                      ]),
-                      borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(24)),
-                    ),
-                    child: const Text(
-                      "KAZANILDI",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  )
-                else
-                  Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: item.progressPercentage,
-                            backgroundColor: isDarkMode
-                                ? Colors.white10
-                                : Colors.grey.shade300,
-                            color: const Color(0xFF448AFF),
-                            minHeight: 4,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          "${item.currentValue} / ${item.targetValue}",
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: descColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+          // ── ALT BÖLÜM ──
+          if (unlocked)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: tierGradient),
+                borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(22)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle_rounded,
+                      color: Colors.white.withOpacity(0.9), size: 13),
+                  const SizedBox(width: 5),
+                  const Text(
+                    'KAZANILDI',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
                     ),
                   ),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: fullyLocked ? 0.0 : item.progressPercentage,
+                      backgroundColor: isDark
+                          ? Colors.white10
+                          : Colors.grey.shade200,
+                      color: fullyLocked
+                          ? Colors.grey.withOpacity(0.3)
+                          : tierColor,
+                      minHeight: 5,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    fullyLocked
+                        ? '🔒 Kilitli'
+                        : '${item.currentValue} / ${item.targetValue}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: fullyLocked
+                          ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                          : descColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+//  TİER İKON
+// ─────────────────────────────────────────
+
+class _TierIcon extends StatelessWidget {
+  final Achievement item;
+  final AchievementTier? tier;
+  final bool unlocked;
+  final bool fullyLocked;
+  final bool isDark;
+  final Color tierColor;
+
+  const _TierIcon({
+    required this.item,
+    required this.tier,
+    required this.unlocked,
+    required this.fullyLocked,
+    required this.isDark,
+    required this.tierColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Glow efekti (sadece kazanıldıysa)
+        if (unlocked)
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: tierColor.withOpacity(0.4),
+                  blurRadius: 18,
+                  spreadRadius: 3,
+                )
               ],
             ),
           ),
+        // İkon çemberi
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: unlocked
+                ? LinearGradient(
+                    colors: [
+                      tierColor.withOpacity(0.25),
+                      tierColor.withOpacity(0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: unlocked
+                ? null
+                : (isDark
+                    ? Colors.white.withOpacity(0.04)
+                    : Colors.grey.withOpacity(0.08)),
+            border: unlocked
+                ? Border.all(color: tierColor.withOpacity(0.5), width: 1.5)
+                : Border.all(
+                    color: isDark ? Colors.white12 : Colors.grey.shade300,
+                    width: 1),
+          ),
+          child: Icon(
+            item.iconData,
+            size: 28,
+            color: unlocked
+                ? tierColor
+                : (isDark ? Colors.white24 : Colors.grey.shade400),
+          ),
         ),
-      ),
+        // Kilit ikonu (tamamen kilitliyse)
+        if (fullyLocked)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1C2333) : Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: isDark ? Colors.white12 : Colors.grey.shade300),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 3)
+                ],
+              ),
+              child: Icon(Icons.lock_rounded,
+                  size: 11,
+                  color: isDark ? Colors.white38 : Colors.grey.shade500),
+            ),
+          ),
+      ],
     );
   }
 }

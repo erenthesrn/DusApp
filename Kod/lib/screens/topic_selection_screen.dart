@@ -22,11 +22,16 @@ class TopicSelectionScreen extends StatefulWidget {
 
 class _TopicSelectionScreenState extends State<TopicSelectionScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  late List<String> _sortedTopics;
 
   @override
   void initState() {
     super.initState();
-    // Liste elemanlarının sırayla gelmesi için animasyon kontrolcüsü
+
+    // Alfabetik sıralama (Türkçe karakterler dahil)
+    _sortedTopics = List<String>.from(widget.topics)
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -40,43 +45,37 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
     super.dispose();
   }
 
-  // --- AKILLI İKON SİSTEMİ ---
-  // Ders ismine göre en uygun, modern Material ikonu seçer
   IconData _getIconForTopic(String topic) {
     final t = topic.toLowerCase();
     
     // Temel Bilimler
-    if (t.contains('anatomi')) return Icons.accessibility_new_rounded; // Vücut
-    if (t.contains('biyoloji')) return Icons.fingerprint_rounded; // Genetik/DNA
-    if (t.contains('biyokimya')) return Icons.science_rounded; // Deney Tüpü
-    if (t.contains('farmakoloji')) return Icons.medication_rounded; // İlaç
-    if (t.contains('fizyoloji')) return Icons.monitor_heart_rounded; // Kalp Atışı
-    if (t.contains('histoloji')) return Icons.biotech_rounded; // Mikroskop
-    if (t.contains('mikrobiyoloji')) return Icons.coronavirus_rounded; // Virüs/Bakteri
-    if (t.contains('patoloji')) return Icons.health_and_safety_rounded; // Kalkan/Hastalık
+    if (t.contains('anatomi')) return Icons.accessibility_new_rounded;
+    if (t.contains('biyoloji')) return Icons.fingerprint_rounded;
+    if (t.contains('biyokimya')) return Icons.science_rounded;
+    if (t.contains('farmakoloji')) return Icons.medication_rounded;
+    if (t.contains('fizyoloji')) return Icons.monitor_heart_rounded;
+    if (t.contains('histoloji')) return Icons.biotech_rounded;
+    if (t.contains('mikrobiyoloji')) return Icons.coronavirus_rounded;
+    if (t.contains('patoloji')) return Icons.health_and_safety_rounded;
     
     // Klinik Bilimler
-    if (t.contains('cerrahi')) return Icons.medical_services_rounded; // Cerrahi Müdahale
-    if (t.contains('radyoloji')) return Icons.camera_alt_rounded; // Röntgen
-    if (t.contains('endodonti')) return Icons.flash_on_rounded; // Sinir/Kök
-    if (t.contains('ortodonti')) return Icons.grid_on_rounded; // Tel/Düzen
-    if (t.contains('restoratif')) return Icons.build_circle_rounded; // Onarım
-    if (t.contains('pedodonti')) return Icons.child_care_rounded; // Çocuk
-    if (t.contains('periodontoloji')) return Icons.layers_rounded; // Diş Eti Tabakaları
-    if (t.contains('protetik')) return Icons.sentiment_satisfied_alt_rounded; // Gülüş Tasarımı
+    if (t.contains('cerrahi')) return Icons.medical_services_rounded;
+    if (t.contains('radyoloji')) return Icons.camera_alt_rounded;
+    if (t.contains('endodonti')) return Icons.flash_on_rounded;
+    if (t.contains('ortodonti')) return Icons.grid_on_rounded;
+    if (t.contains('restoratif')) return Icons.build_circle_rounded;
+    if (t.contains('pedodonti')) return Icons.child_care_rounded;
+    if (t.contains('periodontoloji')) return Icons.layers_rounded;
+    if (t.contains('protetik')) return Icons.sentiment_satisfied_alt_rounded;
 
-    return Icons.menu_book_rounded; // Varsayılan Kitap
+    return Icons.menu_book_rounded;
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Tema Kontrolü
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // 2. Renk Tanımları
     Color appBarTitleColor = isDarkMode ? const Color(0xFFE6EDF3) : Colors.black87;
 
-    // Profil sayfası ile tamamen aynı arka plan tanımı
     Widget background = isDarkMode
       ? Container(
           decoration: const BoxDecoration(
@@ -90,8 +89,8 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
       : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
     return Scaffold(
-      extendBodyBehindAppBar: true, // Glass effect için
-      backgroundColor: Colors.transparent, // Arka planı transparan yapıyoruz
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(
           widget.title, 
@@ -108,7 +107,6 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            // Profil sayfası ile aynı AppBar blur arka plan rengi
             child: Container(
               color: (isDarkMode ? const Color(0xFF0D1117) : Colors.white).withOpacity(0.5),
             ),
@@ -117,10 +115,8 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
       ),
       body: Stack(
         children: [
-          // Profil ekranındaki Arka Plan Widget'ı en alta eklendi
           background,
 
-          // Arka Plan Glow Efekti (Dinamik Renkli - Sağ Üst Köşe)
           if (isDarkMode)
             Positioned(
               top: -100, right: -100,
@@ -136,8 +132,7 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
               ),
             ),
             
-          // Sol Alt Glow (Dengeleyici)
-           if (isDarkMode)
+          if (isDarkMode)
             Positioned(
               bottom: -50, left: -50,
               child: ImageFiltered(
@@ -152,18 +147,16 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
               ),
             ),
 
-          // Liste
           ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 130, 20, 40), // AppBar payı bırakıldı
+            padding: const EdgeInsets.fromLTRB(20, 90, 20, 40),
             physics: const BouncingScrollPhysics(),
-            itemCount: widget.topics.length,
+            itemCount: _sortedTopics.length,         // 🔥 sıralı liste
             itemBuilder: (context, index) {
-              // Her eleman için gecikmeli animasyon
               final Animation<double> animation = Tween<double>(begin: 0.0, end: 1.0).animate(
                 CurvedAnimation(
                   parent: _controller,
                   curve: Interval(
-                    (1 / widget.topics.length) * index, 
+                    (1 / _sortedTopics.length) * index, 
                     1.0, 
                     curve: Curves.easeOut
                   ),
@@ -174,10 +167,10 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
                 animation: animation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(0, 40 * (1 - animation.value)), // Aşağıdan yukarı kayma
+                    offset: Offset(0, 40 * (1 - animation.value)),
                     child: Opacity(
                       opacity: animation.value,
-                      child: _buildPremiumCard(context, widget.topics[index], isDarkMode),
+                      child: _buildPremiumCard(context, _sortedTopics[index], isDarkMode), // 🔥 sıralı liste
                     ),
                   );
                 },
@@ -190,20 +183,18 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
   }
 
   Widget _buildPremiumCard(BuildContext context, String topic, bool isDarkMode) {
-    // Kart Renkleri
     Color cardColor = isDarkMode ? const Color(0xFF161B22) : Colors.white;
     Color textColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
     Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.1);
     
-    // İkon Belirle
     IconData iconData = _getIconForTopic(topic);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      height: 90, // Sabit yükseklik ile daha düzenli görünüm
+      height: 90,
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(24), // Daha yuvarlak köşeler
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
@@ -233,7 +224,6 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                // 1. Sol İkon (Gradient Background & Glow)
                 Container(
                   width: 56, height: 56,
                   decoration: BoxDecoration(
@@ -260,7 +250,6 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
                 
                 const SizedBox(width: 20),
                 
-                // 2. Başlık ve Alt Metin
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,7 +285,6 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
                   ),
                 ),
                 
-                // 3. Sağ Ok İkonu (Minimal)
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -316,5 +304,4 @@ class _TopicSelectionScreenState extends State<TopicSelectionScreen> with Single
       ),
     );
   }
-  
 }

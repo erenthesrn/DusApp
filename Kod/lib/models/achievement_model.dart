@@ -1,13 +1,25 @@
+// lib/models/achievement_model.dart
 import 'package:flutter/material.dart';
+import '../services/achievement_service.dart'; // AchievementTier için
 
 class Achievement {
-  final String id;          // Rozetin benzersiz kimliği (örn: 'anatomi_1')
-  final String title;       // Başlık (örn: 'Anatomi Atlası')
-  final String description; // Açıklama
-  final IconData iconData;  // Gösterilecek ikon
-  final int targetValue;    // Hedef (örn: 50 soru)
-  int currentValue;         // Mevcut durum (örn: 12 soru)
-  bool isUnlocked;          // Kazanıldı mı?
+  final String id;
+  final String title;
+  final String description;
+  final IconData iconData;
+  final int targetValue;
+
+  /// Bronz / Gümüş / Altın — null ise tier'siz özel başarım
+  final AchievementTier? tier;
+
+  /// Aynı branşın kademe grubu (ör: 'anatomy', 'endo')
+  final String? groupId;
+
+  /// Bu başarım açılmadan önce kazanılması gereken başarım ID'si
+  final String? requiredId;
+
+  int currentValue;
+  bool isUnlocked;
 
   Achievement({
     required this.id,
@@ -15,44 +27,35 @@ class Achievement {
     required this.description,
     required this.iconData,
     required this.targetValue,
+    this.tier,
+    this.groupId,
+    this.requiredId,
     this.currentValue = 0,
     this.isUnlocked = false,
   });
 
-  // İlerleme kaydetme (0.0 ile 1.0 arası bir değer döner, progress bar için)
-  double get progressPercentage {
-    if (isUnlocked) return 1.0;
-    return (currentValue / targetValue).clamp(0.0, 1.0);
-  }
+  double get progressPercentage =>
+      targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
 
-  // Veriyi telefona kaydetmek için JSON'a çevirme
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'currentValue': currentValue,
-      'isUnlocked': isUnlocked,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'currentValue': currentValue,
+        'isUnlocked': isUnlocked,
+      };
 
-  // Telefondan veriyi geri okuma
-  factory Achievement.fromMap(Map<String, dynamic> map, Achievement original) {
-    int loadedValue = map['currentValue'] ?? 0;
-    bool loadedUnlocked = map['isUnlocked'] ?? false;
-
-    // 🔥 HATA ÇÖZÜMÜ: Eğer okunan değer hedefe eşit veya büyükse, 
-    // sistem hata yapıp false kaydetmiş olsa bile kesinlikle true kabul et.
-    if (loadedValue >= original.targetValue) {
-      loadedUnlocked = true;
-    }
-
+  static Achievement fromMap(
+      Map<String, dynamic> map, Achievement template) {
     return Achievement(
-      id: original.id,
-      title: original.title,
-      description: original.description,
-      iconData: original.iconData,
-      targetValue: original.targetValue,
-      currentValue: loadedValue,
-      isUnlocked: loadedUnlocked,
+      id: template.id,
+      title: template.title,
+      description: template.description,
+      iconData: template.iconData,
+      targetValue: template.targetValue,
+      tier: template.tier,
+      groupId: template.groupId,
+      requiredId: template.requiredId,
+      currentValue: (map['currentValue'] as num?)?.toInt() ?? 0,
+      isUnlocked: map['isUnlocked'] as bool? ?? false,
     );
   }
 }
