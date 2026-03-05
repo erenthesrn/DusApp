@@ -27,10 +27,9 @@ try {
       // B. Mail Kuyruğuna Ekle
       await _firestore.collection('mail').add({
         'to': [user.email],
+        'from': 'DUS Asistanı <forfuturedentists@gmail.com>', 
         'message': {
-          // 1. GÖNDEREN İSMİ BURADA AYARLANIYOR
-          'from': 'DUS Asistanı <forfuturedentists@gmail.com>', 
-          'subject': 'Giriş Doğrulama Kodunuz: $code',
+         'subject': 'Giriş Doğrulama Kodunuz: $code',
           'html': '''
           <!DOCTYPE html>
           <html>

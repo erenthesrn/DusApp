@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../models/question_model.dart';
 import '../services/quiz_service.dart';
@@ -10,6 +12,21 @@ import '../services/mistakes_service.dart';
 import '../services/bookmark_service.dart';
 import '../services/offline_service.dart';
 import 'result_screen.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom cache manager — 30 gün, max 500 görsel
+// ─────────────────────────────────────────────────────────────────────────────
+class QuestionImageCacheManager {
+  static const key = 'question_images';
+
+  static final CacheManager instance = CacheManager(
+    Config(
+      key,
+      stalePeriod: const Duration(days: 30),
+      maxNrOfCacheObjects: 500,
+    ),
+  );
+}
 
 class QuizScreen extends StatefulWidget {
   final bool isTrial;
@@ -514,7 +531,6 @@ class _QuizScreenState extends State<QuizScreen> {
         debugPrint("⚠️ Offline result save error (non-fatal): $e");
       }
 
-      // Show snackbar after returning, so we don't block
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -671,8 +687,6 @@ class _QuizScreenState extends State<QuizScreen> {
               }
 
               // 5️⃣  Fire-and-forget background save (errors are all caught inside)
-              //     This runs AFTER the user has already seen ResultScreen.
-              //     We intentionally don't await this before popping.
               _saveResultsInBackground(
                 correct: correct,
                 wrong: wrong,
@@ -1121,6 +1135,9 @@ class _QuizScreenState extends State<QuizScreen> {
 
                       const SizedBox(height: 12),
 
+                      // ─────────────────────────────────────────────────────
+                      // GÖRSEL — CachedNetworkImage ile cache'leniyor
+                      // ─────────────────────────────────────────────────────
                       if (currentQuestion.imageUrl != null &&
                           currentQuestion.imageUrl!.isNotEmpty)
                         Container(
@@ -1137,32 +1154,23 @@ class _QuizScreenState extends State<QuizScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              currentQuestion.imageUrl!,
+                            child: CachedNetworkImage(
+                              imageUrl: currentQuestion.imageUrl!,
+                              cacheManager: QuestionImageCacheManager.instance,
                               fit: BoxFit.contain,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    value: loadingProgress
-                                                .expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                            loadingProgress
-                                                .expectedTotalBytes!
-                                        : null,
-                                  ),
-                                );
-                              },
-                              errorBuilder:
-                                  (context, error, stackTrace) {
-                                return const Center(
-                                  child: Icon(Icons.broken_image,
-                                      size: 50, color: Colors.grey),
-                                );
-                              },
+                              placeholder: (context, url) => Center(
+                                child: CircularProgressIndicator(
+                                  color: isDarkMode ? Colors.white54 : null,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                              ),
                             ),
                           ),
                         ),
