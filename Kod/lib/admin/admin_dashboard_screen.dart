@@ -1,9 +1,11 @@
+import 'package:dus_app_1/admin/tabs/blog_admin_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/theme_provider.dart';
 import 'admin_repository.dart';
 import 'tabs/question_upload_tab.dart';
 import 'tabs/user_management_tab.dart';
 import 'tabs/reports_tab.dart';
+import 'tabs/blog_admin_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN GUARD
@@ -129,6 +131,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             QuestionUploadTab(),
             UserManagementTab(),
             ReportsTab(),
+            BlogAdminScreen(),
           ],
         ),
       ),

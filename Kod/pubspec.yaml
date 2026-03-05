@@ -53,6 +53,7 @@ flutter:
     - assets/data/anatomi.json
     - assets/data/
     - assets/audio/streak_music.mp3
+    - assets/guest.json
 
   # --- FONTS (MEVCUT AYARLARIN) ---
   fonts:

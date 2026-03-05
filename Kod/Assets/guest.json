@@ -1,0 +1,331 @@
+{
+  "tests": [
+    {
+      "testNo": 1,
+      "title": "Anatomi Temelleri",
+      "subtitle": "Temel anatomik yapılar",
+      "icon": "accessibility_new",
+      "color": "#E53935",
+      "questions": [
+        {
+          "id": 1,
+          "question": "Kalbin hangi odacığı sistemik dolaşıma kan pompalar?",
+          "options": ["A) Sağ Atriyum", "B) Sol Atriyum", "C) Sağ Ventrikül", "D) Sol Ventrikül", "E) Aorta"],
+          "answerIndex": 3,
+          "explanation": "Sol ventrikül, oksijenden zengin kanı aorta aracılığıyla sistemik dolaşıma pompalar. Duvarı sağ ventriküle göre 3 kat daha kalındır.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 1
+        },
+        {
+          "id": 2,
+          "question": "Hangisi üst ekstremitede yer almaz?",
+          "options": ["A) Radius", "B) Ulna", "C) Fibula", "D) Humerus", "E) Skafoid"],
+          "answerIndex": 2,
+          "explanation": "Fibula, alt ekstremitede yer alan bir kemiktir. Radius, Ulna ve Humerus kol kemikleri; Skafoid ise el bileği (karpal) kemiklerinden biridir.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 2
+        },
+        {
+          "id": 3,
+          "question": "Nervus facialis hangi foramen aracılığıyla kraniyumu terk eder?",
+          "options": ["A) Foramen ovale", "B) Foramen spinosum", "C) Foramen stylomastoideum", "D) Foramen jugulare", "E) Foramen rotundum"],
+          "answerIndex": 2,
+          "explanation": "N. facialis (VII. kranyal sinir), foramen stylomastoideum aracılığıyla temporal kemikten çıkar ve yüz kaslarını innerve eder.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 3
+        },
+        {
+          "id": 4,
+          "question": "Karaciğerin hangi segmentleri Couinaud sınıflamasına göre sağ lob oluşturur?",
+          "options": ["A) Segment I-IV", "B) Segment V-VIII", "C) Segment I-III", "D) Segment VI-VIII", "E) Segment IV-VIII"],
+          "answerIndex": 1,
+          "explanation": "Couinaud sınıflamasına göre karaciğer 8 segmente ayrılır. Segment V, VI, VII ve VIII sağ lobu; I, II, III ve IV sol lobu oluşturur.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 4
+        },
+        {
+          "id": 5,
+          "question": "Rotator cuff kasları arasında hangisi yer almaz?",
+          "options": ["A) Supraspinatus", "B) Infraspinatus", "C) Teres minor", "D) Teres major", "E) Subscapularis"],
+          "answerIndex": 3,
+          "explanation": "Rotator cuff; supraspinatus, infraspinatus, teres minor ve subscapularis kaslarından oluşur. Teres major rotator cuff üyesi değildir.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 5
+        },
+        {
+          "id": 6,
+          "question": "Böbreğin hilumundan hangi yapı geçmez?",
+          "options": ["A) Renal arter", "B) Renal ven", "C) Üreter", "D) Lenfatikler", "E) Femoral sinir"],
+          "answerIndex": 4,
+          "explanation": "Böbrek hilumundan renal arter, renal ven, üreter, sinirler ve lenfatikler geçer. Femoral sinir ise lumbal pleksustan kaynaklanarak uylukta seyreder.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 6
+        },
+        {
+          "id": 7,
+          "question": "Willis poligonunu oluşturan arterler arasında hangisi yer almaz?",
+          "options": ["A) A. cerebri anterior", "B) A. communicans anterior", "C) A. basilaris", "D) A. cerebri posterior", "E) A. communicans posterior"],
+          "answerIndex": 2,
+          "explanation": "Willis poligonu; her iki ACA, ACoA, her iki ICA terminal dalları, her iki PCoA ve her iki PCA'dan oluşur. A. basilaris poligonun kendisini değil, PCA'nın kaynağını oluşturur.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 7
+        },
+        {
+          "id": 8,
+          "question": "Pankreas başı hangi yapıyla komşuluk yapar?",
+          "options": ["A) Dalak", "B) Duodenum", "C) Mide", "D) Transvers kolon", "E) Sigmoid kolon"],
+          "answerIndex": 1,
+          "explanation": "Pankreas başı, duodenum 'C' kıvrımı içine yerleşmiştir ve duodenumanat yakın komşuluk içindedir. Bu ilişki pankreatik hastalıklarda klinik öneme sahiptir.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 8
+        },
+        {
+          "id": 9,
+          "question": "Hangisi arka mediastende yer alır?",
+          "options": ["A) Timus", "B) Arkus aorta", "C) Özofagus", "D) Trakea", "E) Perikard"],
+          "answerIndex": 2,
+          "explanation": "Arka mediastende özofagus, torasik aorta, azigos ven, torasik duktus ve sempatik zincir yer alır. Timus ön mediastende; trakea ve arkus aorta orta mediastende bulunur.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 9
+        },
+        {
+          "id": 10,
+          "question": "Hangi kas diz eklemini fleksiyona getirirken iç rotasyon yaptırır?",
+          "options": ["A) Biceps femoris", "B) Popliteus", "C) Gastrocnemius", "D) Soleus", "E) Plantaris"],
+          "answerIndex": 1,
+          "explanation": "Popliteus kası, diz eklemini kilitleyen tam ekstansiyon pozisyonundan 'açmak' için tibiayı iç rotasyona getirirken fleksiyon başlatır. 'Diz kilidini açan' kastır.",
+          "topic": "Anatomi",
+          "testNo": 1,
+          "questionIndex": 10
+        }
+      ]
+    },
+    {
+      "testNo": 1,
+      "title": "Fizyoloji Temelleri",
+      "subtitle": "Vücut sistemlerinin işleyişi",
+      "icon": "favorite_border",
+      "color": "#1E88E5",
+      "questions": [
+        {
+          "id": 1,
+          "question": "Aksiyon potansiyeli sırasında 'overshoot' fazında hangi iyon hareketi dominant olarak gerçekleşir?",
+          "options": ["A) K+ içeri girişi", "B) Na+ içeri girişi", "C) Ca2+ dışarı çıkışı", "D) Cl- içeri girişi", "E) Na+ dışarı çıkışı"],
+          "answerIndex": 1,
+          "explanation": "Depolarizasyon ve overshoot fazında hızlı voltaj kapılı Na+ kanalları açılır ve Na+ hücre içine hızla girer. Membran potansiyeli +30-+40 mV'a kadar yükselir.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 1
+        },
+        {
+          "id": 2,
+          "question": "Frank-Starling yasasına göre kalp debisi artışı aşağıdakilerden hangisiyle açıklanır?",
+          "options": ["A) Kalp hızı artışı", "B) Afterload azalması", "C) Diyastol sonu volüm artışı", "D) Kontraktilite azalması", "E) Periferik direnç artışı"],
+          "answerIndex": 2,
+          "explanation": "Frank-Starling yasasına göre ventrikülün diyastol sonu dolum hacmi (preload) arttıkça kasılma kuvveti ve atım hacmi artar. Bu mekanizma kalbin kendini otomatik olarak regüle etmesini sağlar.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 2
+        },
+        {
+          "id": 3,
+          "question": "Böbrekte glomerüler filtrasyon hızını (GFR) artıran faktör hangisidir?",
+          "options": ["A) Afferent arteriole konstriksiyonu", "B) Efferent arteriole konstriksiyonu", "C) Bowman kapsülü basıncı artışı", "D) Plazma onkotik basıncı artışı", "E) Tübüler geri emilim artışı"],
+          "answerIndex": 1,
+          "explanation": "Efferent arteriol konstriksiyonu glomerüler kapiller basıncını artırarak GFR'yi artırır. Anjiyotensin II efferent arteriole daha belirgin etki eder ve bu mekanizmayla GFR'yi korur.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 3
+        },
+        {
+          "id": 4,
+          "question": "Oksihemoglobin disosiasyon eğrisini sola kaydıran faktör hangisidir?",
+          "options": ["A) Hiperkapni", "B) Asidoz", "C) 2,3-BPG artışı", "D) Hipotermi", "E) Egzersiz"],
+          "answerIndex": 3,
+          "explanation": "Hipotermi (ısı azalması), oksihemoglobin disosiasyon eğrisini sola kaydırarak hemoglobinin oksijene bağlanma afinitesini artırır. Alkaloze, hipokapni ve 2,3-BPG azalması da sola kayma yapar.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 4
+        },
+        {
+          "id": 5,
+          "question": "Parathormon (PTH) böbrekte öncelikli olarak hangi etkiyi gösterir?",
+          "options": ["A) Na+ reabsorpsiyonunu artırır", "B) Fosfat reabsorpsiyonunu artırır", "C) Ca2+ reabsorpsiyonunu artırır", "D) K+ atılımını azaltır", "E) Su atılımını artırır"],
+          "answerIndex": 2,
+          "explanation": "PTH böbrekte distal tübül ve toplayıcı kanalda Ca2+ reabsorpsiyonunu artırırken fosfat reabsorpsiyonunu azaltır (fosfatüri). Aynı zamanda 1-alfa hidroksilazı aktive ederek aktif D vitamini sentezini artırır.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 5
+        },
+        {
+          "id": 6,
+          "question": "Sempatik sinir sisteminin kalbe etkisi aşağıdakilerden hangisidir?",
+          "options": ["A) Kronotrop(-), Dromotrop(-), İnotrop(-)", "B) Kronotrop(+), Dromotrop(+), İnotrop(+)", "C) Kronotrop(-), Dromotrop(+), İnotrop(-)", "D) Kronotrop(+), Dromotrop(-), İnotrop(+)", "E) Yalnızca İnotrop(+)"],
+          "answerIndex": 1,
+          "explanation": "Sempatik sistem norepinefrin aracılığıyla beta-1 reseptörlerini uyarır: kalp hızını (kronotrop+), iletimini (dromotrop+) ve kasılma gücünü (inotrop+) artırır.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 6
+        },
+        {
+          "id": 7,
+          "question": "Metabolik alkalozda kompansatuvar mekanizma olarak ne gelişir?",
+          "options": ["A) Hiperventilasyon ile CO2 atılımı artar", "B) Hipoventilasyon ile CO2 birikimi artar", "C) Böbrek HCO3- atılımı azalır", "D) NH4+ üretimi artar", "E) Aldosteron sekresyonu azalır"],
+          "answerIndex": 1,
+          "explanation": "Metabolik alkalozda kompansasyon: solunum merkezi deprese olur → hipoventilasyon → CO2 birikir → H2CO3 artar → pH dengelenir. Bu mekanizma sınırlıdır çünkü hipoventilasyon hipoksiye neden olur.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 7
+        },
+        {
+          "id": 8,
+          "question": "Surfaktanın fonksiyonu nedir?",
+          "options": ["A) Gaz değişimini artırır", "B) Alveol yüzey gerilimini azaltır", "C) Mukus üretimini artırır", "D) Bronş düz kas tonusunu artırır", "E) Pulmoner vasküler direnci azaltır"],
+          "answerIndex": 1,
+          "explanation": "Surfaktan (tip II pnömosit salgısı), alveol yüzeyindeki su-hava arayüzünün yüzey gerilimini azaltarak alveollerin açık kalmasını sağlar ve solunumun iş yükünü azaltır.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 8
+        },
+        {
+          "id": 9,
+          "question": "İnsülin hangi reseptör tipi üzerinden etki eder?",
+          "options": ["A) G-protein bağlı reseptör", "B) İyon kanalı reseptörü", "C) Tirozin kinaz reseptörü", "D) Nükleer reseptör", "E) Serin/Treonin kinaz reseptörü"],
+          "answerIndex": 2,
+          "explanation": "İnsülin reseptörü, tirozin kinaz aktivitesine sahip transmembran bir reseptördür. İnsülin bağlandığında otofosforilasyon ve IRS (insülin reseptör substrat) proteinlerinin aktivasyonu gerçekleşir.",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 9
+        },
+        {
+          "id": 10,
+          "question": "Tubuloglomerüler feed-back mekanizmasında macula densa ne algılar?",
+          "options": ["A) Glomerüler basınç değişikliğini", "B) Distal tübüldeki NaCl konsantrasyonunu", "C) Proksimal tübüldeki glukoz miktarını", "D) Kan akım hızını", "E) Eritropoetin düzeyini"],
+          "answerIndex": 1,
+          "explanation": "Macula densa hücreleri, distal tübüldeki NaCl konsantrasyonunu algılar. NaCl artarsa adenozin ve TXA2 aracılığıyla afferent arteriol daralır → GFR azalır (negatif feed-back).",
+          "topic": "Fizyoloji",
+          "testNo": 1,
+          "questionIndex": 10
+        }
+      ]
+    },
+    {
+      "testNo": 1,
+      "title": "Biyokimya Temelleri",
+      "subtitle": "Moleküler ve hücresel mekanizmalar",
+      "icon": "science",
+      "color": "#43A047",
+      "questions": [
+        {
+          "id": 1,
+          "question": "DNA replikasyonu sırasında 'Okazaki fragmentleri' hangi zincirde sentezlenir?",
+          "options": ["A) Öncü (leading) zincirde", "B) Geri kalan (lagging) zincirde", "C) Her iki zincirde eşit", "D) Yalnızca mitokondriyal DNA'da", "E) RNA primerde"],
+          "answerIndex": 1,
+          "explanation": "Lagging (geri kalan) zincirde DNA polimeraz yalnızca 5'→3' yönünde sentezleyebildiğinden replikasyon forku açılma yönünün tersine gider ve kesintili Okazaki fragmentleri oluşur.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 1
+        },
+        {
+          "id": 2,
+          "question": "Kreb döngüsünde substrat düzeyinde fosforilasyon hangi adımda gerçekleşir?",
+          "options": ["A) İzositrat → alfa-ketoglutarat", "B) Süksinil-CoA → Süksinat", "C) Fumarat → Malat", "D) Malat → Oksaloasetat", "E) Sitrat → İzositrat"],
+          "answerIndex": 1,
+          "explanation": "Süksinil-CoA sentaz enzimi aracılığıyla Süksinil-CoA'nın Süksinat'a dönüşümünde GTP (hayvanlarda) veya ATP (bakterilerde) üretilir. Bu Kreb döngüsünün tek substrat düzeyinde fosforilasyon adımıdır.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 2
+        },
+        {
+          "id": 3,
+          "question": "Hangi vitamin B12 yetersizliğinde birikir?",
+          "options": ["A) Propiyonil-CoA", "B) Metilmalonil-CoA", "C) Süksinil-CoA", "D) Malonil-CoA", "E) Asetil-CoA"],
+          "answerIndex": 1,
+          "explanation": "B12 (kobalamin) metilmalonil-CoA mutaz enziminin kofaktörüdür. B12 eksikliğinde metilmalonil-CoA süksinil-CoA'ya dönüşemez ve birikir → idrarda metilmalonik asit yükselir.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 3
+        },
+        {
+          "id": 4,
+          "question": "Kolesterol sentezinin hız kısıtlayıcı enzimi hangisidir?",
+          "options": ["A) Skualen sentaz", "B) HMG-CoA sentaz", "C) HMG-CoA redüktaz", "D) Mevalonat kinaz", "E) Lanosterol sentaz"],
+          "answerIndex": 2,
+          "explanation": "HMG-CoA redüktaz kolesterol sentezinin hız kısıtlayıcı (rate-limiting) enzimidir. Statinler bu enzimi inhibe ederek kolesterol sentezini azaltır. Insulin aktive, glukagon ve kortizol ise inhibe eder.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 4
+        },
+        {
+          "id": 5,
+          "question": "Fenilketonüri (PKU) hangi enzim eksikliğinden kaynaklanır?",
+          "options": ["A) Tirozin hidroksilaz", "B) Fenilalanin hidroksilaz", "C) Homogentisat oksidaz", "D) Fumarilasetoasetat hidrolaz", "E) DOPA dekarboksilaz"],
+          "answerIndex": 1,
+          "explanation": "PKU'da fenilalanin hidroksilaz (PAH) eksikliği nedeniyle fenilalanin tirozine dönüşemez, birikir ve alternatif yollarla fenilpirüvat, fenilasetat ve fenilaktata metabolize edilir.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 5
+        },
+        {
+          "id": 6,
+          "question": "mRNA'dan protein sentezi (translasyon) ribozomun hangi bölgesinde başlar?",
+          "options": ["A) E (çıkış) bölgesi", "B) P (peptidil) bölgesi", "C) A (aminoasil) bölgesi", "D) 5' UTR bölgesi", "E) Kozak sekansında P bölgesinden"],
+          "answerIndex": 4,
+          "explanation": "Başlangıç kodonuna (AUG) karşılık gelen başlatıcı Met-tRNA doğrudan P bölgesine yerleşir. Elongasyon sırasında sonraki aminoasil-tRNA'lar A bölgesine girer.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 6
+        },
+        {
+          "id": 7,
+          "question": "Glukoneogenezin sadece kendine özgü (glikolizin tersi olmayan) enzimi hangisidir?",
+          "options": ["A) Hekzokinaz", "B) Fosfofruktokinaz-1", "C) Pirüvat kinaz", "D) Fruktoz-1,6-bifosfataz", "E) Fosfogliserat kinaz"],
+          "answerIndex": 3,
+          "explanation": "Glukoneogeneze özgü enzimler: Pirüvat karboksilaz, PEPCK, Fruktoz-1,6-bifosfataz ve Glukoz-6-fosfataz. Fruktoz-1,6-bifosfataz glikolizin PFK-1 adımının tersi olarak çalışır.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 7
+        },
+        {
+          "id": 8,
+          "question": "Hangi vitamin yağda çözünen ve antioksidan özelliği olan bir vitamindir?",
+          "options": ["A) Vitamin C", "B) Vitamin B2", "C) Vitamin E", "D) Vitamin B12", "E) Folik asit"],
+          "answerIndex": 2,
+          "explanation": "Vitamin E (tokoferol) yağda çözünen vitaminler (A, D, E, K) arasındadır ve en güçlü lipofilik antioksidandır. Membran lipid peroksidasyonunu önler. Vitamin C ise suda çözünen antioksidandır.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 8
+        },
+        {
+          "id": 9,
+          "question": "Enzim inhibisyonunda Ki değeri neyi gösterir?",
+          "options": ["A) İnhibitörün enzime maksimum bağlanma hızını", "B) İnhibitör-enzim kompleksinin denge dissosiyasyon sabitini", "C) Substrat konsantrasyonunu yarı maksimum hızda", "D) Enzimin optimum pH'ını", "E) İnhibitörsüz maksimum reaksiyon hızını"],
+          "answerIndex": 1,
+          "explanation": "Ki (inhibisyon sabiti), inhibitör-enzim kompleksinin denge dissosiyasyon sabitidir. Düşük Ki değeri inhibitörün yüksek afiniteyle bağlandığını gösterir.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 9
+        },
+        {
+          "id": 10,
+          "question": "Oksidatif fosforilasyonda ATP sentaz kompleksi hangi mekanizmayla çalışır?",
+          "options": ["A) Substrat düzeyinde fosforilasyon", "B) Proton gradyanının ATP sentezinde kullanımı (kemiozmotik teori)", "C) NADH'nin direkt fosforilasyonu", "D) GTP'den ATP transferi", "E) Elektron transferi olmadan fosforilasyon"],
+          "answerIndex": 1,
+          "explanation": "Mitchell'in kemiozmotik teorisine göre elektron taşıma zinciri iç mitokondri membranında proton gradyanı oluşturur. Bu gradyan ATP sentaz (kompleks V) üzerinden geçerek ADP+Pi'den ATP sentezlenir.",
+          "topic": "Biyokimya",
+          "testNo": 1,
+          "questionIndex": 10
+        }
+      ]
+    }
+  ]
+}

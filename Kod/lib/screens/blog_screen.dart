@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'blog_detail_screen.dart';
+import '../admin/tabs/blog_admin_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // =============================================================================
 // VERİ MODELİ
@@ -13,6 +16,7 @@ class BlogPost {
   final String imageUrl;
   final DateTime publishedAt;
   final String readTime;
+  final String content;
 
   BlogPost({
     required this.id,
@@ -21,6 +25,7 @@ class BlogPost {
     required this.imageUrl,
     required this.publishedAt,
     required this.readTime,
+    this.content = '',
   });
 
   factory BlogPost.fromFirestore(DocumentSnapshot doc) {
@@ -32,6 +37,7 @@ class BlogPost {
       imageUrl: data['imageUrl'] ?? '',
       publishedAt: (data['publishedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       readTime: data['readTime'] ?? '3 dk',
+      content: data['content'] ?? '',
     );
   }
 }
@@ -150,6 +156,21 @@ class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  // Admin rol kontrolü
+  Future<bool> _checkAdminRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      return doc.data()?['role'] == 'admin';
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -224,6 +245,25 @@ class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateM
           style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 20)),
       centerTitle: true,
       automaticallyImplyLeading: false,
+      actions: [
+        FutureBuilder<bool>(
+          future: _checkAdminRole(),
+          builder: (context, snapshot) {
+            if (snapshot.data != true) return const SizedBox.shrink();
+            return IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminGuard(child: BlogAdminScreen()),
+                ),
+              ),
+              icon: Icon(Icons.admin_panel_settings_outlined,
+                  color: isDark ? Colors.white54 : Colors.black38, size: 22),
+              tooltip: "Blog Yönetimi",
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -254,9 +294,13 @@ class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateM
                     final today = DateTime(now.year, now.month, now.day);
                     final examDay = DateTime(examDate.year, examDate.month, examDate.day);
                     final daysLeft = examDay.difference(today).inDays;
-                    countdownText = daysLeft > 0
-                        ? "Sınava $daysLeft Gün"
-                        : daysLeft == 0 ? "Sınav Bugün! 🎯" : "Sınav geçti";
+                    if (daysLeft > 0) {
+                      countdownText = "Sinava " + daysLeft.toString() + " Gun Kaldi";
+                    } else if (daysLeft == 0) {
+                      countdownText = "Sinav Bugün!";
+                    } else {
+                      countdownText = "Sinav gecti (" + daysLeft.abs().toString() + " gün önce)";
+                    }
                   }
                 }
 
@@ -478,7 +522,12 @@ class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateM
   Widget _buildHeroBlogCard(BlogPost post, bool isDark) {
     final catColor = _categoryColor(post.category);
     return GestureDetector(
-      onTap: () => HapticFeedback.lightImpact(),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => BlogDetailScreen(post: post),
+        ));
+      },
       child: Container(
         height: 340,
         margin: const EdgeInsets.only(bottom: 4),
@@ -574,7 +623,12 @@ class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateM
     final subColor = isDark ? Colors.grey[500] : Colors.grey[600];
 
     return GestureDetector(
-      onTap: () => HapticFeedback.lightImpact(),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => BlogDetailScreen(post: post),
+        ));
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
