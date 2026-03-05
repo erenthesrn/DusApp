@@ -13,16 +13,14 @@ class FlashcardsScreen extends StatefulWidget {
 }
 
 class _FlashcardsScreenState extends State<FlashcardsScreen> {
-  // Dinamik olarak birleştirilmiş liste burada tutulacak
   Map<String, List<Map<String, dynamic>>> _finalData = {};
-  Map<String, dynamic> _customCategoryIcons = {}; // Artık hem int (ikon) hem String (emoji) tutacak
+  Map<String, dynamic> _customCategoryIcons = {};
 
   String? _selectedCategory;
   List<Map<String, dynamic>> _currentCards = [];
   int _currentIndex = 0;
   bool _isFlipped = false;
   
-  // İstatistikler
   int _knownCount = 0;
   int _unknownCount = 0;
 
@@ -32,7 +30,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     final cardColor = isDark ? const Color(0xFF161B22) : Colors.white;
     final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
 
-    // Profil sayfası ile tamamen aynı arka plan tanımı
     Widget background = isDark
       ? Container(
           decoration: const BoxDecoration(
@@ -45,7 +42,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
         )
       : Container(color: const Color.fromARGB(255, 224, 247, 250));
 
-    // Kategori Seçilmediyse Listeyi Göster
     if (_selectedCategory == null) {
       return Scaffold(
         extendBodyBehindAppBar: true, 
@@ -77,7 +73,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
             StreamBuilder<QuerySnapshot>(
               stream: _getFlashcardsStream(),
               builder: (context, snapshot) {
-                _finalData = {}; // Sadece Firebase'den gelen verileri tutacağız
+                _finalData = {};
 
                 if (snapshot.hasData) {
                   for (var doc in snapshot.data!.docs) {
@@ -117,7 +113,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(20, 130, 20, 100),
                   children: _finalData.keys.map((category) {
-                    // 🔥 YENİ: Sola kaydırarak tüm desteyi silme
                     return Dismissible(
                       key: Key(category),
                       direction: DismissDirection.endToStart,
@@ -143,12 +138,10 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
       );
     }
 
-    // Kartlar Bittiyse Sonuç Ekranı
     if (_currentIndex >= _currentCards.length) {
       return _buildResultScreen(isDark, textColor, background); 
     }
 
-    // KART GÖSTERİM EKRANI
     return Scaffold(
       extendBodyBehindAppBar: true, 
       backgroundColor: Colors.transparent, 
@@ -220,7 +213,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _buildMiniIcon(Icons.add_rounded, const Color(0xFF00BFA5), () => _showAddCardDialog(context, isDark, prefilledCategory: _selectedCategory)),
-                            // 🔥 YENİ: Deste Yönetimi (Tüm soruları gör)
                             _buildMiniIcon(Icons.list_alt_rounded, const Color(0xFF448AFF), () => _openCategoryManager(isDark)),
                             _buildMiniIcon(Icons.shuffle_rounded, Colors.orangeAccent, () {
                               if (_currentCards.isNotEmpty) {
@@ -287,8 +279,9 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                   ),
                 ),
 
+                // FIX 1: Buton taşması - padding azaltıldı, Flexible ile metin sarma eklendi
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
                   child: Row(
                     children: [
                       Expanded(
@@ -300,7 +293,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                           isDarkMode: isDark, 
                         ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _buildActionButton( 
                           label: "Biliyorum", 
@@ -321,11 +314,13 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     );
   }
 
+  // FIX 1: Flexible + overflow ile taşma düzeltildi
   Widget _buildActionButton({required String label, required IconData icon, required Color color, required VoidCallback onTap, required bool isDarkMode}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: isDarkMode ? const Color(0xFF161B22) : Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -340,15 +335,20 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                color: isDarkMode ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: GoogleFonts.inter(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -606,6 +606,9 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
             _currentCards = List.from(_finalData[title]!)..shuffle(); 
             _currentIndex = 0;
             _isFlipped = false;
+            // FIX 3: Yeni deste açılırken sayaçlar sıfırlanıyor
+            _knownCount = 0;
+            _unknownCount = 0;
           });
         },
         leading: Container(
@@ -700,6 +703,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     );
   }
 
+  // FIX 2 & FIX 3: Tebrikler ekranı - metin ortalandı, sayaçlar "Yeni Set Seç" ile sıfırlanıyor
   Widget _buildResultScreen(bool isDark, Color textColor, Widget background) {
     return Scaffold(
       extendBodyBehindAppBar: true, 
@@ -717,11 +721,13 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                   const SizedBox(height: 24),
                   Text(
                     "Tebrikler!",
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: textColor),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     "$_selectedCategory setini tamamladın.",
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.inter(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 40),
@@ -740,9 +746,12 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                         setState(() {
-                           _selectedCategory = null; 
-                         });
+                        // FIX 3: Sayaçlar burada da sıfırlanıyor
+                        setState(() {
+                          _selectedCategory = null;
+                          _knownCount = 0;
+                          _unknownCount = 0;
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0D47A1),
@@ -906,7 +915,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     );
   }
 
-  // 🔥 YENİ: TÜM DESTEYİ SİLME ONAYI
   Future<bool> _confirmDeleteCategory(String category) async {
     bool confirm = await showDialog(
       context: context,
@@ -933,7 +941,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     return confirm;
   }
 
-  // 🔥 YENİ: GENİŞ DÜZENLEME SAYFASINI AÇ
   void _openCategoryManager(bool isDark) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryManagerPage(
       category: _selectedCategory!,
@@ -956,7 +963,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   }
 }
 
-// 🔥 YENİ: GENİŞ DÜZENLEME SAYFASI (TAM SAYFA)
 class CategoryManagerPage extends StatelessWidget {
   final String category;
   final List<Map<String, dynamic>> cards;
@@ -995,7 +1001,7 @@ class CategoryManagerPage extends StatelessWidget {
                   User? user = FirebaseAuth.instance.currentUser;
                   await FirebaseFirestore.instance.collection('users').doc(user!.uid).collection('flashcards').doc(card['id']).delete();
                   onUpdate();
-                  Navigator.pop(context); // Sayfayı yenilemek için geri atıyoruz
+                  Navigator.pop(context);
                 }
               ),
             ),
