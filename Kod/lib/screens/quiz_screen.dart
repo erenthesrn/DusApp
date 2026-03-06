@@ -427,7 +427,9 @@ class _QuizScreenState extends State<QuizScreen> {
     List<Map<String, dynamic>> wrongQuestionsToSave = [];
     List<String> correctQuestionsToRemove = [];
 
-    bool isMistakeReview = widget.questions != null && !widget.isReviewMode;
+    bool isMistakeReview = widget.questions != null &&
+                          !widget.isReviewMode &&
+                          (widget.topic?.contains('Tekrar') ?? false);
 
     for (int i = 0; i < _questions.length; i++) {
       int? answer = _userAnswers[i];
