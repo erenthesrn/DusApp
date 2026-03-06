@@ -1,4 +1,8 @@
 // lib/screens/home_screen.dart - OFFLINE MOD ENTEGRE EDİLMİŞ VERSİYON (KUSURSUZ SENKRONİZASYON)
+// DEĞİŞİKLİKLER:
+//   1. Karışık Tekrar: soru sayısı seçim sheet'i eklendi
+//   2. Konu Bazlı: dersi seçtikten sonra soru sayısı seçim sheet'i eklendi
+//   3. Her iki modda da quiz bittikten sonra "doğruları yanlışlardan sil?" dialog'u eklendi
 
 import 'dart:async';
 import 'dart:ui'; 
@@ -23,6 +27,278 @@ import 'bookmarks_screen.dart';
 
 // 🔥 OFFLINE MOD IMPORTLARI 🔥
 import 'offline_manager_screen.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Soru Sayısı Seçim BottomSheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _QuestionCountSheet extends StatefulWidget {
+  final int maxCount;
+  final bool isDark;
+  final String title;
+  final String subtitle;
+
+  const _QuestionCountSheet({
+    required this.maxCount,
+    required this.isDark,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  State<_QuestionCountSheet> createState() => _QuestionCountSheetState();
+}
+
+class _QuestionCountSheetState extends State<_QuestionCountSheet> {
+  int? _selected;
+
+  List<int> get _counts {
+    const base = [10, 20, 30];
+    // Eğer max sayı base'den küçükse sadece uygun olanları + tümünü göster
+    List<int> result = base.where((c) => c <= widget.maxCount).toList();
+    if (!result.contains(widget.maxCount) && widget.maxCount > 0) {
+      result.add(widget.maxCount); // "Tümü"
+    }
+    if (result.isEmpty) result.add(widget.maxCount);
+    return result;
+  }
+
+  static const _accent = Color(0xFF3B82F6);
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = widget.isDark
+        ? const Color(0xFF0D1117).withOpacity(0.92)
+        : Colors.white.withOpacity(0.95);
+    final Color titleColor =
+        widget.isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B);
+    final Color subtitleColor =
+        widget.isDark ? Colors.grey.shade400 : Colors.blueGrey.shade400;
+    final Color cardBg = widget.isDark
+        ? const Color(0xFF161B22).withOpacity(0.6)
+        : Colors.white.withOpacity(0.85);
+    final Color borderColor =
+        widget.isDark ? Colors.white.withOpacity(0.08) : Colors.white;
+
+    final counts = _counts;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(32)),
+            border: widget.isDark
+                ? Border(
+                    top: BorderSide(color: Colors.white.withOpacity(0.1)))
+                : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: widget.isDark
+                          ? Colors.white24
+                          : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text(
+                  widget.title,
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.subtitle,
+                  style: GoogleFonts.inter(
+                      fontSize: 13, color: subtitleColor),
+                ),
+                const SizedBox(height: 28),
+
+                // Chip'ler
+                Row(
+                  children: counts.map((count) {
+                    final isLast = count == counts.last;
+                    final isSelected = _selected == count;
+                    final label = count == widget.maxCount &&
+                            !const [10, 20, 30].contains(count)
+                        ? 'Tümü\n($count)'
+                        : '$count';
+                    return Expanded(
+                      child: Padding(
+                        padding:
+                            EdgeInsets.only(right: isLast ? 0 : 12),
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => _selected = count),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(
+                                  sigmaX: 8, sigmaY: 8),
+                              child: AnimatedContainer(
+                                duration:
+                                    const Duration(milliseconds: 200),
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? _accent.withOpacity(
+                                          widget.isDark ? 0.2 : 0.1)
+                                      : cardBg,
+                                  borderRadius:
+                                      BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? _accent
+                                        : borderColor,
+                                    width: isSelected ? 2 : 1.5,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: _accent
+                                                .withOpacity(0.25),
+                                            blurRadius: 10,
+                                            offset:
+                                                const Offset(0, 4),
+                                          )
+                                        ]
+                                      : [],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      label,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: count ==
+                                                    widget.maxCount &&
+                                                !const [10, 20, 30]
+                                                    .contains(count)
+                                            ? 16
+                                            : 28,
+                                        fontWeight: FontWeight.w900,
+                                        color: isSelected
+                                            ? _accent
+                                            : (widget.isDark
+                                                ? const Color(
+                                                    0xFFE6EDF3)
+                                                : Colors.black87),
+                                      ),
+                                    ),
+                                    if (const [10, 20, 30]
+                                        .contains(count))
+                                      Text(
+                                        'Soru',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: isSelected
+                                              ? _accent.withOpacity(
+                                                  0.8)
+                                              : (widget.isDark
+                                                  ? Colors.white38
+                                                  : Colors.blueGrey
+                                                      .shade400),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 36),
+
+                // Başlat butonu
+                GestureDetector(
+                  onTap: _selected == null
+                      ? null
+                      : () => Navigator.pop(context, _selected),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    width: double.infinity,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: _selected != null
+                          ? (_accent)
+                          : (widget.isDark
+                              ? Colors.white12
+                              : Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: _selected != null
+                          ? [
+                              BoxShadow(
+                                color: _accent.withOpacity(0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Sınavı Başlat',
+                            style: GoogleFonts.inter(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: _selected != null
+                                  ? Colors.white
+                                  : Colors.white38,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: _selected != null
+                                ? Colors.white
+                                : Colors.white38,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HomeScreen
+// ─────────────────────────────────────────────────────────────────────────────
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -183,7 +459,85 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // 🔥 ÇALIŞMA ALANI (TEMEL & KLİNİK) - CYBER GLASS MENÜ 🔥
+  // ─── Soru sayısı seçim sheet'ini göster ─────────────────────────────────
+  /// Seçilen sayıyı döndürür. Kullanıcı kapatırsa null döner.
+  Future<int?> _showQuestionCountPicker({
+    required int maxCount,
+    required bool isDark,
+    required String title,
+    required String subtitle,
+  }) async {
+    return showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _QuestionCountSheet(
+        maxCount: maxCount,
+        isDark: isDark,
+        title: title,
+        subtitle: subtitle,
+      ),
+    );
+  }
+
+
+  // ─── Yanlış tekrarı quiz'ini başlat ────────────────────────────────────
+  // quiz_screen.dart zaten:
+  //   - isMistakeReview modunda yanlış/boşları tekrar kaydetmiyor
+  //   - doğru yapılanları removeMistakeList ile siliyor (doğru ID formatıyla)
+  // onComplete sadece normal bitişte çağrılır (erken çıkışta çağrılmaz).
+  Future<void> _runMistakesQuiz({
+    required List<Question> questions,
+    required String topic,
+    required bool isDark,
+  }) async {
+    if (!mounted) return;
+
+    int? resultCorrect;
+    int? resultWrong;
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuizScreen(
+          isTrial: true,
+          questions: questions,
+          topic: topic,
+          onComplete: (correct, wrong, empty) {
+            resultCorrect = correct;
+            resultWrong = wrong;
+          },
+        ),
+      ),
+    );
+
+    // Cache'i temizle
+    _invalidateMistakesCache();
+
+    // Erken çıkış: result null veya false → hiçbir şey yapma
+    if (result != true || !mounted) return;
+
+    // Normal bitiş
+    _checkAndCelebrate();
+
+    if (resultCorrect != null && mounted) {
+      final correct = resultCorrect!;
+      final total = questions.length;
+      final color = correct > 0 ? const Color(0xFF10B981) : Colors.orange;
+      final emoji = correct == total ? '🎉' : correct > 0 ? '✅' : '📚';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$emoji $correct/$total doğru. Doğrular yanlışlardan otomatik silindi.'),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  // ── Çalışma Alanı Sheet ────────────────────────────────────────────────────
   void _showTopicSelection(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color titleColor = isDarkMode ? const Color(0xFFE6EDF3) : const Color(0xFF1E293B); 
@@ -359,6 +713,8 @@ class _HomeScreenState extends State<HomeScreen> {
         convertToQuestions: _convertMistakesToQuestions,
         onCheckCelebrate: _checkAndCelebrate,
         onShowSubjectList: _showSubjectSelectionList,
+        showQuestionCountPicker: _showQuestionCountPicker,
+        runMistakesQuiz: _runMistakesQuiz,
       ),
     ).whenComplete(() {
       _isMistakesMenuOpen = false;
@@ -372,7 +728,6 @@ class _HomeScreenState extends State<HomeScreen> {
       grouped.putIfAbsent(sub, () => []).add(m);
     }
 
-    // 🔥 DERSLERİ ALFABETİK SIRALAYALIM 🔥
     List<String> sortedSubjects = grouped.keys.toList()..sort((a, b) => a.compareTo(b));
 
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -457,15 +812,35 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               child: Text("$count Yanlış", style: TextStyle(color: isDarkMode ? Colors.redAccent : Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.bold))
                             ),
-                            onTap: () {
+                            onTap: () async {
+                              // Sheet'i kapat
                               Navigator.pop(context);
-                              List<Question> questions = _convertMistakesToQuestions(grouped[subject]!);
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(
-                                isTrial: true,
+
+                              final subjectMistakes = grouped[subject]!;
+
+                              // ── YENİ: Soru sayısı seç ──
+                              final picked = await _showQuestionCountPicker(
+                                maxCount: subjectMistakes.length,
+                                isDark: isDarkMode,
+                                title: '$subject Tekrarı',
+                                subtitle: 'Kaç soru çözmek istiyorsun?',
+                              );
+                              if (picked == null || !mounted) return;
+
+                              final subjectMistakesShuffled =
+                                  List<Map<String, dynamic>>.from(subjectMistakes)
+                                    ..shuffle();
+                              final selectedMistakes =
+                                  subjectMistakesShuffled.take(picked).toList();
+
+                              final questions =
+                                  _convertMistakesToQuestions(selectedMistakes);
+
+                              await _runMistakesQuiz(
                                 questions: questions,
-                                topic: "$subject Tekrarı",
-                              )))
-                              .then((_) => _checkAndCelebrate()); 
+                                topic: '$subject Tekrarı',
+                                isDark: isDarkMode,
+                              );
                             },
                           );
                         },
@@ -714,7 +1089,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 // YANLIŞLAR MENÜSÜ WİDGET'I
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _MistakesMenuContent extends StatefulWidget {
   final bool isDarkMode;
   final Color titleColor;
@@ -724,6 +1102,21 @@ class _MistakesMenuContent extends StatefulWidget {
   final VoidCallback onCheckCelebrate;
   final void Function(BuildContext, List<Map<String, dynamic>>) onShowSubjectList;
 
+  // ── YENİ callback'ler ──
+  final Future<int?> Function({
+    required int maxCount,
+    required bool isDark,
+    required String title,
+    required String subtitle,
+  }) showQuestionCountPicker;
+
+
+  final Future<void> Function({
+    required List<Question> questions,
+    required String topic,
+    required bool isDark,
+  }) runMistakesQuiz;
+
   const _MistakesMenuContent({
     required this.isDarkMode,
     required this.titleColor,
@@ -732,6 +1125,8 @@ class _MistakesMenuContent extends StatefulWidget {
     required this.convertToQuestions,
     required this.onCheckCelebrate,
     required this.onShowSubjectList,
+    required this.showQuestionCountPicker,
+    required this.runMistakesQuiz,
   });
 
   @override
@@ -812,6 +1207,7 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
                 
                 Row(
                   children: [
+                    // ── KARIŞIK TEKRAR ──
                     Expanded(
                       child: _buildModernCard(
                         context, 
@@ -819,24 +1215,44 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
                         icon: Icons.shuffle_rounded, 
                         color: Colors.purple, 
                         subtitle: "Rastgele Sınav",
-                        onTap: () {
+                        onTap: () async {
+                          // Sheet'i kapat
                           Navigator.pop(context);
+
                           if (_mistakes == null || _mistakes!.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Henüz yanlışın yok! Harikasın 🎉"))
                             );
                             return;
                           }
-                          List<Map<String, dynamic>> shuffled = List.from(_mistakes!)..shuffle();
-                          List<Question> questions = widget.convertToQuestions(shuffled);
-                          Navigator.push(
-                            context, 
-                            MaterialPageRoute(builder: (context) => QuizScreen(isTrial: true, questions: questions, topic: "Karışık Yanlış Tekrarı"))
-                          ).then((_) => widget.onCheckCelebrate()); 
+
+                          // ── YENİ: Soru sayısı seç ──
+                          final picked = await widget.showQuestionCountPicker(
+                            maxCount: _mistakes!.length,
+                            isDark: widget.isDarkMode,
+                            title: 'Karışık Tekrar',
+                            subtitle: 'Kaç soru çözmek istiyorsun?',
+                          );
+                          if (picked == null) return;
+
+                          final shuffled =
+                              List<Map<String, dynamic>>.from(_mistakes!)
+                                ..shuffle();
+                          final selectedMistakes =
+                              shuffled.take(picked).toList();
+                          final questions =
+                              widget.convertToQuestions(selectedMistakes);
+
+                          await widget.runMistakesQuiz(
+                            questions: questions,
+                            topic: 'Karışık Yanlış Tekrarı',
+                            isDark: widget.isDarkMode,
+                          );
                         }
                       ),
                     ),
                     const SizedBox(width: 16),
+                    // ── KONU BAZLI ──
                     Expanded(
                       child: _buildModernCard(
                         context, 
@@ -972,7 +1388,10 @@ class _MistakesMenuContentState extends State<_MistakesMenuContent> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD EKRANI
+// ─────────────────────────────────────────────────────────────────────────────
+
 class DashboardScreen extends StatelessWidget {
   final String targetBranch;
   final int dailyGoal;         

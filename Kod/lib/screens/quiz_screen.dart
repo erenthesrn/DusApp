@@ -40,6 +40,10 @@ class QuizScreen extends StatefulWidget {
   final int initialIndex;
   final bool useOffline;
 
+  // ── YENİ: Quiz tamamlanınca çağrılır (erken çıkışta çağrılmaz)
+  // correct: doğru sayısı, wrong: yanlış, empty: boş
+  final void Function(int correct, int wrong, int empty)? onComplete;
+
   const QuizScreen({
     super.key,
     required this.isTrial,
@@ -51,6 +55,7 @@ class QuizScreen extends StatefulWidget {
     this.isReviewMode = false,
     this.initialIndex = 0,
     this.useOffline = false,
+    this.onComplete, // ── YENİ
   });
 
   @override
@@ -298,6 +303,7 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
+  // ── Erken çıkış — onComplete çağrılmaz ──────────────────────────────────
   Future<bool> _onWillPop() async {
     if (widget.isReviewMode) return true;
 
@@ -417,7 +423,11 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // SCORE CALCULATION — pure, no side-effects, always safe to call
+  // SCORE CALCULATION
+  // isMistakeReview = true → yanlış tekrarı modu
+  //   - Yanlış/boş yapılanlar tekrar yanlışlara KAYDEDILMEZ
+  //   - Doğru yapılanlar yanlışlardan SİLİNİR (Firestore doküman ID formatı
+  //     ile: _questions[i].level kullanılır, widget.topic değil)
   // ─────────────────────────────────────────────────────────────────────────
   Map<String, dynamic> _calculateResults() {
     int correct = 0;
@@ -427,56 +437,42 @@ class _QuizScreenState extends State<QuizScreen> {
     List<Map<String, dynamic>> wrongQuestionsToSave = [];
     List<String> correctQuestionsToRemove = [];
 
+    // Yanlış tekrar modu: sorular dışarıdan verilmiş VE topic 'Tekrar' içeriyor
     bool isMistakeReview = widget.questions != null &&
-                          !widget.isReviewMode &&
-                          (widget.topic?.contains('Tekrar') ?? false);
+        !widget.isReviewMode &&
+        (widget.topic?.contains('Tekrar') ?? false);
 
     for (int i = 0; i < _questions.length; i++) {
       int? answer = _userAnswers[i];
       int trueIndex = _questions[i].answerIndex;
 
       if (answer == null) {
+        // Boş
         empty++;
         if (!isMistakeReview) {
-          wrongQuestionsToSave.add({
-            'id': _questions[i].id,
-            'question': _questions[i].question,
-            'options': _questions[i].options,
-            'correctIndex': _questions[i].answerIndex,
-            'userIndex': -1,
-            'topic': widget.topic ?? _questions[i].level,
-            'testNo': widget.testNo ?? _questions[i].testNo,
-            'questionIndex': _questions[i].id,
-            'explanation': _questions[i].explanation,
-            'image_url': _questions[i].imageUrl,
-            'date': DateTime.now().toIso8601String(),
-          });
+          wrongQuestionsToSave.add(_buildMistakeMap(i, answer));
         }
       } else if (answer == trueIndex) {
+        // Doğru
         correct++;
         if (isMistakeReview) {
-          String topic = widget.topic ?? _questions[i].level;
-          int testNo = widget.testNo ?? _questions[i].testNo;
-          int qId = _questions[i].id;
-          correctQuestionsToRemove.add("${topic}_${testNo}_$qId");
+          // ── DÜZELTME: Firestore doküman ID'si formatı:
+          // "{orijinalTopic}_{testNo}_{questionIndex}"
+          // Orijinal topic = _questions[i].level (Firestore'dan gelen 'topic' alanı)
+          // widget.topic = 'Anatomi Tekrarı' gibi bir şey — Firestore ID'si değil!
+          final originalTopic = _questions[i].level; // örn. 'anatomi'
+          final testNo = _questions[i].testNo;
+          final qId = _questions[i].id;
+          correctQuestionsToRemove.add("${originalTopic}_${testNo}_$qId");
         }
       } else {
+        // Yanlış
         wrong++;
         if (!isMistakeReview) {
-          wrongQuestionsToSave.add({
-            'id': _questions[i].id,
-            'question': _questions[i].question,
-            'options': _questions[i].options,
-            'correctIndex': _questions[i].answerIndex,
-            'userIndex': answer,
-            'topic': widget.topic ?? _questions[i].level,
-            'testNo': widget.testNo ?? _questions[i].testNo,
-            'questionIndex': _questions[i].id,
-            'explanation': _questions[i].explanation,
-            'image_url': _questions[i].imageUrl,
-            'date': DateTime.now().toIso8601String(),
-          });
+          // Normal modda yanlışları kaydet
+          wrongQuestionsToSave.add(_buildMistakeMap(i, answer));
         }
+        // isMistakeReview modunda yanlış yapılanlar listeye tekrar EKLENMİYOR
       }
     }
 
@@ -491,11 +487,28 @@ class _QuizScreenState extends State<QuizScreen> {
       'score': score,
       'wrongQuestionsToSave': wrongQuestionsToSave,
       'correctQuestionsToRemove': correctQuestionsToRemove,
+      'isMistakeReview': isMistakeReview,
+    };
+  }
+
+  Map<String, dynamic> _buildMistakeMap(int i, int? answer) {
+    return {
+      'id': _questions[i].id,
+      'question': _questions[i].question,
+      'options': _questions[i].options,
+      'correctIndex': _questions[i].answerIndex,
+      'userIndex': answer ?? -1,
+      'topic': _questions[i].level, // Orijinal Firestore topic'i
+      'testNo': _questions[i].testNo,
+      'questionIndex': _questions[i].id,
+      'explanation': _questions[i].explanation,
+      'image_url': _questions[i].imageUrl,
+      'date': DateTime.now().toIso8601String(),
     };
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // BACKGROUND SAVE — all errors are caught internally; never throws
+  // BACKGROUND SAVE
   // ─────────────────────────────────────────────────────────────────────────
   Future<void> _saveResultsInBackground({
     required int correct,
@@ -506,7 +519,6 @@ class _QuizScreenState extends State<QuizScreen> {
     required List<String> correctQuestionsToRemove,
   }) async {
     if (_isOfflineMode) {
-      // ── OFFLINE SAVE ────────────────────────────────────────────────────
       try {
         for (var mistake in wrongQuestionsToSave) {
           await OfflineService.saveOfflineMistake(mistake);
@@ -549,7 +561,7 @@ class _QuizScreenState extends State<QuizScreen> {
         );
       }
     } else {
-      // ── ONLINE SAVE ─────────────────────────────────────────────────────
+      // Yanlışları kaydet
       try {
         if (wrongQuestionsToSave.isNotEmpty) {
           await MistakesService.addMistakes(wrongQuestionsToSave);
@@ -558,6 +570,7 @@ class _QuizScreenState extends State<QuizScreen> {
         debugPrint("⚠️ MistakesService.addMistakes error (non-fatal): $e");
       }
 
+      // Doğruları yanlışlardan sil (yanlış tekrar modunda)
       try {
         if (correctQuestionsToRemove.isNotEmpty) {
           await MistakesService.removeMistakeList(correctQuestionsToRemove);
@@ -595,7 +608,8 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FINISH DIALOG — navigation is GUARANTEED even if saves fail
+  // FINISH DIALOG
+  // onComplete callback yalnızca burada çağrılır (erken çıkışta çağrılmaz)
   // ─────────────────────────────────────────────────────────────────────────
   void _showFinishDialog({bool timeUp = false}) {
     showDialog(
@@ -651,13 +665,13 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             ),
             onPressed: () async {
-              // 1️⃣  Close the dialog immediately — no awaits before this
+              // 1️⃣ Dialog'u kapat
               Navigator.pop(ctx);
 
-              // 2️⃣  Stop the timer
+              // 2️⃣ Timer'ı durdur
               _timer?.cancel();
 
-              // 3️⃣  Calculate scores synchronously — this never fails
+              // 3️⃣ Sonuçları hesapla
               final results = _calculateResults();
               final int correct = results['correct'] as int;
               final int wrong = results['wrong'] as int;
@@ -668,7 +682,7 @@ class _QuizScreenState extends State<QuizScreen> {
               final List<String> correctQuestionsToRemove =
                   results['correctQuestionsToRemove'] as List<String>;
 
-              // 4️⃣  Navigate to ResultScreen IMMEDIATELY — before any async saves
+              // 4️⃣ ResultScreen'e git
               if (mounted) {
                 await Navigator.push(
                   context,
@@ -688,7 +702,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 );
               }
 
-              // 5️⃣  Fire-and-forget background save (errors are all caught inside)
+              // 5️⃣ Arka planda kaydet
               _saveResultsInBackground(
                 correct: correct,
                 wrong: wrong,
@@ -700,9 +714,12 @@ class _QuizScreenState extends State<QuizScreen> {
                 debugPrint("⚠️ Background save failed (non-fatal): $e");
               });
 
-              // 6️⃣  Pop quiz screen
+              // 6️⃣ onComplete callback — sadece normal bitişte çağrılır
+              widget.onComplete?.call(correct, wrong, empty);
+
+              // 7️⃣ QuizScreen'i kapat
               if (mounted) {
-                Navigator.pop(context, true);
+                Navigator.pop(context, true); // true = normal bitiş
               }
             },
             child: const Text("Bitir"),
@@ -826,9 +843,6 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // REPORT DIALOG — kullanıcıdan not alır, Firestore'a kaydeder
-  // ─────────────────────────────────────────────────────────────────────────
   void _showReportDialog(Question question) {
     final TextEditingController noteController = TextEditingController();
     bool isSending = false;
@@ -1022,7 +1036,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 Navigator.pop(context);
               } else {
                 if (await _onWillPop()) {
-                  if (mounted) Navigator.of(context).pop();
+                  if (mounted) Navigator.of(context).pop(); // null döner = erken çıkış
                 }
               }
             },
@@ -1137,9 +1151,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
                       const SizedBox(height: 12),
 
-                      // ─────────────────────────────────────────────────────
-                      // GÖRSEL — CachedNetworkImage ile cache'leniyor
-                      // ─────────────────────────────────────────────────────
                       if (currentQuestion.imageUrl != null &&
                           currentQuestion.imageUrl!.isNotEmpty)
                         Container(
