@@ -27,6 +27,7 @@ import 'bookmarks_screen.dart';
 
 // 🔥 OFFLINE MOD IMPORTLARI 🔥
 import 'offline_manager_screen.dart';
+import 'exam_setup_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Soru Sayısı Seçim BottomSheet
@@ -446,15 +447,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Question> _convertMistakesToQuestions(List<Map<String, dynamic>> mistakes) {
     return mistakes.map((m) {
+      // level alanına Firestore doküman ID'sini ('topic_testNo_qIndex') yazıyoruz.
+      // quiz_screen.dart bu değeri correctQuestionsToRemove için direkt kullanır —
+      // her topic formatında ('Sınav Provası_0_5' dahil) silme doğru çalışır.
+      final firestoreDocId = m['id']?.toString() ?? '';
       return Question(
-        id: m['questionIndex'] ?? 0, 
+        id: m['questionIndex'] ?? 0,
         question: m['question'],
         options: List<String>.from(m['options']),
         answerIndex: m['correctIndex'],
         explanation: m['explanation'] ?? "",
-        testNo: m['testNo'] ?? 0, 
-        level: m['topic'] ?? m['subject'] ?? "Genel", 
-        imageUrl: m['imageUrl'], 
+        testNo: m['testNo'] ?? 0,
+        level: firestoreDocId.isNotEmpty
+            ? firestoreDocId
+            : (m['topic'] ?? m['subject'] ?? "Genel"),
+        imageUrl: m['imageUrl'],
       );
     }).toList();
   }
@@ -653,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     isWide: true,
                     onTapOverride: () {
                        Navigator.pop(context);
-                       Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen(isTrial: true, fixedDuration: 150)))
+                       Navigator.push(context, MaterialPageRoute(builder: (context) => const ExamSetupScreen()))
                        .then((_) => _checkAndCelebrate());
                     }
                   ),
