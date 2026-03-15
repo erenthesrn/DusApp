@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'blog_detail_screen.dart';
 import '../admin/tabs/blog_admin_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'calendar_screen.dart';
 
 // =============================================================================
 // VERİ MODELİ
@@ -391,60 +392,67 @@ class _BlogScreenState extends State<BlogScreen> with SingleTickerProviderStateM
   // ===========================================================================
   Widget _buildQuickActions(bool isDark) {
     final actions = [
-      {"icon": Icons.calculate_rounded,    "label": "Puan",    "color": const Color(0xFF0969DA)},
-      {"icon": Icons.timer_rounded,        "label": "Sayaç",   "color": const Color(0xFFFF9500)},
-      {"icon": Icons.analytics_rounded,    "label": "Tercih",  "color": const Color(0xFF34C759)},
+      {"icon": Icons.calculate_rounded,     "label": "Puan",   "color": const Color(0xFF0969DA)},
+      {"icon": Icons.analytics_rounded,     "label": "Tercih", "color": const Color(0xFF34C759)},
       {"icon": Icons.calendar_month_rounded,"label": "Takvim", "color": const Color(0xFFAF52DE)},
     ];
 
     return SliverToBoxAdapter(
-      child: SizedBox(
-        height: 110,
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          itemCount: actions.length,
-          itemBuilder: (context, index) {
-            final action = actions[index];
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                if (index == 0) {
-                  // Puan Hesaplayıcı
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => DusPuanHesaplayici(isDark: isDark),
-                  );
-                }
-              },
-              child: Container(
-                width: 85,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.03) : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: (action["color"] as Color).withOpacity(0.2), width: 1),
-                  boxShadow: [BoxShadow(color: (action["color"] as Color).withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: (action["color"] as Color).withOpacity(0.15), shape: BoxShape.circle),
-                      child: Icon(action["icon"] as IconData, color: action["color"] as Color, size: 28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: SizedBox(
+          height: 110,
+          child: Row(
+            children: List.generate(actions.length, (index) {
+              final action = actions[index];
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    if (index == 0) {
+                      // Puan Hesaplayıcı
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => DusPuanHesaplayici(isDark: isDark),
+                      );
+                    } else if (index == 2) {
+                      // Takvim
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CalendarScreen(),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.03) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: (action["color"] as Color).withOpacity(0.2), width: 1),
+                      boxShadow: [BoxShadow(color: (action["color"] as Color).withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
                     ),
-                    const SizedBox(height: 12),
-                    Text(action["label"] as String,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black87)),
-                  ],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: (action["color"] as Color).withOpacity(0.15), shape: BoxShape.circle),
+                          child: Icon(action["icon"] as IconData, color: action["color"] as Color, size: 28),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(action["label"] as String,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black87)),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            }),
+          ),
         ),
       ),
     );

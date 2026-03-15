@@ -218,17 +218,17 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
               const SliverToBoxAdapter(child: SizedBox(height: 110)),
               
               _buildSliverSectionHeader("Kolay Seviye", Colors.green, isDarkMode, 0),
-              _buildSliverTestGrid(count: 8, startNumber: 1, color: Colors.green, isDarkMode: isDarkMode, delayIndex: 1),
-              
+              _buildSliverTestGrid(count: 10, startNumber: 1, color: Colors.green, isDarkMode: isDarkMode, delayIndex: 1),
+
               _buildSliverDivider(isDarkMode, 2),
-              
+
               _buildSliverSectionHeader("Orta Seviye", Colors.orange, isDarkMode, 3),
-              _buildSliverTestGrid(count: 8, startNumber: 9, color: Colors.orange, isDarkMode: isDarkMode, delayIndex: 4),
-              
+              _buildSliverTestGrid(count: 10, startNumber: 11, color: Colors.orange, isDarkMode: isDarkMode, delayIndex: 4),
+
               _buildSliverDivider(isDarkMode, 5),
-              
+
               _buildSliverSectionHeader("Zor Seviye", Colors.red, isDarkMode, 6),
-              _buildSliverTestGrid(count: 8, startNumber: 17, color: Colors.red, isDarkMode: isDarkMode, delayIndex: 7),
+              _buildSliverTestGrid(count: 10, startNumber: 21, color: Colors.red, isDarkMode: isDarkMode, delayIndex: 7),
               
               const SliverToBoxAdapter(child: SizedBox(height: 30)),
             ],
@@ -297,7 +297,7 @@ class _TestListScreenState extends State<TestListScreen> with SingleTickerProvid
       padding: const EdgeInsets.symmetric(horizontal: 20),
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, 
+          crossAxisCount: 5,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
           childAspectRatio: 1.0,
