@@ -72,11 +72,14 @@ class MistakesService {
     for (var mistake in mistakes) {
       // 🔥 FIX: Hem 'topic' hem 'subject' alanlarını kontrol et
       String topic = (mistake['topic'] ?? mistake['subject'] ?? "Genel").toString().trim();
-      
+
       // Boş topic'i engelle
-      if (topic.isEmpty || topic == "genel") {
+      if (topic.isEmpty || topic.toLowerCase() == "genel") {
         topic = "Anatomi"; // Varsayılan konu (anatomi.json'dan geldiği için)
       }
+
+      // İlk harfi büyük yap (ör: "anatomi" → "Anatomi")
+      topic = topic[0].toUpperCase() + topic.substring(1);
       
       int testNo = int.tryParse(mistake['testNo']?.toString() ?? "0") ?? 0;
       int qIndex = int.tryParse(mistake['questionIndex']?.toString() ?? mistake['id']?.toString() ?? "0") ?? 0;
